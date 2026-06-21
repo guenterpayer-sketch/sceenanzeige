@@ -1,0 +1,11 @@
+{
+  "id": "stundenplan",
+  "label": "Stundenplan",
+  "icon": "calendar",
+  "has_proxy": true,
+  "has_inhalte": false,
+  "settings": [
+    { "key": "anzahl_kurse", "type": "number", "label": "Anzahl angezeigter Kurse", "default": 5 },
+    { "key": "nur_heute", "type": "bool", "label": "Nur heutige Kurse anzeigen", "default": true }
+  ]
+}
