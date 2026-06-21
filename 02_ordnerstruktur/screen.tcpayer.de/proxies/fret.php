@@ -1,18 +1,22 @@
 <?php
 /**
- * proxies/song.php
+ * proxies/fret.php
  *
- * Serverseitiger Proxy für die FRET-API (song-Modul).
- * Siehe Projektzusammenfassung_Song_Anzeige.md sowie Abschnitt 14 der Doku.
+ * Serverseitiger Proxy für die FRET-API (fret-Modul, benannt nach der
+ * Musiksoftware FRET). Siehe Projektzusammenfassung_Song_Anzeige.md sowie
+ * Abschnitt 14 der Doku. Entspricht dem bereits live laufenden Standalone-
+ * Proxy (schoolId serverseitig versteckt), nur in die Modul-/CORS-Struktur
+ * eingepasst.
  *
  * WICHTIG (Sicherheit):
  *   - FRET_SCHOOL_ID bleibt serverseitig (config.php) und gelangt NIE ans
  *     Frontend — die FRET-API besitzt auch schreibende Endpunkte.
+ *   - Die Computer-UUID selbst ist nicht geheim (steht auch in der Auswahl).
  *   - Nur player1 ist für die Anzeige relevant; player2 wird verworfen.
  *
  * Aufruf vom (Saal-)Frontend:
- *   GET proxies/song.php?action=list           → [{id,name}, ...] der Computer/Säle
- *   GET proxies/song.php?computer=<uuid>        → aufbereiteter Song-Status
+ *   GET proxies/fret.php?action=list           → [{id,name}, ...] der Computer/Säle
+ *   GET proxies/fret.php?computer=<uuid>        → aufbereiteter Song-Status
  */
 
 declare(strict_types=1);

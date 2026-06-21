@@ -1,6 +1,6 @@
 {
-  "id": "song",
-  "label": "Aktueller Song",
+  "id": "fret",
+  "label": "FRET – Aktueller Song",
   "icon": "music",
   "has_proxy": true,
   "has_inhalte": false,

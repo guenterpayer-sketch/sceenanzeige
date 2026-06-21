@@ -2,7 +2,7 @@
 /**
  * proxies/_cors.php
  *
- * Gemeinsamer CORS-/JSON-Header-Helfer für die Proxys (nc.php, song.php).
+ * Gemeinsamer CORS-/JSON-Header-Helfer für die Proxys (nc.php, fret.php).
  * Die Saal-Frontends (saalX.tcpayer.de) rufen diese Proxys cross-origin auf;
  * erlaubt werden ausschließlich die bekannten Saal-Subdomains (analog zur
  * .htaccess-Regel aus Schritt 2 / Chat-Zusammenfassung Schritt 1-2).

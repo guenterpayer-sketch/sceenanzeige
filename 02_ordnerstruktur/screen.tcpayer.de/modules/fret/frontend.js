@@ -1,9 +1,10 @@
 /**
- * modules/song/frontend.js
+ * modules/fret/frontend.js
  *
- * Zeigt den aktuell laufenden Song (Titel, Künstler, Tanz-Badges,
- * Fortschrittsbalken) sowie optional die kommenden Songs. Daten kommen vom
- * Proxy proxies/song.php (FRET-API; schoolId bleibt serverseitig).
+ * Modul "fret" (benannt nach der Musiksoftware FRET). Zeigt den aktuell
+ * laufenden Song (Titel, Künstler, Tanz-Badges, Fortschrittsbalken) sowie
+ * optional die kommenden Songs. Daten kommen vom Proxy proxies/fret.php
+ * (FRET-API; schoolId bleibt serverseitig in config.php).
  *
  * Übernommene Bausteine aus dem Standalone-Projekt
  * (Projektzusammenfassung_Song_Anzeige.md):
@@ -14,7 +15,7 @@
  *     (Interval-Leak-Bugfix)
  *
  * Konvention (siehe module-loader.js):
- *   window.TanzschuleModule.song = function(container, settings, inhalte)
+ *   window.TanzschuleModule.fret = function(container, settings, inhalte)
  */
 (function () {
     window.TanzschuleModule = window.TanzschuleModule || {};
@@ -32,9 +33,9 @@
         }).join('');
     }
 
-    window.TanzschuleModule.song = function (container, settings) {
+    window.TanzschuleModule.fret = function (container, settings) {
         settings = settings || {};
-        container.classList.add('tm-modul-song');
+        container.classList.add('tm-modul-fret');
 
         // Alte Timer dieses Containers zwingend aufräumen (Leak-Schutz).
         if (container._tmPoll) { clearInterval(container._tmPoll); }
@@ -114,7 +115,7 @@
         }
 
         function holeDaten() {
-            var url = basis + '/proxies/song.php?computer=' + encodeURIComponent(computerId);
+            var url = basis + '/proxies/fret.php?computer=' + encodeURIComponent(computerId);
             fetch(url, { cache: 'no-store' })
                 .then(function (r) { return r.json(); })
                 .then(function (data) {

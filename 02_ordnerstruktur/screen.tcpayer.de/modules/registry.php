@@ -19,5 +19,5 @@ return [
     'bild',
     'stundenplan',
     'ankuendigung',
-    'song',
+    'fret',
 ];
