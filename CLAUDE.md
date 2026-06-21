@@ -37,6 +37,43 @@ Zeitmanagement, keine eigenen Bilder, keine Songanzeige/Ticker).
 **Hosting:** all-inkl (PHP 8 + MySQL). Kein Node.js, kein Docker, keine
 serverseitigen Laufzeitumgebungen außer PHP.
 
+### 1.1 Was dieses Projekt baut (Zieldefinition)
+
+Gebaut wird ein **digitales Monitor-/Signage-System für die Tanzschule**, das
+die bisherige unflexible Lösung (Redirect auf eine fremde Monitor-URL)
+ersetzt. Konkret:
+
+- **Zentrales Backend** (`screen.tcpayer.de`): Oberfläche, in der das Personal
+  die Inhalte pflegt (Bilder, Ankündigungen, Stundenplan-/FRET-Einstellungen,
+  Playlists, Ticker, Saal-Zuweisung).
+- **Schlanke Saal-Monitore** (`saal1/2/3.tcpayer.de`): laufen im
+  Vollbild-Kiosk-Modus auf je einem Bildschirm, holen ihre Inhalte vom
+  Backend und kennen nur ihre eigene `SAAL_ID`.
+- **Inhalte als wiederverwendbare Module**: `uhrzeit`, `bild`, `ankuendigung`,
+  `stundenplan`, `fret` — angelegt als benannte „Modul-Instanzen" in einer
+  Bibliothek und beliebig in Playlists einsetzbar.
+- **Playlists** ordnen Module in **Spalten-Layouts** an, mit **Zeitregeln**
+  (welche Playlist läuft wann), **Saal-Zuweisung** und Priorität bei
+  Überschneidung. Ein **Ticker-Footer** läuft als eigenständiges System
+  parallel.
+- **Zielnutzen**: eigenes Zeitmanagement, eigene Bilder/Ankündigungen,
+  Live-Songanzeige je Saal (FRET) und Stundenplan (Nimbuscloud) — alles
+  flexibel pro Saal und Uhrzeit steuerbar.
+
+**Zwei klar getrennte Datenquellen** (siehe auch Abschnitt 9 und 14):
+
+| System | Was | Modul | Braucht |
+|---|---|---|---|
+| **FRET** | Musiksoftware; je Saal ein PC (eigene Computer-UUID) mit je 2 Playern. Zeigt, welche Musik gerade in welchem Saal läuft (z. B. Tanzabend). | `fret` | `schoolId` (Account-Zuordnung) + Computer-UUID |
+| **Nimbuscloud (NC)** | Tanzschulverwaltung; liefert den Stundenplan (welcher Unterricht in welchem Saal). | `stundenplan` | nur den Stundenplan-API-Key, **keine** schoolId |
+
+Es sind **vollständig voneinander unabhängige Systeme** — daher auch im Code
+getrennte Proxys (`proxies/fret.php`, `proxies/nc.php`) und getrennte
+Zugangsdaten.
+
+**Zielauflösung der Monitore:** **Full-HD (1920×1080)** — Designvorgabe für
+alle Modul-Layouts/Schriftgrößen (siehe Abschnitt 6, „Layout-Katalog").
+
 ---
 
 ## 2. Subdomains & Hosting-Struktur
@@ -64,7 +101,7 @@ saal3.tcpayer.de     → Monitor Saal 3  (beliebig erweiterbar)
 |---|---|
 | Backend | PHP 8 + MySQL |
 | NC-Proxy | PHP (Nimbuscloud API-Key bleibt serverseitig) |
-| Song-Proxy | PHP (CORS-Schutz, falls nötig) |
+| FRET-Proxy | PHP (FRET schoolId bleibt serverseitig, CORS-Schutz) |
 | Monitor-Frontend | HTML + Vanilla JS, Vollbild/Kiosk-Modus |
 | Live-Vorschau | iFrame im Backend, simuliert den Monitor in Echtzeit |
 | Hosting | all-inkl, je Subdomain ein Ordner |
@@ -89,7 +126,7 @@ screen.tcpayer.de/
 │   ├── stundenplan/
 │   ├── ankuendigung/
 │   ├── uhrzeit/
-│   └── song/
+│   └── fret/                  ← Songanzeige aus der Musiksoftware FRET
 │   (community/ aktuell NICHT angelegt — siehe Abschnitt 9 "Community-Modul")
 ├── layouts/
 │   ├── registry.php          ← zentrale Liste aller Layouts
@@ -101,8 +138,8 @@ screen.tcpayer.de/
 │   └── 3-spaltig-gleich/
 ├── ticker-modules/            ← falls Ticker später auch modular wird (aktuell nicht nötig, siehe Abschnitt 7)
 ├── proxies/
-│   ├── nc.php                 ← Nimbuscloud API-Proxy
-│   └── song.php                ← Song-API Proxy
+│   ├── nc.php                 ← Nimbuscloud API-Proxy (Stundenplan)
+│   └── fret.php               ← FRET-API Proxy (Songanzeige, schoolId serverseitig)
 └── uploads/                    ← zentrale Bild-Bibliothek
 ```
 
@@ -253,7 +290,11 @@ Fertig — Live-Vorschau verfügbar
 | `ankuendigung` | Mehrere Einträge pro Instanz, je Eintrag: Text + optionales Bild, eigene Anzeigedauer, eigenes `gueltig_bis` |
 | `stundenplan` | Dynamisch aus Nimbuscloud per Legacy-API `/timetable/data` (kein SQL, siehe Abschnitt 9) |
 | `uhrzeit` | Live Uhrzeit + Datum |
-| `song` | Aktueller Song per Polling von eigener Song-API (FRET) |
+| `fret` | Aktuell laufender Song je Saal aus der Musiksoftware FRET, Polling über `proxies/fret.php` (siehe Abschnitt 14) |
+
+> **Hinweis Umbenennung:** Das frühere `song`-Modul heißt jetzt **`fret`**
+> (nach der Musiksoftware), inkl. Ordner `modules/fret/` und Proxy
+> `proxies/fret.php`. Frühere Erwähnungen von „song" meinen dasselbe Modul.
 
 **Zurückgestellt:** `community` (Community-Feed aus Nimbuscloud) ist
 **nicht** im aktiven Bauplan. Grund und Details siehe Abschnitt 9
@@ -265,6 +306,34 @@ ohne bestehenden Code anzufassen.
 - **Header:** Uhrzeit/Datum — optional ein-/ausblendbar pro Playlist
 - **Footer:** Ticker (siehe Abschnitt 7) — komplett unabhängig von der
   Playlist-Logik
+
+### Layout-Katalog & Zielauflösung
+
+**Zielauflösung:** Alle Monitore laufen in **Full-HD (1920×1080, Querformat)**.
+Das ist die verbindliche Designgrundlage für Modul-Layouts und Schriftgrößen
+(TV-Großbild-optimiert, große Schrift; Richtwerte aus der FRET-Vorlage:
+Song-Titel ~40px, Tanz-Badges ~40px, Playlist-Einträge ~28px — bei der
+konkreten Umsetzung je Modul anpassbar).
+
+**Verfügbare Layouts** (registriert in `layouts/registry.php`; die konkreten
+`layout.json` + `template.html` mit der CSS-Grid-Definition werden in
+Schritt 6 gebaut):
+
+| Layout-ID | Spalten | Standard-Breiten |
+|---|---|---|
+| `1-spaltig` | 1 | 100 % |
+| `2-spaltig-60-40` | 2 | 60 / 40 % |
+| `2-spaltig-50-50` | 2 | 50 / 50 % |
+| `3-spaltig-gleich` | 3 | je ~33 % |
+
+**Wichtig — was Doku vs. was Konfiguration ist:**
+- Die **Layout-Mechanik** (1–3 Spalten, Breiten frei in % wählbar,
+  Header/Footer-Schalter, `layout_override` pro Modul-Instanz) ist hier
+  konzeptionell festgeschrieben.
+- Die **konkrete Spaltenbreite je Playlist** (z. B. „Spalte 1 = 60 %") ist
+  **Laufzeit-Konfiguration** in `playlist_layout` und wird **beim Anlegen
+  jeder Playlist** im Backend gesetzt — sie steht bewusst **nicht** als feste
+  Zahl in dieser Doku.
 
 ---
 
@@ -321,7 +390,10 @@ einstellungen
   saal_id,
   nc_api_key_stundenplan,   -- Stundenplan-Key (Legacy-API /timetable/data, niedrigere Sensibilität)
   nc_api_key_stammdaten,    -- Stammdaten-Key (für community-Modul, NICHT aktiv genutzt, siehe Abschnitt 9)
-  song_api_url              -- FRET-API Basis-URL für das song-Modul
+  song_api_url              -- (optional) FRET-API Basis-URL pro Saal; die
+                            -- FRET-Basis-URL + schoolId liegen primär in
+                            -- config.php (FRET_API_BASE/FRET_SCHOOL_ID),
+                            -- siehe Abschnitt 14
 
 -- Modul-Instanzen (Bibliothek, wiederverwendbare Bausteine)
 modul_instanzen
@@ -348,7 +420,7 @@ modul_instanz_inhalte
   gueltig_bis,          -- NULL = unbegrenzt; Datum, ab dem der Eintrag ausläuft
   aktiv                 -- bool, Standard true; pausiert NUR diesen einen Eintrag
   -- nur relevant für Module mit mehreren Unter-Inhalten (Bild, Ankündigung)
-  -- bei dynamischen Modulen (Stundenplan, Uhrzeit, Song) leer/nicht nötig
+  -- bei dynamischen Modulen (Stundenplan, Uhrzeit, FRET) leer/nicht nötig
 
 -- Playlists (Hauptfläche)
 playlists
@@ -486,7 +558,7 @@ und kann bei Bedarf erneut bereitgestellt werden.
   bzw. den entsprechenden Backend-Endpunkten
 - Prüft Zeitregeln **clientseitig** bei jedem Refresh
 - Auto-Refresh der Haupt-Daten alle ~60 Sekunden
-- Song-Polling alle 5–10 Sekunden (falls `song`-Modul aktiv)
+- FRET-Polling alle 5–10 Sekunden (falls `fret`-Modul aktiv)
 - Ticker läuft unabhängig als Lauftext im Footer (eigener Datenabruf)
 
 ### Monitor-Logik (Ablauf bei jedem Refresh)
@@ -515,7 +587,7 @@ und kann bei Bedarf erneut bereitgestellt werden.
 | **Bibliothek** | Modul-Instanzen anlegen/verwalten (Bilder hochladen, Ankündigungstexte, Stundenplan-Einstellungen, etc.) |
 | **Playlists** | Anlegen, Layout konfigurieren, Spalten mit Modul-Instanzen befüllen, Zeitregeln + Saal-Zuweisung |
 | **Ticker** | Eigener Bereich: Ticker-Playlists anlegen, Texte verwalten, Zeitregeln + Saal-Zuweisung |
-| **Säle** | Säle anlegen (Name, Subdomain), NC-API-Key + Song-API-URL pro Saal hinterlegen |
+| **Säle** | Säle anlegen (Name, Subdomain), NC-API-Key (Stundenplan) pro Saal hinterlegen; FRET-schoolId liegt zentral in `config.php` |
 | **Live-Vorschau** | iFrame, das den Monitor eines gewählten Saals in Echtzeit simuliert |
 | **Einstellungen** | NC-Verbindung testen, allgemeine Systemeinstellungen |
 
@@ -559,7 +631,7 @@ und kann bei Bedarf erneut bereitgestellt werden.
 | 1 | SQL-Script — alle Tabellen aus Abschnitt 8 anlegen | ✅ abgeschlossen, live getestet |
 | 2 | Datei- und Ordnerstruktur auf all-inkl + `.htaccess` je Subdomain | ✅ abgeschlossen, live getestet |
 | 3 | Modul-Registry-Grundgerüst + erste Referenz-Module (`uhrzeit`, `bild`) | ✅ abgeschlossen |
-| 4 | Module `stundenplan`, `ankuendigung`, `song` + NC-Proxy + Song-Proxy (`community` zurückgestellt, siehe Abschnitt 9) | ▶️ aktuell, in Überarbeitung |
+| 4 | Module `stundenplan`, `ankuendigung`, `fret` + NC-Proxy + FRET-Proxy (`community` zurückgestellt, siehe Abschnitt 9) | ▶️ aktuell, **am Anfang** (Grundgerüst der Module/Proxys steht im Repo, noch nicht live getestet) |
 | 5 | Backend: Bibliothek (Modul-Instanzen verwalten, inkl. `aktiv`/`gueltig_bis` + Mediathek mit Duplikat-Erkennung) | offen |
 | 6 | Backend: Playlist-Editor (Layout-Konfigurator + Spalten-Zuweisung) | offen |
 | 7 | Backend: Zeitregeln + Saal-Zuweisung (Playlists) | offen |
@@ -575,25 +647,41 @@ Datei mitgeben (nicht nur beschreiben).
 
 ---
 
-## 14. Quelle: FRET-API (Song-Modul, Kurzreferenz)
+## 14. Quelle: FRET-API (`fret`-Modul, Kurzreferenz)
+
+**Kontext:** FRET ist die **Musiksoftware**. Je Saal läuft auf einem eigenen
+PC eine FRET-Instanz (→ eine eigene **Computer-UUID** pro Saal), mit je
+**2 Playern**. Die **`schoolId`** ordnet den API-Abruf dem Schul-Account zu.
+Das `fret`-Modul zeigt am Monitor, **welche Musik gerade in welchem Saal**
+läuft (z. B. bei einem Tanzabend für die Kunden). FRET ist **völlig
+unabhängig** von Nimbuscloud (siehe Abschnitt 9/15).
 
 - **Basis-URL:** `https://fret-api.azurewebsites.net/api/v1`
 - **Relevante Endpunkte:**
   - `GET /schools/{schoolId}/Computers` — Liste der Computer/Säle
   - `GET /schools/{schoolId}/computers/{computerId}/Players` — aktueller
     Song-Status für einen Computer
-- **Sicherheitshinweis:** Die FRET-API besitzt auch **schreibende**
-  Endpunkte — die `schoolId` darf deshalb **niemals im Frontend/Browser
-  sichtbar** sein, identisch zur Anforderung beim Nimbuscloud-API-Key.
-  Zugriff ausschließlich über `proxies/song.php` serverseitig.
+- **Sicherheitshinweis (verbindlich):** Die FRET-API besitzt auch
+  **schreibende** Endpunkte — die `schoolId` darf deshalb **niemals im
+  Frontend/Browser sichtbar** sein. Zugriff ausschließlich über
+  `proxies/fret.php` serverseitig.
+- **Wo liegen welche Werte (wichtig, weicht von der ursprünglichen
+  Formulierung ab):**
+  - **`schoolId` + FRET-Basis-URL → serverseitig in `config.php`**
+    (`FRET_SCHOOL_ID`, `FRET_API_BASE`). **Nicht** in den Modul-Instanz-
+    Einstellungen, da diese ans Frontend serialisiert werden.
+  - **Computer-UUID + optionaler Anzeigename → pro `fret`-Modul-Instanz**
+    in deren Einstellungen. Die UUID selbst ist nicht geheim (steht ohnehin
+    in der Saal-Auswahl).
 - **Response-Struktur:** `Players`-Antwort enthält `player1` (relevant)
   und `player2` (intern, für die Anzeige irrelevant). Songs in
   `player1.songs[]`, `position: 0` = aktueller Song, `position > 0` =
   kommende Songs, `position < 0` = Verlauf.
-- Mapping (schoolId, Computer-UUIDs, Anzeigenamen) wird über die
-  `einstellungen`-JSON-Spalte der jeweiligen `song`-Modul-Instanz
-  gepflegt, nicht hartkodiert.
 - Vollständige OpenAPI-Referenz liegt vor (`FRET_API.json`).
+
+> **Abgrenzung zu Nimbuscloud:** Das `stundenplan`-Modul (NC) braucht
+> **keine** `schoolId` — nur den per-Saal `nc_api_key_stundenplan`. FRET und
+> NC sind getrennte Systeme mit getrennten Proxys und Zugangsdaten.
 
 ---
 
@@ -688,6 +776,29 @@ Schritt 4:
 16. Vollständige Endpunkt-Doku (Parameter, Rückgabefelder, Codebeispiel,
     Vergleichstabelle alt/neu) ausgelagert in eigene Datei
     `NC_Legacy_API_Stundenplan.md` — beim Bau von Schritt 4 mit hochladen
+
+### 16b. Nachtrag — Zieldefinition, FRET/NC-Klarstellung, `song`→`fret` (Claude-Code-Chat)
+
+Erstellt im Zuge der Weiterarbeit in Claude Code (größeres Projekt besser
+geeignet) und nach Abgleich mit dem bereits live liegenden Stand:
+
+17. **Zieldefinition ergänzt** (Abschnitt 1.1) — knappe Beschreibung, *was*
+    das Projekt baut und für wen, inkl. der Trennung FRET vs. Nimbuscloud.
+18. **`song`-Modul in `fret` umbenannt** — Modul nach der Musiksoftware FRET
+    benannt (`modules/fret/`, `proxies/fret.php`, Registry-Eintrag `fret`).
+    Betrifft Abschnitte 3, 4, 6, 13, 14.
+19. **`schoolId`-Ablage korrigiert** — entgegen der ursprünglichen
+    Formulierung in Abschnitt 14 liegt die `schoolId` (sicherheitsrelevant)
+    **serverseitig in `config.php`** (`FRET_SCHOOL_ID`), **nicht** in den
+    Modul-Instanz-Einstellungen (die ans Frontend serialisiert werden). Pro
+    Instanz nur Computer-UUID + Anzeigename. Nimbuscloud braucht **keine**
+    schoolId.
+20. **Zielauflösung festgelegt** — Monitore laufen in **Full-HD
+    (1920×1080)**; Layout-Katalog + TV-Schriftgrößen-Richtwerte in
+    Abschnitt 6 ergänzt. Klarstellung: konkrete Spaltenbreiten je Playlist
+    sind Laufzeit-Konfiguration, keine Doku-Festlegung.
+21. **Bauplan-Status präzisiert** — Schritt 4 steht **am Anfang** (Modul-/
+    Proxy-Grundgerüst im Repo, noch nicht live getestet).
 
 ---
 
