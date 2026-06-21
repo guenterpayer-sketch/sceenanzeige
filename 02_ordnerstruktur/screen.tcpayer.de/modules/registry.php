@@ -2,28 +2,19 @@
 /**
  * modules/registry.php
  *
- * Zentrale Liste aller Inhalts-Module (Plugin-System, siehe Abschnitt 4 der
- * Projektdokumentation). Neue Module werden hier per Eintrag registriert —
- * bestehender Code muss dafür NICHT angefasst werden.
+ * Zentrale Liste aller AKTIVEN Inhalts-Module (Plugin-System, siehe
+ * Abschnitt 4 der Projektdokumentation). Neue Module werden hier per
+ * Eintrag registriert — bestehender Code muss dafür NICHT angefasst werden.
  *
- * Jeder Eintrag verweist auf einen Ordner unter modules/<id>/, der mindestens
- * folgende Dateien enthält:
- *   - module.json    Metadaten + Einstellungsfelder (für das Backend-Formular)
- *   - backend.php    Formular-Logik im Backend (optional, falls über das
- *                     generische module.json-Formular hinausgehend nötig)
- *   - proxy.php       Serverseitiger Datenabruf (nur falls has_proxy = true)
- *   - frontend.js     Darstellung am Monitor
- *
- * Wird in Schritt 3/4 (Modul-Implementierung) inhaltlich befüllt.
+ * Stand Schritt 3: nur die beiden Referenz-Module sind fertig implementiert.
+ * stundenplan/ankuendigung/song folgen in Schritt 4 und werden dann hier
+ * ergänzt. Das community-Modul ist laut Abschnitt 9 der Doku dauerhaft
+ * zurückgestellt und daher bewusst NICHT eingetragen.
  */
 
 declare(strict_types=1);
 
 return [
-    'bild',
-    'stundenplan',
-    'ankuendigung',
-    'community',
     'uhrzeit',
-    'song',
+    'bild',
 ];
