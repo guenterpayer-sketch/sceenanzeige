@@ -29,6 +29,23 @@ define('UPLOADS_DIR', __DIR__ . '/uploads');
 define('UPLOADS_URL', 'https://screen.tcpayer.de/uploads');
 
 // ----------------------------------------------------------------------------
+// Nimbuscloud Legacy-API (stundenplan-Modul, siehe NC_Legacy_API_Stundenplan.md)
+// Basis-URL der schul-spezifischen Instanz, OHNE abschließenden Slash.
+// Der eigentliche API-Key liegt NICHT hier, sondern pro Saal serverseitig in
+// der Tabelle `einstellungen` (Spalte nc_api_key_stundenplan).
+// ----------------------------------------------------------------------------
+define('NC_API_BASE', 'https://xyz.nimbuscloud.at/api/json/v1');
+
+// ----------------------------------------------------------------------------
+// FRET-API (song-Modul, siehe Projektzusammenfassung_Song_Anzeige.md)
+// FRET_SCHOOL_ID ist sicherheitsrelevant (die FRET-API hat auch schreibende
+// Endpunkte) und darf NIEMALS ans Frontend gelangen — daher serverseitig hier
+// statt in den Modul-Instanz-Einstellungen (die ans Frontend übertragen werden).
+// ----------------------------------------------------------------------------
+define('FRET_API_BASE', 'https://fret-api.azurewebsites.net/api/v1');
+define('FRET_SCHOOL_ID', '');
+
+// ----------------------------------------------------------------------------
 // PDO-Verbindung (wird von allen Backend-Skripten/Proxies eingebunden)
 // ----------------------------------------------------------------------------
 function get_pdo(): PDO
