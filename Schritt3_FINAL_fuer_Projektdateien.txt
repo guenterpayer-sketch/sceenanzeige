@@ -1,0 +1,1019 @@
+============================================================================
+Tanzschule Monitor-System — Schritt 3: Modul-Registry-Grundgerüst +
+Referenz-Module "uhrzeit" und "bild"
+(FINALER Code-Stand inkl. Live-Test-Nachbesserung — ersetzt die erste
+Schritt-3-Version "Schritt3_Modul_Registry_und_Referenzmodule.txt")
+============================================================================
+
+STATUS
+----------------------------------------------------------------------------
+✅ Schritt 3 abgeschlossen und live auf all-inkl getestet.
+✅ Beide Referenz-Module ("uhrzeit", "bild") funktionieren im Live-Test
+   über test-module3.php.
+✅ Nachbesserung nach Live-Test erfolgreich verifiziert:
+   - Echtes Crossfade beim Bild-Wechsel (zwei Bild-Layer statt einem)
+   - Bugfix: Vorschau-Box kollabierte auf Höhe 0 (CSS-Konflikt, siehe
+     Abschnitt "Bekannte Bugs & Fixes" unten)
+   - Crossfade-Dauer gemeinsam getestet und auf 1500ms (1,5 Sek.) final
+     festgelegt (Standardwert war zunächst 800ms)
+▶️ Nächster Schritt: Schritt 4 (Module "stundenplan", "ankuendigung",
+   "community", "song" + NC-Proxy + Song-Proxy)
+
+ZIEL DIESES SCHRITTS
+----------------------------------------------------------------------------
+- Generisches Plugin-Grundgerüst fertigstellen (gemäß Abschnitt 4 der
+  Projektdokumentation): Backend liest module.json und generiert das
+  Einstellungsformular AUTOMATISCH, ohne dass pro Modul ein eigenes PHP-
+  Formular geschrieben werden muss.
+- Zwei vollständig funktionierende Referenz-Module bauen: "uhrzeit"
+  (kein Proxy, keine Unter-Inhalte) und "bild" (kein Proxy, ABER Unter-
+  Inhalte = einzelne hochgeladene Bilder, rotierend).
+- Eine Test-/Milestone-Seite, mit der beide Module sofort live im Browser
+  geprüft werden können — passend zur vereinbarten Teststrategie
+  "Meilenstein-Tests" aus der Chat-Zusammenfassung Schritt 1-2.
+
+WICHTIG: Schritt 4 ergänzt die übrigen Module (stundenplan, ankuendigung,
+community, song) inkl. NC-Proxy und Song-Proxy. Diese vier bleiben daher
+absichtlich NOCH NICHT in modules/registry.php eingetragen.
+
+VERZEICHNISBAUM (NEU/GEÄNDERT GEGENÜBER SCHRITT 2)
+----------------------------------------------------------------------------
+  screen.tcpayer.de/modules/registry.php                  [GEÄNDERT]
+  screen.tcpayer.de/modules/uhrzeit/module.json            [NEU]
+  screen.tcpayer.de/modules/uhrzeit/frontend.js            [NEU]
+  screen.tcpayer.de/modules/bild/module.json               [NEU]
+  screen.tcpayer.de/modules/bild/frontend.js               [NEU, nach Live-Test korrigiert]
+  screen.tcpayer.de/includes/ModuleRegistry.php            [NEU]
+  screen.tcpayer.de/includes/ModulInstanz.php              [NEU]
+  screen.tcpayer.de/assets/js/module-loader.js             [NEU]
+  screen.tcpayer.de/assets/css/module-test.css             [NEU, nach Live-Test korrigiert]
+  screen.tcpayer.de/test-module3.php                       [NEU, Meilenstein-Testseite]
+
+============================================================================
+BEKANNTE BUGS & FIXES AUS DEM LIVE-TEST (für künftige Chats wichtig!)
+============================================================================
+
+1. BUG: Kein Crossfade, nur "Ausblenden, dann hartes Einblenden"
+   Ursache: nur ein <img>-Element, src wurde während des Ausblendens
+   getauscht statt das neue Bild parallel einzublenden.
+   FIX: Zwei übereinanderliegende <img>-Layer ("tm-bild-layer-a/b"), die
+   sich per Opacity-Transition gegenseitig durchkreuzen. Crossfade-Dauer
+   ist die Konstante `fadeDauerMs` in modules/bild/frontend.js — gemeinsam
+   getestet und final auf **1500ms** gesetzt (Standard war zunächst 800ms).
+
+2. BUG: Bild-Vorschau-Box hatte Höhe 0 (Bild lud korrekt, war aber
+   unsichtbar)
+   Ursache: `container.classList.add('tm-modul-bild')` im Frontend-JS
+   setzte eine zweite CSS-Klasse auf die Vorschau-Box, die `height: 100%`
+   definierte. Das überschrieb die feste Höhe (270px) von
+   `.tm-preview-monitor` aus der Testseite. Da die Bild-Layer per
+   `position: absolute` aus dem normalen Fluss genommen sind, trugen sie
+   nichts zur Höhe bei -> Box kollabierte auf 0 (Browser-Inspector zeigte
+   "1830 × 0"). Beim Uhrzeit-Modul fiel das nicht auf, weil dessen Text im
+   normalen Fluss liegt und zufällig trotzdem eine Mindesthöhe erzeugte.
+   FIX: `width/height: 100%` aus den CSS-Marker-Klassen `.tm-modul-bild`
+   und `.tm-modul-uhrzeit` entfernt — die Größe kommt jetzt ausschließlich
+   von der jeweils umgebenden Box (in Schritt 6/9 dann die Playlist-
+   Spalte). Die innere `.tm-bild-stage` bekommt ihre 100% Höhe/Breite
+   weiterhin per Inline-Style direkt im JS, das ist unkritisch, weil sie
+   sich relativ zur bereits korrekt dimensionierten äußeren Box berechnet.
+
+   **Merksatz für künftige Module:** Modul-Frontends sollten der äußeren
+   Container-Box (die das Backend/Layout bereitstellt) niemals selbst eine
+   Höhe/Breite per Prozent aufzwingen — nur die innere Struktur darin.
+
+3. Defensive Ergänzung: Positionierung/Sichtbarkeit der Bild-Layer wird
+   zusätzlich per Inline-Style (nicht nur CSS-Klasse) gesetzt, damit das
+   Modul auch robust funktioniert, falls die externe CSS-Datei mal nicht
+   aktuell im Browser-Cache liegt. Zusätzlich `onerror`-Logging pro Bild-
+   Layer für leichteres Debuggen künftiger Probleme.
+
+============================================================================
+DATEI-INHALTE (FINALER STAND)
+============================================================================
+
+============================================================================
+DATEI: screen.tcpayer.de/modules/registry.php
+============================================================================
+<?php
+/**
+ * modules/registry.php
+ *
+ * Zentrale Liste aller AKTIVEN Inhalts-Module (Plugin-System, siehe
+ * Abschnitt 4 der Projektdokumentation). Neue Module werden hier per
+ * Eintrag registriert — bestehender Code muss dafür NICHT angefasst werden.
+ *
+ * Stand Schritt 3: nur die beiden Referenz-Module sind fertig implementiert.
+ * stundenplan/ankuendigung/community/song folgen in Schritt 4 und werden
+ * dann hier ergänzt.
+ */
+
+declare(strict_types=1);
+
+return [
+    'uhrzeit',
+    'bild',
+];
+
+
+============================================================================
+DATEI: screen.tcpayer.de/includes/ModuleRegistry.php
+============================================================================
+<?php
+/**
+ * includes/ModuleRegistry.php
+ *
+ * Liest modules/registry.php und die jeweiligen module.json-Dateien und
+ * generiert daraus automatisch:
+ *   - eine Liste aller verfügbaren Module mit Metadaten
+ *   - das Backend-Einstellungsformular (HTML) für eine Modul-Instanz
+ *   - die Auswertung eines abgeschickten Formulars (POST -> typisiertes Array)
+ *
+ * Das ist die zentrale Umsetzung von Abschnitt 4 der Projektdokumentation:
+ * "Neue Moduleinstellung -> nur module.json anpassen".
+ */
+
+declare(strict_types=1);
+
+final class ModuleRegistry
+{
+    private const MODULES_DIR = __DIR__ . '/../modules';
+
+    /** @var array<string,array>|null Cache der geladenen module.json-Inhalte */
+    private static ?array $cache = null;
+
+    /**
+     * @return string[] IDs aller registrierten Module, in Registry-Reihenfolge
+     */
+    public static function getRegisteredIds(): array
+    {
+        $ids = require self::MODULES_DIR . '/registry.php';
+        if (!is_array($ids)) {
+            throw new RuntimeException('modules/registry.php muss ein Array zurückgeben.');
+        }
+        return $ids;
+    }
+
+    /**
+     * @return array<string,array> id => decodierte module.json
+     */
+    public static function getAll(): array
+    {
+        if (self::$cache !== null) {
+            return self::$cache;
+        }
+        $result = [];
+        foreach (self::getRegisteredIds() as $id) {
+            $result[$id] = self::load($id);
+        }
+        return self::$cache = $result;
+    }
+
+    public static function load(string $id): array
+    {
+        $path = self::MODULES_DIR . '/' . $id . '/module.json';
+        if (!is_file($path)) {
+            throw new RuntimeException("module.json für Modul '$id' nicht gefunden ($path).");
+        }
+        $json = json_decode(file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
+        $json['id'] = $json['id'] ?? $id;
+        $json['settings'] = $json['settings'] ?? [];
+        $json['has_proxy'] = (bool)($json['has_proxy'] ?? false);
+        $json['has_inhalte'] = (bool)($json['has_inhalte'] ?? false);
+        return $json;
+    }
+
+    public static function exists(string $id): bool
+    {
+        return in_array($id, self::getRegisteredIds(), true);
+    }
+
+    /**
+     * Generiert das Einstellungsformular (nur die <div class="field">…-Teile,
+     * kein eigenes <form>-Tag, damit die aufrufende Seite den Rahmen bestimmt).
+     *
+     * @param array<string,mixed> $values Aktuell gespeicherte Werte (überschreiben defaults)
+     */
+    public static function renderSettingsForm(string $id, array $values = []): string
+    {
+        $module = self::load($id);
+        $html = '';
+        foreach ($module['settings'] as $field) {
+            $html .= self::renderField($field, $values[$field['key']] ?? $field['default'] ?? null);
+        }
+        return $html;
+    }
+
+    private static function renderField(array $field, mixed $value): string
+    {
+        $key = htmlspecialchars($field['key']);
+        $name = 'einstellungen[' . $key . ']';
+        $label = htmlspecialchars($field['label'] ?? $field['key']);
+        $type = $field['type'] ?? 'text';
+
+        $out = '<div class="field field-' . htmlspecialchars($type) . '">';
+        $out .= '<label for="f_' . $key . '">' . $label . '</label>';
+
+        switch ($type) {
+            case 'bool':
+                $checked = $value ? ' checked' : '';
+                $out .= '<input type="checkbox" id="f_' . $key . '" name="' . $name . '" value="1"' . $checked . '>';
+                break;
+
+            case 'number':
+                $val = htmlspecialchars((string)($value ?? ''));
+                $out .= '<input type="number" id="f_' . $key . '" name="' . $name . '" value="' . $val . '">';
+                break;
+
+            case 'select':
+                $out .= '<select id="f_' . $key . '" name="' . $name . '">';
+                foreach (($field['options'] ?? []) as $opt) {
+                    $optVal = htmlspecialchars((string)$opt['value']);
+                    $optLabel = htmlspecialchars((string)$opt['label']);
+                    $sel = ((string)$value === (string)$opt['value']) ? ' selected' : '';
+                    $out .= '<option value="' . $optVal . '"' . $sel . '>' . $optLabel . '</option>';
+                }
+                $out .= '</select>';
+                break;
+
+            case 'textarea':
+                $val = htmlspecialchars((string)($value ?? ''));
+                $out .= '<textarea id="f_' . $key . '" name="' . $name . '">' . $val . '</textarea>';
+                break;
+
+            default: // text
+                $val = htmlspecialchars((string)($value ?? ''));
+                $out .= '<input type="text" id="f_' . $key . '" name="' . $name . '" value="' . $val . '">';
+        }
+
+        $out .= '</div>';
+        return $out;
+    }
+
+    /**
+     * Wertet $_POST['einstellungen'] anhand der module.json-Felddefinitionen
+     * typisiert aus (bool wird zu echtem bool, number zu int/float, etc.).
+     *
+     * @param array<string,mixed> $postEinstellungen z.B. $_POST['einstellungen'] ?? []
+     * @return array<string,mixed>
+     */
+    public static function collectSettings(string $id, array $postEinstellungen): array
+    {
+        $module = self::load($id);
+        $result = [];
+        foreach ($module['settings'] as $field) {
+            $key = $field['key'];
+            $type = $field['type'] ?? 'text';
+            $raw = $postEinstellungen[$key] ?? null;
+
+            switch ($type) {
+                case 'bool':
+                    $result[$key] = ($raw === '1' || $raw === true);
+                    break;
+                case 'number':
+                    $result[$key] = $raw === null || $raw === '' ? ($field['default'] ?? 0) : (is_numeric($raw) ? (str_contains((string)$raw, '.') ? (float)$raw : (int)$raw) : ($field['default'] ?? 0));
+                    break;
+                default:
+                    $result[$key] = $raw !== null ? (string)$raw : ($field['default'] ?? '');
+            }
+        }
+        return $result;
+    }
+}
+
+
+============================================================================
+DATEI: screen.tcpayer.de/includes/ModulInstanz.php
+============================================================================
+<?php
+/**
+ * includes/ModulInstanz.php
+ *
+ * Minimale CRUD-Helfer für modul_instanzen / modul_instanz_inhalte
+ * (Tabellen aus 01_schema.sql, Abschnitt 8 der Doku).
+ *
+ * WICHTIG: Dies ist absichtlich schlank gehalten (nur was für Schritt 3
+ * zum Testen der Referenz-Module nötig ist). Die vollständige
+ * Bibliotheks-Verwaltung (Liste, Suche, Löschen mit Abhängigkeitsprüfung
+ * gegen Playlists usw.) folgt in Schritt 5 — siehe auch
+ * "Notiz_Schritt5_Mediathek.md" für das geplante Mediathek-Konzept
+ * (zentrale Bilder-Tabelle mit Hash-Duplikat-Erkennung, Drag&Drop-Upload).
+ */
+
+declare(strict_types=1);
+
+final class ModulInstanz
+{
+    public static function create(string $modulTyp, string $name, array $einstellungen): int
+    {
+        $pdo = get_pdo();
+        $stmt = $pdo->prepare(
+            'INSERT INTO modul_instanzen (modul_typ, name, einstellungen) VALUES (:typ, :name, :einstellungen)'
+        );
+        $stmt->execute([
+            ':typ' => $modulTyp,
+            ':name' => $name,
+            ':einstellungen' => json_encode($einstellungen, JSON_UNESCAPED_UNICODE),
+        ]);
+        return (int)$pdo->lastInsertId();
+    }
+
+    public static function update(int $id, string $name, array $einstellungen): void
+    {
+        $pdo = get_pdo();
+        $stmt = $pdo->prepare(
+            'UPDATE modul_instanzen SET name = :name, einstellungen = :einstellungen WHERE id = :id'
+        );
+        $stmt->execute([
+            ':name' => $name,
+            ':einstellungen' => json_encode($einstellungen, JSON_UNESCAPED_UNICODE),
+            ':id' => $id,
+        ]);
+    }
+
+    public static function delete(int $id): void
+    {
+        // ON DELETE CASCADE räumt modul_instanz_inhalte automatisch mit ab.
+        // Hinweis für Schritt 5: vor dem Löschen prüfen, ob die Instanz noch
+        // in playlist_spalten_inhalte verwendet wird, und ggf. warnen.
+        $pdo = get_pdo();
+        $pdo->prepare('DELETE FROM modul_instanzen WHERE id = :id')->execute([':id' => $id]);
+    }
+
+    public static function find(int $id): ?array
+    {
+        $pdo = get_pdo();
+        $stmt = $pdo->prepare('SELECT * FROM modul_instanzen WHERE id = :id');
+        $stmt->execute([':id' => $id]);
+        $row = $stmt->fetch();
+        if (!$row) {
+            return null;
+        }
+        $row['einstellungen'] = json_decode($row['einstellungen'] ?? '{}', true) ?: [];
+        return $row;
+    }
+
+    /**
+     * @return array<int,array> Alle Instanzen, optional gefiltert nach Modul-Typ
+     */
+    public static function listAll(?string $modulTyp = null): array
+    {
+        $pdo = get_pdo();
+        if ($modulTyp !== null) {
+            $stmt = $pdo->prepare('SELECT * FROM modul_instanzen WHERE modul_typ = :typ ORDER BY name');
+            $stmt->execute([':typ' => $modulTyp]);
+        } else {
+            $stmt = $pdo->query('SELECT * FROM modul_instanzen ORDER BY modul_typ, name');
+        }
+        $rows = $stmt->fetchAll();
+        foreach ($rows as &$row) {
+            $row['einstellungen'] = json_decode($row['einstellungen'] ?? '{}', true) ?: [];
+        }
+        return $rows;
+    }
+
+    // ------------------------------------------------------------------
+    // Unter-Inhalte (z.B. einzelne Bilder einer "bild"-Instanz)
+    // ------------------------------------------------------------------
+
+    public static function addInhalt(int $modulInstanzId, ?string $dateiname, ?string $textInhalt, int $reihenfolge, int $dauerSek, ?string $ablaufdatum = null): int
+    {
+        $pdo = get_pdo();
+        $stmt = $pdo->prepare(
+            'INSERT INTO modul_instanz_inhalte (modul_instanz_id, dateiname, text_inhalt, ablaufdatum, reihenfolge, dauer_sek)
+             VALUES (:mid, :dateiname, :text, :ablauf, :reihenfolge, :dauer)'
+        );
+        $stmt->execute([
+            ':mid' => $modulInstanzId,
+            ':dateiname' => $dateiname,
+            ':text' => $textInhalt,
+            ':ablauf' => $ablaufdatum,
+            ':reihenfolge' => $reihenfolge,
+            ':dauer' => $dauerSek,
+        ]);
+        return (int)$pdo->lastInsertId();
+    }
+
+    public static function listInhalte(int $modulInstanzId): array
+    {
+        $pdo = get_pdo();
+        $stmt = $pdo->prepare(
+            'SELECT * FROM modul_instanz_inhalte WHERE modul_instanz_id = :mid ORDER BY reihenfolge, id'
+        );
+        $stmt->execute([':mid' => $modulInstanzId]);
+        return $stmt->fetchAll();
+    }
+
+    public static function deleteInhalt(int $inhaltId): void
+    {
+        $pdo = get_pdo();
+        $pdo->prepare('DELETE FROM modul_instanz_inhalte WHERE id = :id')->execute([':id' => $inhaltId]);
+    }
+}
+
+
+============================================================================
+DATEI: screen.tcpayer.de/modules/uhrzeit/module.json
+============================================================================
+{
+  "id": "uhrzeit",
+  "label": "Uhrzeit & Datum",
+  "icon": "clock",
+  "has_proxy": false,
+  "has_inhalte": false,
+  "settings": [
+    { "key": "zeige_datum", "type": "bool", "label": "Datum anzeigen", "default": true },
+    {
+      "key": "format_zeit",
+      "type": "select",
+      "label": "Zeitformat",
+      "default": "H:i",
+      "options": [
+        { "value": "H:i", "label": "24h, z.B. 14:05" },
+        { "value": "H:i:s", "label": "24h mit Sekunden, z.B. 14:05:32" },
+        { "value": "g:i A", "label": "12h, z.B. 2:05 PM" }
+      ]
+    },
+    {
+      "key": "format_datum",
+      "type": "select",
+      "label": "Datumsformat",
+      "default": "d.m.Y",
+      "options": [
+        { "value": "d.m.Y", "label": "31.12.2026" },
+        { "value": "l, d.m.Y", "label": "Donnerstag, 31.12.2026" }
+      ]
+    }
+  ]
+}
+
+
+============================================================================
+DATEI: screen.tcpayer.de/modules/uhrzeit/frontend.js
+============================================================================
+/**
+ * modules/uhrzeit/frontend.js
+ *
+ * Konvention für alle Module (siehe module-loader.js):
+ *   window.TanzschuleModule[<id>] = function(container, settings, inhalte) { ... }
+ *
+ * "uhrzeit" hat keine Unter-Inhalte, daher wird "inhalte" hier ignoriert.
+ * Live-Uhrzeit, lokal jede Sekunde aktualisiert (kein erneuter Datenabruf
+ * nötig, siehe Abschnitt 10 der Doku: rein clientseitig).
+ */
+(function () {
+    window.TanzschuleModule = window.TanzschuleModule || {};
+
+    const WOCHENTAGE_LANG = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+
+    function pad(n) {
+        return String(n).padStart(2, '0');
+    }
+
+    function formatZeit(date, format) {
+        const h24 = date.getHours();
+        const m = pad(date.getMinutes());
+        const s = pad(date.getSeconds());
+        if (format === 'H:i:s') return `${pad(h24)}:${m}:${s}`;
+        if (format === 'g:i A') {
+            const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+            const ampm = h24 < 12 ? 'AM' : 'PM';
+            return `${h12}:${m} ${ampm}`;
+        }
+        return `${pad(h24)}:${m}`; // H:i default
+    }
+
+    function formatDatum(date, format) {
+        const tag = pad(date.getDate());
+        const monat = pad(date.getMonth() + 1);
+        const jahr = date.getFullYear();
+        const basis = `${tag}.${monat}.${jahr}`;
+        if (format === 'l, d.m.Y') {
+            return `${WOCHENTAGE_LANG[date.getDay()]}, ${basis}`;
+        }
+        return basis; // d.m.Y default
+    }
+
+    window.TanzschuleModule.uhrzeit = function (container, settings) {
+        settings = settings || {};
+        container.classList.add('tm-modul-uhrzeit');
+        container.innerHTML = '<div class="tm-uhrzeit-zeit"></div><div class="tm-uhrzeit-datum"></div>';
+        const zeitEl = container.querySelector('.tm-uhrzeit-zeit');
+        const datumEl = container.querySelector('.tm-uhrzeit-datum');
+
+        if (settings.zeige_datum === false) {
+            datumEl.style.display = 'none';
+        }
+
+        function tick() {
+            const now = new Date();
+            zeitEl.textContent = formatZeit(now, settings.format_zeit || 'H:i');
+            if (settings.zeige_datum !== false) {
+                datumEl.textContent = formatDatum(now, settings.format_datum || 'd.m.Y');
+            }
+        }
+
+        tick();
+        // Wichtig (siehe Song-Anzeige Bugfix, Abschnitt 5e der Song-Doku):
+        // bei jedem Neu-Rendern der Modul-Instanz muss der alte Interval-Timer
+        // aufgeräumt werden, sonst entstehen Leaks. Daher Referenz am Container
+        // speichern und vor dem Setzen eines neuen Intervals löschen.
+        if (container._tmInterval) {
+            clearInterval(container._tmInterval);
+        }
+        container._tmInterval = setInterval(tick, 1000);
+    };
+})();
+
+
+============================================================================
+DATEI: screen.tcpayer.de/modules/bild/module.json
+============================================================================
+{
+  "id": "bild",
+  "label": "Bild",
+  "icon": "image",
+  "has_proxy": false,
+  "has_inhalte": true,
+  "settings": [
+    {
+      "key": "intervall_sek",
+      "type": "number",
+      "label": "Standard-Anzeigedauer in Sek. (falls bei einem Bild keine eigene Dauer gesetzt ist)",
+      "default": 10
+    },
+    {
+      "key": "uebergang",
+      "type": "select",
+      "label": "Übergangseffekt",
+      "default": "fade",
+      "options": [
+        { "value": "fade", "label": "Sanft ausblenden" },
+        { "value": "none", "label": "Kein Übergang (harter Schnitt)" }
+      ]
+    },
+    {
+      "key": "bildmodus",
+      "type": "select",
+      "label": "Darstellung",
+      "default": "cover",
+      "options": [
+        { "value": "cover", "label": "Füllen (zuschneiden)" },
+        { "value": "contain", "label": "Vollständig einpassen (keine Beschneidung)" }
+      ]
+    }
+  ]
+}
+
+
+============================================================================
+DATEI: screen.tcpayer.de/modules/bild/frontend.js
+============================================================================
+/**
+ * modules/bild/frontend.js
+ *
+ * Rotiert durch die Unter-Inhalte (einzelne Bilder) einer "bild"-Modul-
+ * Instanz. Jedes Bild kann eine eigene Anzeigedauer (dauer_sek) haben;
+ * fehlt diese, greift settings.intervall_sek als Fallback.
+ *
+ * "inhalte" kommt vom Backend als Array von Objekten:
+ *   { id, dateiname, reihenfolge, dauer_sek }
+ * Die Bild-URL wird aus UPLOADS_URL (global, vom Saal-Frontend gesetzt)
+ * + dateiname zusammengesetzt.
+ *
+ * FIX (nach Live-Test Schritt 3): echtes Crossfade statt "ausblenden,
+ * dann erst neues Bild laden". Dafür zwei übereinanderliegende <img>-Layer,
+ * die sich per Opacity gegenseitig durchkreuzen — während Layer A
+ * ausblendet, blendet Layer B (mit dem neuen Bild) gleichzeitig ein.
+ * Crossfade-Dauer gemeinsam getestet und final auf 1500ms gesetzt.
+ */
+(function () {
+    window.TanzschuleModule = window.TanzschuleModule || {};
+
+    window.TanzschuleModule.bild = function (container, settings, inhalte) {
+        settings = settings || {};
+        inhalte = (inhalte || []).filter(function (i) { return !!i.dateiname; });
+        container.classList.add('tm-modul-bild');
+
+        if (container._tmTimeout) {
+            clearTimeout(container._tmTimeout);
+        }
+
+        if (inhalte.length === 0) {
+            container.innerHTML = '<div class="tm-bild-leer">Keine Bilder vorhanden</div>';
+            return;
+        }
+
+        const uploadsBase = (window.UPLOADS_URL || 'https://screen.tcpayer.de/uploads') + '/';
+        const objectFit = settings.bildmodus === 'contain' ? 'contain' : 'cover';
+        const useFade = settings.uebergang !== 'none';
+        const fadeDauerMs = 1500;
+
+        // Zwei übereinanderliegende Bild-Layer für echtes Crossfade.
+        // Positionierung/Sichtbarkeit bewusst per Inline-Style statt nur per
+        // CSS-Klasse, damit das Modul auch funktioniert, falls module-test.css
+        // (noch) nicht aktualisiert wurde oder gecacht ist.
+        container.style.position = container.style.position || 'relative';
+        container.innerHTML =
+            '<div class="tm-bild-stage" style="position:relative;width:100%;height:100%;overflow:hidden;">' +
+            '<img class="tm-bild-img tm-bild-layer-a" alt="" style="position:absolute;top:0;left:0;width:100%;height:100%;display:block;">' +
+            '<img class="tm-bild-img tm-bild-layer-b" alt="" style="position:absolute;top:0;left:0;width:100%;height:100%;display:block;">' +
+            '</div>';
+
+        const layerA = container.querySelector('.tm-bild-layer-a');
+        const layerB = container.querySelector('.tm-bild-layer-b');
+        [layerA, layerB].forEach(function (img) {
+            img.style.objectFit = objectFit;
+            img.style.opacity = '0';
+            img.onerror = function () {
+                console.error('[bild-modul] Bild konnte nicht geladen werden:', img.src);
+            };
+            if (useFade) {
+                img.style.transition = 'opacity ' + fadeDauerMs + 'ms ease';
+            }
+        });
+
+        let aktiverLayer = layerA;
+        let inaktiverLayer = layerB;
+        let index = 0;
+        let ersterDurchlauf = true;
+
+        function zeigeNaechstesBild() {
+            const item = inhalte[index];
+            const dauerSek = (item.dauer_sek && item.dauer_sek > 0) ? item.dauer_sek : (settings.intervall_sek || 10);
+            const url = uploadsBase + encodeURIComponent(item.dateiname);
+
+            if (ersterDurchlauf || !useFade) {
+                // Erstes Bild bzw. Übergang deaktiviert: direkt anzeigen, kein Crossfade nötig.
+                aktiverLayer.src = url;
+                aktiverLayer.style.opacity = '1';
+                inaktiverLayer.style.opacity = '0';
+                ersterDurchlauf = false;
+            } else {
+                // Neues Bild im (aktuell unsichtbaren) anderen Layer vorladen,
+                // dann beide gleichzeitig kreuzen lassen: alt -> 0, neu -> 1.
+                inaktiverLayer.src = url;
+                inaktiverLayer.style.opacity = '1';
+                aktiverLayer.style.opacity = '0';
+
+                const tmp = aktiverLayer;
+                aktiverLayer = inaktiverLayer;
+                inaktiverLayer = tmp;
+            }
+
+            index = (index + 1) % inhalte.length;
+            container._tmTimeout = setTimeout(zeigeNaechstesBild, dauerSek * 1000);
+        }
+
+        zeigeNaechstesBild();
+    };
+})();
+
+
+============================================================================
+DATEI: screen.tcpayer.de/assets/js/module-loader.js
+============================================================================
+/**
+ * assets/js/module-loader.js
+ *
+ * Generischer Lader für Modul-Frontends (siehe Abschnitt 4 der Doku).
+ * Lädt modules/<id>/frontend.js per <script>-Tag (einmalig pro Modul-ID,
+ * dann gecacht) und ruft anschließend die registrierte Render-Funktion auf.
+ *
+ * Aufruf z.B. aus dem Monitor-Frontend (Schritt 9) oder von dieser
+ * Testseite (Schritt 3):
+ *   TanzschuleLoader.render('bild', container, settings, inhalte);
+ */
+(function () {
+    const geladeneModule = {};
+
+    function ladeSkript(modulId, basisUrl, callback) {
+        if (geladeneModule[modulId] === 'fertig') {
+            callback();
+            return;
+        }
+        if (geladeneModule[modulId] === 'laedt') {
+            // einfacher Polling-Wartemechanismus, falls parallel mehrfach angefordert
+            const warte = setInterval(function () {
+                if (geladeneModule[modulId] === 'fertig') {
+                    clearInterval(warte);
+                    callback();
+                }
+            }, 30);
+            return;
+        }
+        geladeneModule[modulId] = 'laedt';
+        const script = document.createElement('script');
+        script.src = basisUrl + '/modules/' + encodeURIComponent(modulId) + '/frontend.js';
+        script.onload = function () {
+            geladeneModule[modulId] = 'fertig';
+            callback();
+        };
+        script.onerror = function () {
+            geladeneModule[modulId] = null;
+            console.error('Konnte frontend.js für Modul "' + modulId + '" nicht laden.');
+        };
+        document.head.appendChild(script);
+    }
+
+    window.TanzschuleLoader = {
+        /**
+         * @param {string} modulId
+         * @param {HTMLElement} container
+         * @param {object} settings
+         * @param {array} [inhalte]
+         * @param {string} [basisUrl] Standard: window.BACKEND_BASE oder aktueller Origin
+         */
+        render: function (modulId, container, settings, inhalte, basisUrl) {
+            basisUrl = basisUrl || window.BACKEND_BASE || '';
+            ladeSkript(modulId, basisUrl, function () {
+                const fn = window.TanzschuleModule && window.TanzschuleModule[modulId];
+                if (typeof fn !== 'function') {
+                    console.error('Modul "' + modulId + '" hat keine Render-Funktion registriert.');
+                    return;
+                }
+                fn(container, settings || {}, inhalte || []);
+            });
+        }
+    };
+})();
+
+
+============================================================================
+DATEI: screen.tcpayer.de/assets/css/module-test.css
+============================================================================
+/* assets/css/module-test.css — nur für die Schritt-3-Testseite */
+
+body {
+    font-family: system-ui, sans-serif;
+    background: #f4f4f5;
+    color: #1a1a1a;
+    margin: 0;
+    padding: 24px;
+}
+
+h1, h2 { margin-top: 0; }
+
+.tm-card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+}
+
+.field { margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 13px; font-weight: 600; color: #444; }
+.field input, .field select, .field textarea {
+    padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;
+}
+.field-bool { flex-direction: row; align-items: center; }
+.field-bool input { width: auto; }
+
+button {
+    background: #ad2121; color: #fff; border: none; border-radius: 4px;
+    padding: 8px 16px; cursor: pointer; font-size: 14px;
+}
+button:hover { background: #8c1a1a; }
+
+.tm-instanz-liste { display: flex; flex-direction: column; gap: 10px; }
+.tm-instanz-zeile {
+    display: flex; justify-content: space-between; align-items: center;
+    border: 1px solid #eee; border-radius: 6px; padding: 8px 12px;
+}
+
+.tm-preview-monitor {
+    width: 480px; height: 270px; background: #0e0e0e; color: #fff;
+    position: relative; overflow: hidden; border-radius: 6px;
+}
+/* WICHTIG (siehe "Bekannte Bugs & Fixes" oben): diese Marker-Klassen dürfen
+   der äußeren Box (.tm-preview-monitor bzw. später der Playlist-Spalte)
+   KEINE eigene Höhe/Breite per Prozent aufzwingen, sonst kollabiert die Box
+   auf 0, sobald der Modul-Inhalt aus dem normalen Fluss genommen ist
+   (z.B. position:absolute bei den Bild-Layern). */
+.tm-modul-uhrzeit { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.tm-uhrzeit-zeit { font-size: 48px; font-weight: 700; }
+.tm-uhrzeit-datum { font-size: 18px; opacity: 0.8; }
+.tm-modul-bild { }
+.tm-bild-stage { position: relative; width: 100%; height: 100%; }
+.tm-bild-img {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%; display: block;
+}
+.tm-bild-leer { display: flex; align-items: center; justify-content: center; height: 100%; opacity: 0.6; }
+
+
+============================================================================
+DATEI: screen.tcpayer.de/test-module3.php
+============================================================================
+<?php
+/**
+ * test-module3.php
+ *
+ * MEILENSTEIN-TESTSEITE für Schritt 3 (siehe Teststrategie in der
+ * Chat-Zusammenfassung Schritt 1-2: "Tests nach sinnvollen Zwischenständen").
+ *
+ * Zweck:
+ *   - Modul-Instanz für "uhrzeit" oder "bild" anlegen (Formular wird
+ *     automatisch aus module.json generiert -> ModuleRegistry::renderSettingsForm)
+ *   - bei "bild": Bilder hochladen (landen in uploads/, Eintrag in
+ *     modul_instanz_inhalte)
+ *   - Live-Vorschau jeder angelegten Instanz über module-loader.js
+ *
+ * WICHTIG: Diese Datei ist nur ein Test-Werkzeug für Schritt 3, kein Teil
+ * der finalen Bibliotheks-Verwaltung (die kommt erst in Schritt 5 mit
+ * richtigem UI). Nach erfolgreichem Test ggf. einfach liegen lassen oder
+ * löschen — sie hat keine Abhängigkeiten zu anderen Dateien außer den
+ * neu angelegten includes/Modul*.php.
+ */
+
+declare(strict_types=1);
+
+require __DIR__ . '/config.php';
+require __DIR__ . '/includes/ModuleRegistry.php';
+require __DIR__ . '/includes/ModulInstanz.php';
+
+$fehler = [];
+$erfolg = null;
+
+// ----------------------------------------------------------------------
+// POST: neue Modul-Instanz anlegen
+// ----------------------------------------------------------------------
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aktion']) && $_POST['aktion'] === 'anlegen') {
+    $modulTyp = $_POST['modul_typ'] ?? '';
+    $name = trim($_POST['name'] ?? '');
+
+    if (!ModuleRegistry::exists($modulTyp)) {
+        $fehler[] = 'Unbekannter Modul-Typ.';
+    } elseif ($name === '') {
+        $fehler[] = 'Bitte einen Namen für die Modul-Instanz angeben.';
+    } else {
+        $einstellungen = ModuleRegistry::collectSettings($modulTyp, $_POST['einstellungen'] ?? []);
+        $instanzId = ModulInstanz::create($modulTyp, $name, $einstellungen);
+
+        // Bild-Uploads verarbeiten (nur relevant für has_inhalte-Module wie "bild")
+        if ($modulTyp === 'bild' && !empty($_FILES['bilder']['name'][0])) {
+            $erlaubt = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+            $reihenfolge = 0;
+            foreach ($_FILES['bilder']['name'] as $i => $originalName) {
+                if ($_FILES['bilder']['error'][$i] !== UPLOAD_ERR_OK) {
+                    continue;
+                }
+                $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+                if (!in_array($ext, $erlaubt, true)) {
+                    $fehler[] = "Dateityp von '$originalName' nicht erlaubt.";
+                    continue;
+                }
+                $neuerName = 'bild_' . $instanzId . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+                $ziel = UPLOADS_DIR . '/' . $neuerName;
+                if (move_uploaded_file($_FILES['bilder']['tmp_name'][$i], $ziel)) {
+                    ModulInstanz::addInhalt($instanzId, $neuerName, null, $reihenfolge, 10);
+                    $reihenfolge++;
+                } else {
+                    $fehler[] = "Upload von '$originalName' fehlgeschlagen.";
+                }
+            }
+        }
+
+        if (empty($fehler)) {
+            $erfolg = "Modul-Instanz '$name' (#$instanzId) angelegt.";
+        }
+    }
+}
+
+// ----------------------------------------------------------------------
+// POST: Modul-Instanz löschen
+// ----------------------------------------------------------------------
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aktion']) && $_POST['aktion'] === 'loeschen') {
+    $id = (int)($_POST['id'] ?? 0);
+    if ($id > 0) {
+        ModulInstanz::delete($id);
+        $erfolg = "Modul-Instanz #$id gelöscht.";
+    }
+}
+
+$alleModule = ModuleRegistry::getAll();
+$instanzen = ModulInstanz::listAll();
+?>
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Schritt 3 — Modul-Test</title>
+<link rel="stylesheet" href="/assets/css/module-test.css">
+</head>
+<body>
+
+<h1>Schritt 3 — Modul-Registry &amp; Referenz-Module testen</h1>
+
+<?php foreach ($fehler as $f): ?>
+    <div class="tm-card" style="border-color:#ad2121;color:#ad2121;"><?= htmlspecialchars($f) ?></div>
+<?php endforeach; ?>
+<?php if ($erfolg): ?>
+    <div class="tm-card" style="border-color:#2e7d32;color:#2e7d32;"><?= htmlspecialchars($erfolg) ?></div>
+<?php endif; ?>
+
+<div class="tm-card">
+    <h2>Neue Modul-Instanz anlegen</h2>
+    <form method="post" enctype="multipart/form-data" id="anlegen-form">
+        <input type="hidden" name="aktion" value="anlegen">
+
+        <div class="field">
+            <label for="modul_typ">Modul-Typ</label>
+            <select name="modul_typ" id="modul_typ" onchange="zeigeFelderFuer(this.value)">
+                <?php foreach ($alleModule as $id => $meta): ?>
+                    <option value="<?= htmlspecialchars($id) ?>"><?= htmlspecialchars($meta['label']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+
+        <div class="field">
+            <label for="name">Name der Instanz (z.B. "Begrüßung Eingang")</label>
+            <input type="text" name="name" id="name" required>
+        </div>
+
+        <?php foreach ($alleModule as $id => $meta): ?>
+            <div class="modul-felder" data-modul="<?= htmlspecialchars($id) ?>" style="display:none;">
+                <?= ModuleRegistry::renderSettingsForm($id) ?>
+                <?php if ($meta['has_inhalte']): ?>
+                    <div class="field">
+                        <label>Bilder hochladen</label>
+                        <input type="file" name="bilder[]" accept="image/*" multiple>
+                    </div>
+                <?php endif; ?>
+            </div>
+        <?php endforeach; ?>
+
+        <button type="submit">Anlegen</button>
+    </form>
+</div>
+
+<div class="tm-card">
+    <h2>Vorhandene Modul-Instanzen</h2>
+    <?php if (empty($instanzen)): ?>
+        <p>Noch keine Instanzen angelegt.</p>
+    <?php else: ?>
+        <div class="tm-instanz-liste">
+            <?php foreach ($instanzen as $inst): ?>
+                <div class="tm-instanz-zeile">
+                    <span>#<?= $inst['id'] ?> — <?= htmlspecialchars($inst['name']) ?> (<?= htmlspecialchars($inst['modul_typ']) ?>)</span>
+                    <form method="post" onsubmit="return confirm('Wirklich löschen?');">
+                        <input type="hidden" name="aktion" value="loeschen">
+                        <input type="hidden" name="id" value="<?= $inst['id'] ?>">
+                        <button type="submit" style="background:#888;">Löschen</button>
+                    </form>
+                </div>
+                <div class="tm-preview-monitor" id="preview-<?= $inst['id'] ?>"></div>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+</div>
+
+<script>
+    window.BACKEND_BASE = '';
+    window.UPLOADS_URL = '<?= UPLOADS_URL ?>';
+</script>
+<script src="/assets/js/module-loader.js"></script>
+<script>
+    function zeigeFelderFuer(modulTyp) {
+        document.querySelectorAll('.modul-felder').forEach(function (el) {
+            el.style.display = (el.dataset.modul === modulTyp) ? 'block' : 'none';
+        });
+    }
+    zeigeFelderFuer(document.getElementById('modul_typ').value);
+
+    <?php foreach ($instanzen as $inst): ?>
+    TanzschuleLoader.render(
+        <?= json_encode($inst['modul_typ']) ?>,
+        document.getElementById('preview-<?= $inst['id'] ?>'),
+        <?= json_encode($inst['einstellungen'], JSON_UNESCAPED_UNICODE) ?>,
+        <?= json_encode(ModulInstanz::listInhalte((int)$inst['id']), JSON_UNESCAPED_UNICODE) ?>
+    );
+    <?php endforeach; ?>
+</script>
+
+</body>
+</html>
+
+============================================================================
+OFFENE PUNKTE / VORMERKUNGEN FÜR SCHRITT 5
+============================================================================
+Siehe separate Datei "Notiz_Schritt5_Mediathek.md" (eigene Projektdatei):
+- Zentrale Mediathek-Tabelle statt Pro-Instanz-Upload (Bilder
+  wiederverwendbar über mehrere Bild-Modul-Instanzen hinweg)
+- Duplikat-Erkennung per SHA-256-Hash beim Upload
+- Echtes Drag&Drop + Sammel-Vorschau im Backend statt Standard-
+  Browser-Dateidialog
+
+============================================================================
+NÄCHSTER SCHRITT
+============================================================================
+Schritt 4: Module "stundenplan" (NC-Proxy + Direct-DB-Access-SQL),
+"ankuendigung", "community" (NC-Proxy) und "song" (FRET-Proxy) + Eintrag
+aller vier in modules/registry.php.
+
+Für den nächsten Chat hochladen: Projektdokumentation + diese Datei +
+01_schema.sql + Schritt2_Ordnerstruktur_und_Dateien.txt +
+Chat_Zusammenfassung_Schritt1-2.md + Notiz_Schritt5_Mediathek.md, und
+angeben: "Wir sind bei Schritt 4, Schritt 3 ist live getestet und
+abgeschlossen."

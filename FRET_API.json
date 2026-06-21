@@ -1,0 +1,576 @@
+{
+  "openapi": "3.0.4",
+  "info": {
+    "title": "FRET Public API",
+    "description": "Öffentliche FRET Schnittstelle (03/16/2026 19:58)",
+    "version": "v1"
+  },
+  "servers": [
+    {
+      "url": "https://fret-api.azurewebsites.net",
+      "description": "FRET API"
+    }
+  ],
+  "paths": {
+    "/api/v1/schools/{schoolId}/Computers": {
+      "get": {
+        "tags": [
+          "Computers"
+        ],
+        "summary": "Retrieves a list of computers associated with the specified school.",
+        "operationId": "GetComputers",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "in": "path",
+            "description": "The unique identifier of the school for which to fetch the computers.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ComputerListDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/schools/{schoolId}/Dances": {
+      "get": {
+        "tags": [
+          "Dances"
+        ],
+        "summary": "Retrieves a list of dances associated with the specified school.",
+        "operationId": "GetDances",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "in": "path",
+            "description": "The unique identifier of the school whose dances are being retrieved.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DanceDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/schools/{schoolId}/computers/{computerId}/Players": {
+      "get": {
+        "tags": [
+          "Players"
+        ],
+        "summary": "Retrieves the player information associated with a specific school and computer.",
+        "operationId": "GetPlayerInfos",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "in": "path",
+            "description": "The unique identifier of the school.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "computerId",
+            "in": "path",
+            "description": "The unique identifier of the computer.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerInfosDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/Schools/{schoolId}": {
+      "get": {
+        "tags": [
+          "Schools"
+        ],
+        "summary": "Retrieves information about a specific school based on the provided school ID.",
+        "operationId": "GetSchoolInfo",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "in": "path",
+            "description": "The unique identifier of the school to retrieve information for.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolListDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/Schools": {
+      "get": {
+        "tags": [
+          "Schools"
+        ],
+        "summary": "Retrieves information about a specific school based on the provided school ID using an alternative route.",
+        "operationId": "GetSchool",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "in": "query",
+            "description": "The unique identifier of the school to retrieve information for.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolListDto"
+                }
+              }
+            }
+          }
+        },
+        "deprecated": true
+      }
+    },
+    "/api/v1/schools/{schoolId}/songs/{songId}/cover": {
+      "get": {
+        "tags": [
+          "Songs"
+        ],
+        "summary": "Retrieves the cover image for a specific song in a school.",
+        "operationId": "GetCover",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "in": "path",
+            "description": "The unique identifier of the school.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "songId",
+            "in": "path",
+            "description": "The unique identifier of the song.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "v",
+            "in": "query",
+            "description": "Optional version parameter (ticks) for cache busting and strong caching.",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/schools/{schoolId}/computers/{computerId}/Wishes": {
+      "put": {
+        "tags": [
+          "Wishes"
+        ],
+        "summary": "Adds a wish associated with a specific school and computer in the system.",
+        "operationId": "AddWish",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "in": "path",
+            "description": "The unique identifier of the school to which the computer belongs.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "computerId",
+            "in": "path",
+            "description": "The unique identifier of the computer for which the wish is being added.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "The details of the wish being created, including type and identifier.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WishCreationDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WishCreationDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/WishCreationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ComputerListDto": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The unique identifier of the computer.",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the computer."
+          }
+        },
+        "additionalProperties": false,
+        "description": "Represents a Data Transfer Object (DTO) containing basic information about a computer."
+      },
+      "DanceDto": {
+        "required": [
+          "id",
+          "name",
+          "shortName"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "The unique identifier of the dance.",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string",
+            "description": "The full name of the dance."
+          },
+          "shortName": {
+            "type": "string",
+            "description": "The short or abbreviated name of the dance."
+          }
+        },
+        "additionalProperties": false,
+        "description": "Represents a Data Transfer Object for a dance."
+      },
+      "PlayerInfoDto": {
+        "required": [
+          "isLineDanceMode",
+          "isPlaying",
+          "songs"
+        ],
+        "type": "object",
+        "properties": {
+          "isPlaying": {
+            "type": "boolean",
+            "description": "Indicates whether the player is actively playing a song."
+          },
+          "songs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlayerSongInfoDto"
+            },
+            "description": "A list of songs currently associated with the player."
+          },
+          "isLineDanceMode": {
+            "type": "boolean",
+            "description": "Indicates if the player is in line dance mode. Default value is false."
+          }
+        },
+        "additionalProperties": false,
+        "description": "Represents information about a player, including its state, current songs, and mode configuration."
+      },
+      "PlayerInfosDto": {
+        "required": [
+          "player1",
+          "player2"
+        ],
+        "type": "object",
+        "properties": {
+          "player1": {
+            "$ref": "#/components/schemas/PlayerInfoDto"
+          },
+          "player2": {
+            "$ref": "#/components/schemas/PlayerInfoDto"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Represents comprehensive player information, including details of two individual players."
+      },
+      "PlayerSongInfoDto": {
+        "required": [
+          "artist",
+          "comment",
+          "dances",
+          "dancesLong",
+          "dancesShort",
+          "duration",
+          "position",
+          "songId",
+          "title",
+          "year"
+        ],
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "description": "Gets or sets the position of the song in the playlist or queue.\nA position of 0 typically represents the currently playing song, while\nhigher values indicate songs in the upcoming sequence of a playlist.",
+            "format": "int32"
+          },
+          "songId": {
+            "type": "string",
+            "description": "Gets or sets the unique identifier for the song.\nThis identifier is globally unique and is used to reference\nthe specific song across various contexts, such as playlist associations\nor player behaviors.",
+            "format": "uuid"
+          },
+          "startTime": {
+            "type": "string",
+            "description": "Gets or sets the start time of the song. This represents the time when the song begins playback\nor is scheduled to begin in the context of the player's queue or list. The value may be null\nif the start time is not determined or relevant in a certain context.",
+            "format": "date-time",
+            "nullable": true
+          },
+          "endTime": {
+            "type": "string",
+            "description": "Gets or sets the ending time of the song playback. This indicates when the song\nconcludes in the playback timeline. A null value represents that the song has not\nended or the end time is not defined.",
+            "format": "date-time",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "description": "Gets or sets the title of the song.\nThis property typically represents the name of the song as it is displayed in a player or playlist."
+          },
+          "artist": {
+            "type": "string",
+            "description": "Gets or sets the name of the artist who performed the song.\nThis property enables identification of the performer or creator\nassociated with the given track in the playlist or playing context."
+          },
+          "dancesShort": {
+            "type": "string",
+            "description": "Gets or sets a short description or abbreviation of the dances associated with the song.\nThis property provides a concise way to represent dance information linked to the song."
+          },
+          "dancesLong": {
+            "type": "string",
+            "description": "Gets or sets the detailed description of the dances associated with the song.\nThis property typically contains long-form textual representations of dance names\nlinked to the current song."
+          },
+          "dances": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SongDanceDto"
+            },
+            "description": "Gets or sets the list of dances associated with the song.\nEach entry in the list provides detailed dance metadata, including\nnames and an indication of whether it is marked as primary."
+          },
+          "duration": {
+            "type": "number",
+            "description": "Gets or sets the duration of the song in seconds.\nThe duration represents the total playback length of the song\nand is used to calculate the end time based on the start time\nduring playback scheduling or timeline adjustments.",
+            "format": "double"
+          },
+          "year": {
+            "type": "integer",
+            "description": "Gets or sets the release year of the song.\nThis property typically indicates the year the song was published or first became available to the public.",
+            "format": "int32"
+          },
+          "comment": {
+            "type": "string",
+            "description": "Gets or sets the user-provided comment associated with the song.\nThis can include personal notes, feedback, or any additional information\nrelevant to the context of the song or its usage."
+          },
+          "coverImageUrl": {
+            "type": "string",
+            "description": "Gets or sets the URL for the cover image of the song.\nThis URL typically points to a resource where the song's associated artwork\nor thumbnail image can be retrieved.",
+            "nullable": true
+          },
+          "isWish": {
+            "type": "boolean",
+            "description": "Gets or sets a value indicating whether the song is marked as a \"wish\" or a special request.\nThis property is usually associated with user preferences, indicating that the song holds\nspecific importance or is flagged for prioritized playback.",
+            "nullable": true
+          },
+          "remainingSeconds": {
+            "type": "number",
+            "description": "Gets or sets the remaining playback time of the song in seconds at the moment the update was sent.\nOnly set for the currently playing song (Position = 0) when IsPlaying is true.\nUse this value together with the client's local clock at the time of receiving the message\nto calculate the current playback position without requiring clock synchronization.\nReplaces the fragile StartTime/EndTime UTC compensation approach.",
+            "format": "double",
+            "nullable": true
+          },
+          "estimatedSecondsUntilStart": {
+            "type": "number",
+            "description": "Gets or sets the estimated number of seconds until this song will start playing,\nmeasured from the moment the update was sent.\nOnly set for upcoming songs (Position > 0) when IsPlaying is true.\nUse this value together with the client's local clock at the time of receiving the message\nto display a human-readable countdown (e.g. \"in 3 Minuten\") without requiring clock synchronization.",
+            "format": "double",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Represents detailed information about a song being played or in a playlist in the context of a player system."
+      },
+      "SchoolListDto": {
+        "required": [
+          "id",
+          "schoolName"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "schoolName": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Represents a Data Transfer Object (DTO) containing information about a school."
+      },
+      "SongDanceDto": {
+        "required": [
+          "isOverride",
+          "isPrimary",
+          "longName",
+          "shortName"
+        ],
+        "type": "object",
+        "properties": {
+          "longName": {
+            "type": "string"
+          },
+          "shortName": {
+            "type": "string"
+          },
+          "isPrimary": {
+            "type": "boolean"
+          },
+          "isOverride": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Represents a data transfer object for a song and its associated dance information."
+      },
+      "WishCreationDto": {
+        "required": [
+          "id",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "enum": [
+              "Dance"
+            ],
+            "type": "string",
+            "description": "The type of the wish, represented by the FRET.Cloud.Public.Abstractions.Dtos.WishType enum."
+          },
+          "id": {
+            "type": "string",
+            "description": "The unique identifier for the wish, typically a string value."
+          }
+        },
+        "additionalProperties": false,
+        "description": "Represents the data transfer object used for creating a wish."
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Computers"
+    },
+    {
+      "name": "Dances"
+    },
+    {
+      "name": "Players"
+    },
+    {
+      "name": "Schools"
+    },
+    {
+      "name": "Songs"
+    },
+    {
+      "name": "Wishes"
+    }
+  ]
+}

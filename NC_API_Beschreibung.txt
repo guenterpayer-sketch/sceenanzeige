@@ -1,0 +1,296 @@
+REST-API
+Die Nimbuscloud-API.
+Organisatorische Informationen
+Schnittstellen — Die Nimbuscloud ist über die JSON-Schnittstellen (Current und Legacy) erreichbar. Beide werden laufend weiterentwickelt und gepflegt, neue Softwaremodule erhalten jedoch nur Endpunkte in der aktuellen API.
+Legacy-Dokumentation — Die Dokumentation der Legacy-API findest du hier.
+API-Keys — Sofern der Zugriff auf die API im gewählten Paket enthalten ist, können API-Keys in der Nimbuscloud unter System > Einstellungen > API-Keys erstellt werden.
+IP-Beschränkung — API-Keys können aus Sicherheitsgründen auf bestimmte IP-Adressen eingeschränkt werden. Ist keine Einschränkung gewünscht, kann der Zugriff mit einem Stern (*) von jeder beliebigen IP-Adresse erfolgen.
+Undokumentierte Felder — Felder, die über diese Dokumentation hinaus übertragen werden, sind nicht offiziell verfügbar und können ohne Vorankündigung umbenannt oder entfernt werden.
+Deprecation — Aufrufe an einen veralteten Endpunkt werden mit einer Warnung im Log markiert. Der Zeitpunkt der Abkündigung ist in der Dokumentation des jeweiligen Endpunkts angegeben.
+Support — Technischer Support ist ausschließlich über Support-Ticket oder per E-Mail an support@nimbuscloud.at verfügbar und wird individuell abgerechnet.
+Hinweis. Für die meisten Anwendungsfälle von Webseiteneinbindungen ist die Verwendung der iFrame-Schnittstelle zu empfehlen. Alle Infos zu den verfügbaren Widgets findest du in deiner Nimbuscloud unter System > Einstellungen > Online-Anmeldung.
+Technische Grundlagen
+API-Key-Header — Der API-Key muss im Header X-API-Key übergeben werden.
+Berechtigungen — Die erforderlichen API-Key-Berechtigungen sind in der Dokumentation des jeweiligen Endpunkts angegeben. Es gibt 3 Anforderungsstufen:
+All
+— Alle angezeigten Berechtigungen sind erforderlich.
+Any
+— Eine beliebige der angezeigten Berechtigungen ist erforderlich.
+Single
+— Nur die eine angezeigte Berechtigung ist erforderlich.
+Zugriffsprotokollierung — Zugriffe auf die API, die aufgrund fehlender Berechtigungen oder einer nicht übereinstimmenden IP-Adresse eingeschränkt wurden, werden im Systemlog protokolliert.
+JSON-Struktur — Alle Daten werden in JSON-Objekten innerhalb eines übergeordneten Schlüssels data gesendet und empfangen. Ausnahmen gelten für binäre Antworten oder Anfragen.
+Zeichenkodierung — Alle Daten müssen UTF-8-kodiert sein.
+Zeitstempel — Zeitstempel müssen als lokale Zeit übergeben werden. Unter Tools ist ein Timestamp-Konverter zu finden.
+Datumsformat — Daten werden im PHP-Format Date_ATOM übermittelt (Beispiel: 2005-08-15T15:52:01+00:00).
+Pagination — Paginierte Antworten enthalten die Daten in der Eigenschaft items. Die Pagination-Informationen werden in den Eigenschaften totalItemCount, pageStart (Offset) und pageSize (Standard: 10, max. 1000) übermittelt.
+Codebeispiele zum Zugriff
+Beispielhafter Zugriff mittels GuzzleHTTP (composer require guzzlehttp/guzzle) Mehr Infos
+
+1 · GET-Request
+dashboard-iframe-token-info
+PHP
+
+Kopieren
+
+$client = new GuzzleHttpClient();
+
+try {
+    $response = $client->get("https://xyz.nimbuscloud.at/backend/v2/user/auth/sso/dashboard-iframe-token-info", [
+        RequestOptions::HEADERS => [
+            "Content-Type" => "application/json",
+            "X-API-Key" => "yourapikey"
+        ],
+        RequestOptions::QUERY => [
+            "token" => $token
+        ]
+    ]);
+    $response = json_decode($response->getBody()->getContents(), true);
+    var_dump($response);
+} catch (GuzzleHttpExceptionGuzzleException $e) {
+    echo $e->getMessage();
+}
+2 · POST-Request
+create-login-token
+PHP
+
+Kopieren
+
+try {
+    $client = new GuzzleHttpClient();
+    $response = $client->post("https://xyz.nimbuscloud.at/backend/v2/user/auth/sso/create-login-token", [
+        RequestOptions::HEADERS => [
+            "Content-Type" => "application/json",
+            "X-API-Key" => "yourapikey"
+        ],
+        RequestOptions::BODY => json_encode([
+            "data" => [
+                "applicationName" => ...,
+                "forwardUrl" => ...,
+                "cancelUrl" => ...,
+            ]
+        ])
+    ]);
+    $response = json_decode($response->getBody()->getContents(), true);
+    $link = $response["data"]; //data contains the result
+} catch (GuzzleHttpExceptionClientException $e) {
+    if($e->getCode() === 404) {
+        echo "Result hat error code 404!";
+    }
+    else {
+        echo $e->getMessage();
+    }
+}
+Vollständige Referenz
+Swagger / OpenAPI
+Nimbuscloud API
+ 2.0 
+OAS 3.0
+/assets/nimbuscloud-openapi.yaml
+REST API for the Nimbuscloud platform.
+
+Authentication
+The API key must be provided in the X-API-Key header on every request.
+
+Permission requirements
+Every endpoint documents one of three permission requirement levels:
+
+Single — the single shown permission is required.
+All — every shown permission is required.
+Any — at least one of the shown permissions is required.
+Access that is rejected because of missing permissions or an IP address mismatch is recorded in the system log.
+
+Envelope conventions
+All JSON requests and responses wrap their payload in a top-level data property. Binary requests and responses are exempt.
+
+Dates are exchanged in PHP DATE_ATOM format (ISO 8601 with timezone), e.g. 2005-08-15T15:52:01+00:00.
+
+Pagination
+Paginated responses use:
+
+items — the page of records (inside data)
+totalItemCount — total number of records matching the query
+pageStart — offset of the first returned record (defaults to 0)
+pageSize — number of records per page (defaults to 10, max 1000)
+The corresponding request query parameters pageStart and pageSize follow the same defaults and limits.
+
+Servers
+
+https://demo.nimbuscloud.at/backend - Nimbuscloud demo base URL
+
+Authorize
+AffiliateLink
+Affiliate-link campaigns and leads (public endpoints).
+
+
+
+POST
+/v1/affiliate-link/campaign-leads/create
+Create a campaign lead
+
+
+
+GET
+/v1/affiliate-link/campaign-leads/{campaignHash}/{leadHash}/confirm
+Confirm a campaign lead (double opt-in)
+
+
+
+GET
+/v1/affiliate-link/campaigns/{urlHash}/public
+Get the public view of a campaign
+
+
+Community
+Community newsfeed.
+
+
+
+GET
+/v2/community/api-feed/api-posts
+Get paginated community feed posts
+
+
+System
+System utilities (direct DB access).
+
+
+
+POST
+/v2/system/direct-db-access/execute-query
+Execute a read-only SQL query against the instance database
+
+
+
+GET
+/v2/system/direct-db-access/schema
+Get the database schema
+
+
+Task
+Tasks, task lists, list categories and stages.
+
+
+
+GET
+/v2/task/list-categories
+Get all task list categories
+
+
+
+GET
+/v2/task/lists/all
+Get all task lists for a given user
+
+
+
+GET
+/v2/task/stages
+Get all task stages
+
+
+
+GET
+/v2/task/tasks/overdue
+Get all overdue tasks of a given user
+
+
+
+GET
+/v2/task/tasks/{customerNr}/customer
+Get all tasks of a given customer
+
+
+
+POST
+/v2/task/tasks/{id}/complete
+Mark a task as completed or not completed
+
+
+
+GET
+/v2/task/tasks/{listId}/list
+Get tasks from a given task list
+
+
+User
+Users, user groups, roles and SSO.
+
+
+
+POST
+/v2/user/auth/sso/create-login-token
+Create an SSO login URL for the nimbuscloud
+
+
+
+GET
+/v2/user/auth/sso/dashboard-iframe-token-info
+Get information about the user that opened the nimbuscloud dashboard
+
+
+
+GET
+/v2/user/auth/sso/user-by-user-token
+Resolve a user token returned by the SSO redirect
+
+
+
+GET
+/v2/user/groups
+Get all user groups with their members
+
+
+
+GET
+/v2/user/roles
+Get all user roles with members and permissions
+
+
+
+GET
+/v2/user/users
+Get all users
+
+
+
+Schemas
+PaginatedEnvelope
+AtomDate
+DayDate
+Gender
+Salutation
+UserOnlineStatus
+PersonContactItemType
+PersonContactItemRole
+TaskPriority
+TaskListView
+UserPermissionLevel
+PermissionName
+AffiliateLink_CreateCampaignLead
+AffiliateLink_PublicCampaign
+ZZLegacyCashBox_PublicCompany
+Community_FeedPost
+Community_PostContent
+Community_PollAnswer
+Community_FriendLove
+Community_FeedComment
+ZZLegacyCustomer_SimpleCustomer
+ZZLegacyCustomer_CustomerTag
+System_Person_APerson
+System_Person_NaturalPerson
+System_Person_CompanyPerson
+System_Person_PersonContactItem
+System_DirectDbAccessQuery
+Task_TaskListCategory
+Task_TaskStage
+Task_TaskListStage
+Task_TaskList
+Task_TaskCategory
+Task_SubTask
+Task_APITask
+User_SimpleUser
+User_APIUser
+User_APIUserGroup
+User_APIRole
+User_SSORequest

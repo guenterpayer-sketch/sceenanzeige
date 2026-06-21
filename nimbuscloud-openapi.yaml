@@ -1,0 +1,1307 @@
+openapi: 3.0.3
+info:
+  title: Nimbuscloud API
+  version: "2.0"
+  description: |
+    REST API for the Nimbuscloud platform.
+
+    ## Authentication
+    The API key must be provided in the `X-API-Key` header on every request.
+
+    ## Permission requirements
+    Every endpoint documents one of three permission requirement levels:
+      - **Single** — the single shown permission is required.
+      - **All** — every shown permission is required.
+      - **Any** — at least one of the shown permissions is required.
+
+    Access that is rejected because of missing permissions or an IP address mismatch is recorded in the system log.
+
+    ## Envelope conventions
+    All JSON requests and responses wrap their payload in a top-level `data` property. Binary requests and responses are exempt.
+
+    Dates are exchanged in PHP `DATE_ATOM` format (ISO 8601 with timezone), e.g. `2005-08-15T15:52:01+00:00`.
+
+    ## Pagination
+    Paginated responses use:
+      - `items` — the page of records (inside `data`)
+      - `totalItemCount` — total number of records matching the query
+      - `pageStart` — offset of the first returned record (defaults to `0`)
+      - `pageSize` — number of records per page (defaults to `10`, max `1000`)
+
+    The corresponding request query parameters `pageStart` and `pageSize` follow the same defaults and limits.
+
+servers:
+  - url: https://demo.nimbuscloud.at/backend
+    description: Nimbuscloud demo base URL
+
+security:
+  - ApiKeyAuth: []
+
+tags:
+  - name: AffiliateLink
+    description: Affiliate-link campaigns and leads (public endpoints).
+  - name: Community
+    description: Community newsfeed.
+  - name: System
+    description: System utilities (direct DB access).
+  - name: Task
+    description: Tasks, task lists, list categories and stages.
+  - name: User
+    description: Users, user groups, roles and SSO.
+
+paths:
+
+  /v1/affiliate-link/campaign-leads/create:
+    post:
+      tags: [AffiliateLink]
+      summary: Create a campaign lead
+      description: |
+        **Permission requirement (Single):** `System_Public`
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  $ref: '#/components/schemas/AffiliateLink_CreateCampaignLead'
+      responses:
+        '200':
+          description: Lead created successfully.
+        '404':
+          description: Not found.
+
+  /v1/affiliate-link/campaign-leads/{campaignHash}/{leadHash}/confirm:
+    get:
+      tags: [AffiliateLink]
+      summary: Confirm a campaign lead (double opt-in)
+      description: |
+        **Permission requirement (Single):** `System_Public`
+      parameters:
+        - in: path
+          name: campaignHash
+          required: true
+          schema: { type: string }
+        - in: path
+          name: leadHash
+          required: true
+          schema: { type: string }
+        - in: query
+          name: customerHash
+          required: false
+          schema: { type: string }
+      responses:
+        '200':
+          description: Lead confirmed.
+        '404':
+          description: Not found.
+
+  /v1/affiliate-link/campaigns/{urlHash}/public:
+    get:
+      tags: [AffiliateLink]
+      summary: Get the public view of a campaign
+      description: |
+        **Permission requirement (Single):** `System_Public`
+      parameters:
+        - in: path
+          name: urlHash
+          required: true
+          schema: { type: string }
+        - in: query
+          name: customerHash
+          required: false
+          schema: { type: string }
+      responses:
+        '200':
+          description: The public campaign.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AffiliateLink_PublicCampaign'
+        '400':
+          description: Bad request.
+        '404':
+          description: Campaign not found.
+
+  /v2/community/api-feed/api-posts:
+    get:
+      tags: [Community]
+      summary: Get paginated community feed posts
+      description: |
+        Returns the paginated posts of a community newsfeed from the viewpoint of a selected customer.
+
+        **Permission requirement (Single):** `Community_ApiKey_Community`
+      parameters:
+        - in: query
+          name: customer
+          required: true
+          description: Customer number whose viewpoint is used.
+          schema: { type: integer }
+        - in: query
+          name: id
+          required: true
+          description: ID of a group or event; `0` for the main feed.
+          schema: { type: integer }
+        - in: query
+          name: type
+          required: true
+          schema:
+            type: string
+            enum: [main, event, group]
+        - $ref: '#/components/parameters/PageStart'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: The paginated posts.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    allOf:
+                      - $ref: '#/components/schemas/PaginatedEnvelope'
+                      - type: object
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Community_FeedPost'
+        '400':
+          description: The selected customer is not allowed to view this feed.
+        '404':
+          description: The selected customer was not found.
+
+  /v2/system/direct-db-access/execute-query:
+    post:
+      tags: [System]
+      summary: Execute a read-only SQL query against the instance database
+      description: |
+        Provides SQL read-only access to the instance database. Access must be enabled by the
+        support team and is only granted on special request with detailed information on what is needed.
+
+        **Permission requirement (Single):** `System_ApiKey_DirectDatabaseAccess`
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  $ref: '#/components/schemas/System_DirectDbAccessQuery'
+      responses:
+        '200':
+          description: Query succeeded. `data` is the row set returned by the query.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: {}
+                    description: Rows returned by the query (each row is an arbitrary JSON object).
+        '400':
+          description: Query failed. The response body is the SQL error message.
+
+  /v2/system/direct-db-access/schema:
+    get:
+      tags: [System]
+      summary: Get the database schema
+      description: |
+        Retrieves the current database schema as an array of `CREATE TABLE` and `ALTER TABLE` SQL statements.
+
+        **Permission requirement (Single):** `System_ApiKey_DirectDatabaseAccess`
+      responses:
+        '200':
+          description: The schema statements.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { type: string }
+
+  /v2/task/list-categories:
+    get:
+      tags: [Task]
+      summary: Get all task list categories
+      description: |
+        **Permission requirement (Single):** `Task_ApiKey_All`
+      responses:
+        '200':
+          description: The currently available task list categories.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Task_TaskListCategory'
+
+  /v2/task/lists/all:
+    get:
+      tags: [Task]
+      summary: Get all task lists for a given user
+      description: |
+        **Permission requirement (Single):** `Task_ApiKey_All`
+      parameters:
+        - in: query
+          name: user
+          required: true
+          schema: { type: integer }
+        - in: query
+          name: categoryId
+          required: false
+          schema: { type: integer }
+        - in: query
+          name: stageId
+          required: false
+          schema: { type: integer }
+      responses:
+        '200':
+          description: The currently available task lists.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Task_TaskList'
+        '404':
+          description: The given user was not found.
+
+  /v2/task/stages:
+    get:
+      tags: [Task]
+      summary: Get all task stages
+      description: |
+        **Permission requirement (Single):** `Task_ApiKey_All`
+      responses:
+        '200':
+          description: The currently available task list stages.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Task_TaskStage'
+
+  /v2/task/tasks/overdue:
+    get:
+      tags: [Task]
+      summary: Get all overdue tasks of a given user
+      description: |
+        **Permission requirement (Single):** `Task_ApiKey_All`
+      parameters:
+        - in: query
+          name: user
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: The overdue tasks.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Task_APITask'
+        '404':
+          description: The given user was not found.
+
+  /v2/task/tasks/{customerNr}/customer:
+    get:
+      tags: [Task]
+      summary: Get all tasks of a given customer
+      description: |
+        **Permission requirement (Single):** `Task_ApiKey_All`
+      parameters:
+        - in: path
+          name: customerNr
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: The tasks.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Task_APITask'
+        '404':
+          description: The given customer was not found.
+
+  /v2/task/tasks/{id}/complete:
+    post:
+      tags: [Task]
+      summary: Mark a task as completed or not completed
+      description: |
+        **Permission requirement (Single):** `Task_ApiKey_All`
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+        - in: query
+          name: isCompleted
+          required: true
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: Task updated.
+        '400':
+          description: The task is already marked as completed.
+        '403':
+          description: Insufficient permission.
+        '404':
+          description: The given task was not found.
+
+  /v2/task/tasks/{listId}/list:
+    get:
+      tags: [Task]
+      summary: Get tasks from a given task list
+      description: |
+        **Permission requirement (Single):** `Task_ApiKey_All`
+      parameters:
+        - in: path
+          name: listId
+          required: true
+          schema: { type: integer }
+        - in: query
+          name: includeCompleted
+          required: false
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: The tasks in the given list.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Task_APITask'
+        '404':
+          description: The given task list was not found.
+
+  /v2/user/auth/sso/create-login-token:
+    post:
+      tags: [User]
+      summary: Create an SSO login URL for the nimbuscloud
+      description: |
+        Returns a URL that the end user must open to log in. After login the user is redirected
+        to your `forwardUrl` with the placeholder `{token}` replaced by a unique user token, which can be
+        exchanged for user information via `/v2/user/auth/sso/user-by-user-token`.
+
+        **Permission requirement (Single):** `User_ApiKey_Authenticate`
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  $ref: '#/components/schemas/User_SSORequest'
+      responses:
+        '200':
+          description: The URL to forward the user to.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: string, format: uri }
+        '403':
+          description: The provided URLs do not match the required format.
+
+  /v2/user/auth/sso/dashboard-iframe-token-info:
+    get:
+      tags: [User]
+      summary: Get information about the user that opened the nimbuscloud dashboard
+      description: |
+        **Permission requirement (Single):** `User_ApiKey_Authenticate`
+      parameters:
+        - in: query
+          name: token
+          required: true
+          description: Token provided by the nimbuscloud dashboard in your iframe URL.
+          schema: { type: string }
+      responses:
+        '200':
+          description: The authenticated user.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User_APIUser'
+        '404':
+          description: The supplied token has expired or is invalid.
+
+  /v2/user/auth/sso/user-by-user-token:
+    get:
+      tags: [User]
+      summary: Resolve a user token returned by the SSO redirect
+      description: |
+        **Permission requirement (Single):** `User_ApiKey_Authenticate`
+      parameters:
+        - in: query
+          name: token
+          required: true
+          description: User token provided by the redirected user.
+          schema: { type: string }
+      responses:
+        '200':
+          description: The authenticated user.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User_APIUser'
+        '404':
+          description: The supplied user token has expired or was already used.
+
+  /v2/user/groups:
+    get:
+      tags: [User]
+      summary: Get all user groups with their members
+      description: |
+        **Permission requirement (Single):** `User_ApiKey_Read`
+      responses:
+        '200':
+          description: The currently available groups.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User_APIUserGroup'
+
+  /v2/user/roles:
+    get:
+      tags: [User]
+      summary: Get all user roles with members and permissions
+      description: |
+        **Permission requirement (Single):** `User_ApiKey_Read`
+      responses:
+        '200':
+          description: The currently available roles.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User_APIRole'
+
+  /v2/user/users:
+    get:
+      tags: [User]
+      summary: Get all users
+      description: |
+        **Permission requirement (Single):** `User_ApiKey_Read`
+      responses:
+        '200':
+          description: The currently available users.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User_APIUser'
+
+components:
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: |
+        API key used to authenticate the caller. The required permission(s) for each endpoint
+        are documented in that endpoint's description. Access rejected because of missing
+        permissions or an IP address mismatch is recorded in the system log.
+
+  parameters:
+    PageStart:
+      in: query
+      name: pageStart
+      required: false
+      description: Pagination offset (e.g. `0`, `10`, `20`, ...). Defaults to `0`.
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+    PageSize:
+      in: query
+      name: pageSize
+      required: false
+      description: Number of items per page. Defaults to `10`, maximum `1000`.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 1000
+        default: 10
+
+  schemas:
+
+    # -------------------------------------------------------------------------
+    # Generic envelopes
+    # -------------------------------------------------------------------------
+
+    PaginatedEnvelope:
+      type: object
+      description: |
+        Common paginated response shape. The actual `items` array type is documented per endpoint.
+      required: [items, totalItemCount, pageStart, pageSize]
+      properties:
+        items:
+          type: array
+          description: The page of records.
+          items: {}
+        totalItemCount:
+          type: integer
+          description: Total number of records matching the query (across all pages).
+        pageStart:
+          type: integer
+          description: Offset of the first returned record.
+        pageSize:
+          type: integer
+          description: Number of records in this page.
+
+    AtomDate:
+      type: string
+      format: date-time
+      description: |
+        Date/time in PHP `DATE_ATOM` format (ISO 8601 with timezone), e.g. `2005-08-15T15:52:01+00:00`.
+      example: '2005-08-15T15:52:01+00:00'
+
+    DayDate:
+      type: string
+      format: date
+      description: A calendar day with no time component (`YYYY-MM-DD`).
+      example: '2024-03-14'
+
+    # -------------------------------------------------------------------------
+    # Enumerations
+    # -------------------------------------------------------------------------
+
+    Gender:
+      type: string
+      enum: [male, female, nonBinary]
+
+    Salutation:
+      type: string
+      enum: [mr, mrs, neutral]
+
+    UserOnlineStatus:
+      type: string
+      enum: [online, offline, doNotDisturb, away, blocked, inCall]
+
+    PersonContactItemType:
+      type: string
+      enum:
+        - email
+        - mobile
+        - phone
+        - website
+        - skype
+        - facebook
+        - instagram
+        - twitter
+        - tiktok
+        - snapchat
+        - telegram
+        - livechat
+
+    PersonContactItemRole:
+      type: string
+      enum: [contact, business, private]
+
+    TaskPriority:
+      type: string
+      enum: [low, mid, high]
+
+    TaskListView:
+      type: string
+      enum: [stages, list, tiles]
+
+    UserPermissionLevel:
+      type: integer
+      description: Permission level on a shared item (0 = none, 4 = full).
+      enum: [0, 1, 2, 3, 4]
+
+    PermissionName:
+      type: string
+      description: One of the available permission identifiers used by API keys, roles and the system.
+      enum:
+        - AffiliateLink
+        - Community_Chat
+        - Community_Content
+        - Community_ApiKey_Community
+        - ExternalCommunication_Mail
+        - ExternalCommunication_PhoneCallLog
+        - ExternalCommunication_Settings
+        - ExternalCommunication_SendAndViewUnifiedMessages
+        - FileManagement
+        - Finance
+        - Gamification
+        - Gamification_ApiKey_Read
+        - InternalCommunication_Chat
+        - InternalCommunication_InternalNews
+        - Screen
+        - System_Authenticated
+        - System_Public
+        - System_Forbidden
+        - System_HelpCenterTickets
+        - System_HelpCenterInstance
+        - System_HelpCenterNews
+        - System_ApiKey_DirectDatabaseAccess
+        - System_Log
+        - System_CanDisableAutoLogout
+        - System_Backup
+        - System_Settings
+        - System_Share
+        - System_Share_admin
+        - System_Recurring
+        - System_CanSeeAllJobs
+        - Task
+        - Task_Admin
+        - Task_ApiKey_All
+        - TimeRecording
+        - TimeRecording_Admin
+        - User
+        - User_Roles
+        - User_ApiKey_Authenticate
+        - User_ApiKey_Read
+        - ZZLegacyCalendar_AppointmentReminderForOtherUsers
+        - ZZLegacyCashBox_Finance_finapi
+        - ZZLegacyCashBox_Finance_manage_bank_transactions
+        - ZZLegacyCashBox_Finance_see_bank_balance
+        - ZZLegacyCashBox_Finance_see_incoming
+        - ZZLegacyCashBox_Finance_see_outgoing
+        - ZZLegacyCashBox_Finance_see_chargebacks
+        - ZZLegacyCashBox_Finance_create_bank_transfer
+        - ZZLegacyCashBox_Finance_authorize_bank_transfer
+        - ZZLegacyCashBox
+        - ZZLegacyCashBox_Admin
+        - ZZLegacyCashBox_Cashbox_payments
+        - ZZLegacyCashBox_Cashbox_payments_journal
+        - ZZLegacyCashBox_Cashbox_payments_dd
+        - ZZLegacyCashBox_Cashbox_products
+        - ZZLegacyCashBox_Cashbox_invoices
+        - ZZLegacyCashBox_Cashbox_create_invoices
+        - ZZLegacyCashBox_Cashbox_reminder
+        - ZZLegacyCashBox_Cashbox_correct
+        - ZZLegacyCashBox_Cashbox_coupons
+        - ZZLegacyCashBox_Cashbox_product_journal
+        - ZZLegacyCashBox_Products_settings
+        - ZZLegacyCashBox_Pointofsale
+        - ZZLegacyCashBox_Pos_day_end_closing
+        - ZZLegacyCashBox_Pos_day_end_closing_view
+        - ZZLegacyCashBox_Pos_canUseSpecialDiscount
+        - ZZLegacyCashBox_Pos_settings
+        - ZZLegacyCourse_Coursebook
+        - ZZLegacyCourse_Coursebook_print
+        - ZZLegacyCourse_Coursebook_comment
+        - ZZLegacyCourse_Coursebook_write
+        - ZZLegacyCourse_Danceschool
+        - ZZLegacyCourse_Danceschool_singleEdit
+        - ZZLegacyCourse_Danceschool_locations
+        - ZZLegacyCourse_Danceschool_times
+        - ZZLegacyCourse_Danceschool_values
+        - ZZLegacyCourse_Danceschool_templates
+        - ZZLegacyCourse_Danceschool_categories
+        - ZZLegacyCourse_Danceschool_courses
+        - ZZLegacyCourse_Danceschool_resources
+        - ZZLegacyCourse_Danceschool_smartlock_permissions
+        - ZZLegacyCustomer_Customers
+        - ZZLegacyCustomer_Customers_add
+        - ZZLegacyCustomer_Customers_edit
+        - ZZLegacyCustomer_Customers_dsgvo
+        - ZZLegacyCustomer_Registration_edit
+        - ZZLegacyCustomer_Registration_add
+        - ZZLegacyCustomer_Registration_pauses
+        - ZZLegacyCustomer_Products_sale
+        - ZZLegacyTicketing_Sales
+        - ZZLegacyTicketing_Edit
+        - ZZLegacyTicketing_Manage
+        - ZZLegacyWiki
+        - ZZLegacyWiki_Manage
+        - ZZLegacyWiki_Edit
+        - ZZLegacyZZOther_Community_livestream
+        - ZZLegacyZZOther_Central_administration
+        - ZZLegacyZZOther_Statistics
+        - ZZLegacyZZOther_PublicCustomers
+        - ZZLegacyZZOther_Communications
+        - ZZLegacyZZOther_Communications_mail_settings
+        - ZZLegacyZZOther_Communications_sendMail
+        - ZZLegacyZZOther_Communications_sendNewsletter
+        - ZZLegacyZZOther_Communications_form
+        - ZZLegacyZZOther_Communications_survey
+        - ZZLegacyZZOther_Tasks_appointments
+        - ZZLegacyZZOther_Dashboard_customer_statistics
+        - ZZLegacyZZOther_Dashboard_finance_statistics
+        - ZZLegacyZZOther_Customercommunity
+        - ZZLegacyZZOther_Customercommunity_edit_requests
+        - ZZLegacyZZOther_Customercommunity_edit_changes
+        - ZZLegacyZZOther_Customercommunity_online_courses
+        - ZZLegacyZZOther_ApiKey_FinanceRead
+        - ZZLegacyZZOther_ApiKey_FinanceWrite
+        - ZZLegacyZZOther_ApiKey_CustomersRead
+        - ZZLegacyZZOther_ApiKey_CustomersAuthenticate
+        - ZZLegacyZZOther_ApiKey_CustomersRegistrations
+        - ZZLegacyZZOther_ApiKey_CustomersEdit
+        - ZZLegacyZZOther_ApiKey_NimbusSystem
+        - ZZLegacyZZOther_ApiKey_TicketingScan
+        - ZZLegacyZZOther_ApiKey_TimetableRead
+        - ZZLegacyZZOther_ApiKey_DanceschoolData
+        - ZZLegacyZZOther_ApiKey_Attendance
+        - ZZLegacyZZOther_ApiKey_Music
+        - ZZLegacyZZOther_ApiKey_OnlineRegistration
+        - ZZLegacyZZOther_ApiKey_Companion
+
+    # -------------------------------------------------------------------------
+    # AffiliateLink
+    # -------------------------------------------------------------------------
+
+    AffiliateLink_CreateCampaignLead:
+      type: object
+      required: [campaignHash, firstname, lastname, email]
+      properties:
+        campaignHash: { type: string }
+        firstname:    { type: string }
+        lastname:     { type: string }
+        email:        { type: string, format: email }
+        customerHash:
+          type: string
+          nullable: true
+
+    AffiliateLink_PublicCampaign:
+      type: object
+      required: [id, name, theme, themePath, content, thankYouText, company]
+      properties:
+        id:           { type: integer }
+        name:         { type: string }
+        theme:        { type: string }
+        themePath:    { type: string }
+        content:      { type: string }
+        thankYouText: { type: string }
+        customerHash:
+          type: string
+          nullable: true
+        company:
+          $ref: '#/components/schemas/ZZLegacyCashBox_PublicCompany'
+
+    ZZLegacyCashBox_PublicCompany:
+      type: object
+      required: [id, name]
+      properties:
+        id:    { type: integer }
+        name:  { type: string }
+        imprintUrl:           { type: string, nullable: true, format: uri }
+        privacyPolicyUrl:     { type: string, nullable: true, format: uri }
+        termsUrl:             { type: string, nullable: true, format: uri }
+        cancellationRightsUrl: { type: string, nullable: true, format: uri }
+        logoSquare:           { type: string, nullable: true }
+        logoWide:             { type: string, nullable: true }
+
+    # -------------------------------------------------------------------------
+    # Community
+    # -------------------------------------------------------------------------
+
+    Community_FeedPost:
+      type: object
+      required:
+        - id
+        - commentsDisabled
+        - content
+        - isAdvertisement
+        - isPinned
+        - creationDate
+        - ownerIsOfficial
+        - isViewed
+        - isLoveMe
+        - othersLove
+        - friendsLove
+        - remainingLove
+        - comments
+      properties:
+        id:                { type: integer }
+        commentsDisabled:  { type: boolean }
+        content:
+          $ref: '#/components/schemas/Community_PostContent'
+        isAdvertisement:   { type: boolean }
+        isPinned:          { type: boolean }
+        owner:
+          allOf:
+            - $ref: '#/components/schemas/ZZLegacyCustomer_SimpleCustomer'
+          nullable: true
+        creationDate:
+          type: integer
+          description: Unix timestamp (seconds).
+        communityShowFriendsOnlineStatus: { type: boolean, nullable: true }
+        communityStatusText:              { type: string,  nullable: true }
+        origin:                           { type: string,  nullable: true }
+        originLink:                       { type: string,  nullable: true }
+        ownerName:                        { type: string,  nullable: true }
+        ownerIsOfficial:                  { type: boolean }
+        isViewed:                         { type: boolean }
+        isLoveMe:                         { type: boolean }
+        othersLove:                       { type: integer }
+        friendsLove:
+          type: array
+          items:
+            $ref: '#/components/schemas/Community_FriendLove'
+        remainingLove: { type: integer }
+        comments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Community_FeedComment'
+
+    Community_PostContent:
+      type: object
+      required: [type, content]
+      properties:
+        type:
+          type: string
+          enum: [text, image, video, url, poll]
+        content:     { type: string }
+        description: { type: string, nullable: true }
+        title:       { type: string, nullable: true }
+        url:         { type: string, nullable: true, format: uri }
+        videoId:     { type: string, nullable: true }
+        videoType:
+          type: string
+          nullable: true
+          enum: [vimeo, youtube]
+        addOwn:      { type: boolean, nullable: true }
+        answers:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/Community_PollAnswer'
+        multiple:    { type: boolean, nullable: true }
+        question:    { type: string,  nullable: true }
+        image:       { type: string,  nullable: true }
+        images:
+          type: array
+          nullable: true
+          items: { type: string }
+
+    Community_PollAnswer:
+      type: object
+      required: [fromUser, id, label, totalAnswers, votesCount, votesPercent]
+      properties:
+        fromUser:           { type: boolean }
+        id:                 { type: integer }
+        label:              { type: string }
+        post:               { type: string, nullable: true }
+        selectedTimestamp:  { type: integer, nullable: true }
+        totalAnswers:       { type: integer }
+        votesCount:         { type: integer }
+        votesPercent:       { type: number }
+
+    Community_FriendLove:
+      type: object
+      required: [customerNr, fullName, gender, showOnlineStatus]
+      properties:
+        customerNr:       { type: integer }
+        fullName:         { type: string }
+        gender:
+          $ref: '#/components/schemas/Gender'
+        showOnlineStatus: { type: boolean }
+
+    Community_FeedComment:
+      type: object
+      required: [id, content, timestamp]
+      properties:
+        id:        { type: integer }
+        owner:
+          allOf:
+            - $ref: '#/components/schemas/ZZLegacyCustomer_SimpleCustomer'
+          nullable: true
+        content:   { type: string }
+        timestamp:
+          type: integer
+          description: Unix timestamp (seconds).
+        showOnlineStatus: { type: boolean, nullable: true }
+
+    # -------------------------------------------------------------------------
+    # Customer (referenced by Community and Tasks)
+    # -------------------------------------------------------------------------
+
+    ZZLegacyCustomer_SimpleCustomer:
+      type: object
+      required: [customerNumber, cardId, fullName, person, tags, profileImageUrl]
+      properties:
+        customerNumber: { type: integer }
+        cardId:         { type: string }
+        fullName:       { type: string }
+        person:
+          $ref: '#/components/schemas/System_Person_APerson'
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/ZZLegacyCustomer_CustomerTag'
+        phoneNumbers:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/System_Person_PersonContactItem'
+        profileImageUrl: { type: string, format: uri }
+        birthday:
+          allOf:
+            - $ref: '#/components/schemas/DayDate'
+          nullable: true
+
+    ZZLegacyCustomer_CustomerTag:
+      type: object
+      required: [id, shortName, longName, color, useForPrimaryColor]
+      properties:
+        id:                  { type: integer }
+        shortName:           { type: string }
+        longName:            { type: string }
+        color:               { type: string }
+        useForPrimaryColor:  { type: boolean }
+
+    System_Person_APerson:
+      type: object
+      description: Base "person" type. `personType` discriminates between natural and company persons.
+      required: [personType]
+      properties:
+        id: { type: integer, nullable: true }
+        personType:
+          type: string
+          enum: [natural, company]
+        fullName:        { type: string, nullable: true }
+        reverseFullName: { type: string, nullable: true }
+      discriminator:
+        propertyName: personType
+        mapping:
+          natural: '#/components/schemas/System_Person_NaturalPerson'
+          company: '#/components/schemas/System_Person_CompanyPerson'
+
+    System_Person_NaturalPerson:
+      allOf:
+        - $ref: '#/components/schemas/System_Person_APerson'
+        - type: object
+          required: [firstName, lastName, gender, salutation, isFormalSalutation]
+          properties:
+            firstName:          { type: string }
+            lastName:           { type: string }
+            gender:             { $ref: '#/components/schemas/Gender' }
+            salutation:         { $ref: '#/components/schemas/Salutation' }
+            isFormalSalutation: { type: boolean }
+
+    System_Person_CompanyPerson:
+      allOf:
+        - $ref: '#/components/schemas/System_Person_APerson'
+        - type: object
+          required: [legalForm, companyName]
+          properties:
+            legalForm:   { type: string }
+            companyName: { type: string }
+
+    System_Person_PersonContactItem:
+      type: object
+      required: [type, value]
+      properties:
+        id:        { type: integer, nullable: true }
+        type:      { $ref: '#/components/schemas/PersonContactItemType' }
+        value:     { type: string }
+        itemRole:
+          allOf:
+            - $ref: '#/components/schemas/PersonContactItemRole'
+          nullable: true
+        notes:     { type: string,  nullable: true }
+        noMassText: { type: boolean, nullable: true }
+        isHistory: { type: boolean, nullable: true }
+        isPrimary: { type: boolean, nullable: true }
+
+    # -------------------------------------------------------------------------
+    # System / Direct DB access
+    # -------------------------------------------------------------------------
+
+    System_DirectDbAccessQuery:
+      type: object
+      required: [sql, params, arrayTypes]
+      properties:
+        sql:
+          type: string
+          description: The SQL query (read-only).
+        params:
+          type: object
+          additionalProperties: true
+          description: Dictionary of named query parameters.
+        arrayTypes:
+          type: object
+          additionalProperties: { type: string }
+          description: Types of array parameters (parameter name → type identifier).
+
+    # -------------------------------------------------------------------------
+    # Tasks
+    # -------------------------------------------------------------------------
+
+    Task_TaskListCategory:
+      type: object
+      required: [name]
+      properties:
+        id:        { type: integer, nullable: true }
+        name:      { type: string }
+        listCount: { type: integer, nullable: true }
+
+    Task_TaskStage:
+      type: object
+      required: [name, color, timeLimit, completeLimit]
+      properties:
+        id:            { type: integer, nullable: true }
+        name:          { type: string }
+        color:         { type: string }
+        timeLimit:     { type: integer }
+        completeLimit: { type: integer }
+
+    Task_TaskListStage:
+      type: object
+      required: [stage, orderNumber]
+      properties:
+        stage:
+          $ref: '#/components/schemas/Task_TaskStage'
+        orderNumber:   { type: integer }
+        numberOfTasks: { type: integer, nullable: true }
+
+    Task_TaskList:
+      type: object
+      required: [name, owner, category, view, isTemplate, isDefault, stages]
+      properties:
+        id:    { type: integer, nullable: true }
+        name:  { type: string }
+        owner:
+          $ref: '#/components/schemas/User_SimpleUser'
+        category:
+          $ref: '#/components/schemas/Task_TaskListCategory'
+        view:
+          $ref: '#/components/schemas/TaskListView'
+        numberOfOverdueTasks: { type: integer, nullable: true }
+        isTemplate: { type: boolean }
+        isDefault:  { type: boolean }
+        userPermission:
+          allOf:
+            - $ref: '#/components/schemas/UserPermissionLevel'
+          nullable: true
+        stages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task_TaskListStage'
+
+    Task_TaskCategory:
+      type: object
+      required: [name, color]
+      properties:
+        id:    { type: integer, nullable: true }
+        name:  { type: string }
+        color: { type: string }
+
+    Task_SubTask:
+      type: object
+      required: [title, details, isCompleted, orderNumber]
+      properties:
+        id:          { type: integer, nullable: true }
+        title:       { type: string }
+        details:     { type: string }
+        isCompleted: { type: boolean }
+        orderNumber: { type: integer }
+
+    Task_APITask:
+      type: object
+      required:
+        - title
+        - description
+        - priority
+        - customers
+        - users
+        - groups
+        - articles
+        - subtasks
+      properties:
+        id:          { type: integer, nullable: true }
+        title:       { type: string }
+        description: { type: string }
+        category:
+          allOf:
+            - $ref: '#/components/schemas/Task_TaskCategory'
+          nullable: true
+        priority:
+          $ref: '#/components/schemas/TaskPriority'
+        completionDate:
+          allOf:
+            - $ref: '#/components/schemas/AtomDate'
+          nullable: true
+        completionStartTime:
+          allOf:
+            - $ref: '#/components/schemas/AtomDate'
+          nullable: true
+        completionEndTime:
+          allOf:
+            - $ref: '#/components/schemas/AtomDate'
+          nullable: true
+        customers:
+          type: array
+          items:
+            $ref: '#/components/schemas/ZZLegacyCustomer_SimpleCustomer'
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/User_SimpleUser'
+        groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/User_APIUserGroup'
+        articles:
+          type: array
+          items: { type: integer }
+        originalItem: { type: integer, nullable: true }
+        subtasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task_SubTask'
+
+    # -------------------------------------------------------------------------
+    # Users
+    # -------------------------------------------------------------------------
+
+    User_SimpleUser:
+      type: object
+      required: [username, firstName, lastName, isDeleted]
+      properties:
+        id:        { type: integer, nullable: true }
+        username:  { type: string }
+        firstName: { type: string }
+        lastName:  { type: string }
+        profileImageUrl:      { type: string, nullable: true, format: uri }
+        profileImageSmallUrl: { type: string, nullable: true, format: uri }
+        isDeleted: { type: boolean }
+        status:
+          allOf:
+            - $ref: '#/components/schemas/UserOnlineStatus'
+          nullable: true
+
+    User_APIUser:
+      type: object
+      required: [username, firstName, lastName, roleId, roleName]
+      properties:
+        id:        { type: integer, nullable: true }
+        username:  { type: string }
+        firstName: { type: string }
+        lastName:  { type: string }
+        roleId:    { type: integer }
+        roleName:  { type: string }
+        profileImageUrl:      { type: string, nullable: true, format: uri }
+        profileImageSmallUrl: { type: string, nullable: true, format: uri }
+        email:       { type: string, nullable: true, format: email }
+        phoneNumber: { type: string, nullable: true }
+        lastLogin:
+          allOf:
+            - $ref: '#/components/schemas/AtomDate'
+          nullable: true
+
+    User_APIUserGroup:
+      type: object
+      required: [name, members]
+      properties:
+        id:   { type: integer, nullable: true }
+        name: { type: string }
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/User_APIUser'
+
+    User_APIRole:
+      type: object
+      required: [name, permissions]
+      properties:
+        id:   { type: integer, nullable: true }
+        name: { type: string }
+        permissions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PermissionName'
+        users:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/User_APIUser'
+
+    User_SSORequest:
+      type: object
+      required: [applicationName, forwardUrl, cancelUrl]
+      properties:
+        applicationName:
+          type: string
+          description: Name of your application. May not contain the word "Nimbuscloud".
+        forwardUrl:
+          type: string
+          format: uri
+          description: |
+            URL the user is redirected to after a successful login. Must start with `https://`
+            and contain the placeholder `{token}` which will be replaced with the user token.
+        cancelUrl:
+          type: string
+          format: uri
+          description: |
+            URL the user is redirected to if the login is cancelled. Must start with `https://`.
