@@ -1,0 +1,94 @@
+/* assets/css/module-test.css — nur für die Schritt-3-Testseite */
+
+body {
+    font-family: system-ui, sans-serif;
+    background: #f4f4f5;
+    color: #1a1a1a;
+    margin: 0;
+    padding: 24px;
+}
+
+h1, h2 { margin-top: 0; }
+
+.tm-card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+}
+
+.field { margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 13px; font-weight: 600; color: #444; }
+.field input, .field select, .field textarea {
+    padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;
+}
+.field-bool { flex-direction: row; align-items: center; }
+.field-bool input { width: auto; }
+
+button {
+    background: #ad2121; color: #fff; border: none; border-radius: 4px;
+    padding: 8px 16px; cursor: pointer; font-size: 14px;
+}
+button:hover { background: #8c1a1a; }
+
+.tm-instanz-liste { display: flex; flex-direction: column; gap: 10px; }
+.tm-instanz-zeile {
+    display: flex; justify-content: space-between; align-items: center;
+    border: 1px solid #eee; border-radius: 6px; padding: 8px 12px;
+}
+
+.tm-preview-monitor {
+    width: 480px; height: 270px; background: #0e0e0e; color: #fff;
+    position: relative; overflow: hidden; border-radius: 6px;
+}
+.tm-modul-uhrzeit { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.tm-uhrzeit-zeit { font-size: 48px; font-weight: 700; }
+.tm-uhrzeit-datum { font-size: 18px; opacity: 0.8; }
+.tm-modul-bild { }
+.tm-bild-stage { position: relative; width: 100%; height: 100%; }
+.tm-bild-img {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%; display: block;
+}
+.tm-bild-leer { display: flex; align-items: center; justify-content: center; height: 100%; opacity: 0.6; }
+
+/* ============================================================
+   Ergänzungen aus Schritt 4 — an bestehende module-test.css aus
+   Schritt 3 ANHÄNGEN, nicht ersetzen!
+   ============================================================ */
+
+.tm-ankuendigung-text {
+    display: flex; align-items: center; justify-content: center;
+    height: 100%; font-size: 28px; text-align: center; padding: 0 16px;
+    box-sizing: border-box;
+}
+.tm-ankuendigung-leer, .tm-stundenplan-leer, .tm-community-leer {
+    display: flex; align-items: center; justify-content: center;
+    height: 100%; opacity: 0.6;
+}
+.tm-stundenplan-fehler, .tm-community-fehler, .tm-song-fehler {
+    display: flex; align-items: center; justify-content: center;
+    height: 100%; color: #ff6b6b; text-align: center; padding: 0 12px;
+    box-sizing: border-box; font-size: 14px;
+}
+
+.tm-stundenplan-liste { list-style: none; margin: 0; padding: 8px; height: 100%; overflow: hidden; box-sizing: border-box; }
+.tm-stundenplan-zeile { display: flex; gap: 12px; padding: 6px 4px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.tm-sp-zeit { font-weight: 700; min-width: 60px; }
+
+.tm-community-post { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.tm-community-bild { max-width: 100%; border-radius: 4px; display: block; margin-bottom: 6px; }
+.tm-community-text { margin: 0; font-size: 15px; }
+
+.tm-modul-song { display: flex; flex-direction: column; height: 100%; padding: 12px; box-sizing: border-box; }
+.tm-song-titel { font-size: 28px; font-weight: 700; }
+.tm-song-artist { font-size: 16px; opacity: 0.8; margin-bottom: 6px; }
+.tm-song-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.tm-song-badge { padding: 2px 10px; border-radius: 12px; font-size: 13px; font-weight: 600; }
+.tm-song-badge-main { background: #ad2121; color: #fff; }
+.tm-song-badge-side { background: #f0f0f0; border: 2px solid #ad2121; color: #ad2121; }
+.tm-song-progress { height: 10px; background: rgba(255,255,255,0.15); border-radius: 5px; overflow: hidden; margin-bottom: 14px; }
+.tm-song-progress-bar { height: 100%; width: 0%; background: #ad2121; transition: width 1s linear; }
+.tm-song-playlist-item { display: flex; gap: 8px; align-items: center; padding: 4px 0; font-size: 14px; opacity: 0.85; }
+

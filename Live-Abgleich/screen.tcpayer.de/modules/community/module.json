@@ -1,0 +1,11 @@
+{
+  "id": "community",
+  "label": "Community-Feed",
+  "icon": "users",
+  "has_proxy": true,
+  "has_inhalte": false,
+  "settings": [
+    { "key": "customer_nr", "type": "number", "label": "Kundennummer (Sichtweite, aus der der Feed abgerufen wird)", "default": 0 },
+    { "key": "anzahl_posts", "type": "number", "label": "Anzahl angezeigter Beiträge", "default": 10 }
+  ]
+}
