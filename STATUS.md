@@ -30,7 +30,12 @@ A/B erledigt, Live-Test steht noch aus)._
 
 ---
 
-## Aktueller Fokus: Schritt 5 ✅ erledigt → als Nächstes Schritt 6 (Playlist-Editor)
+## Aktueller Fokus: Schritt 5 ✅ erledigt → Schritt 6 startet in eigenem Chat
+
+Schritt 6 (Playlist-Editor) wird in einem **neuen Chat** begonnen. Briefing
+dafür: **`Schritt6_Vorbereitung.md`** (Ziel, Abgrenzung zu Schritt 7/9/10,
+vorhandene Bausteine, empfohlener Aufbau, offene Fragen). Zu Beginn dort
+`CLAUDE.md` + `STATUS.md` + `Schritt6_Vorbereitung.md` lesen.
 
 Schritt 5 vollständig live getestet: Mediathek (Upload/Dup-Erkennung, Ordner,
 Tags, Anzeigename), Bibliothek + Instanz-Editor (alle Modultypen, Inhalte-
