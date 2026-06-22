@@ -258,6 +258,57 @@ body {
 .adm-btn-rot:hover { background: #a52f23 !important; }
 .adm-inline { display: inline; margin: 0; }
 
+/* ===== Bibliothek: Kachel-Ebenen ===== */
+/* Ebene 1: Modulart-Kacheln */
+.adm-typgrid {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px;
+}
+.adm-typkachel {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; text-align: center; text-decoration: none;
+    background: #fff; border: 1px solid #dde3ea; border-radius: 12px;
+    padding: 28px 16px; color: #1c2733; min-height: 150px;
+    transition: border-color .15s, box-shadow .15s, transform .1s;
+}
+.adm-typkachel:hover { border-color: #ad2121; box-shadow: 0 6px 18px rgba(173,33,33,.12); transform: translateY(-2px); }
+.adm-typ-icon { font-size: 42px; line-height: 1; }
+.adm-typ-label { font-weight: 600; font-size: 17px; }
+.adm-typ-anzahl {
+    font-size: 13px; color: #fff; background: #ad2121; border-radius: 12px; padding: 2px 10px;
+}
+
+/* Ebene 2: Instanz-Kacheln */
+.adm-kachelgrid {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px;
+}
+.adm-kachel {
+    display: flex; flex-direction: column;
+    background: #fff; border: 1px solid #dde3ea; border-radius: 12px; overflow: hidden;
+}
+.adm-kachel.inaktiv { opacity: .6; }
+.adm-kachel-vorschau {
+    height: 140px; display: flex; align-items: center; justify-content: center;
+    gap: 8px; padding: 12px; background: #f0f2f5; color: #5a6b7d; text-align: center;
+}
+.adm-kachel-vorschau.bild { background-size: cover; background-position: center; }
+.adm-kachel-vorschau.leer { font-size: 14px; }
+.adm-kachel-vorschau.text { flex-direction: column; }
+.adm-kachel-txt { font-size: 14px; color: #1c2733; line-height: 1.4; }
+.adm-kachel-mini {
+    width: 56px; height: 40px; border-radius: 4px; background-size: cover; background-position: center; display: inline-block;
+}
+.adm-kachel-vorschau.info { flex-direction: column; }
+.adm-kachel-icon { font-size: 38px; line-height: 1; }
+.adm-kachel-info { font-size: 13px; color: #33424f; }
+.adm-kachel-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.adm-kachel-name { font-weight: 600; }
+.adm-kachel-aktionen { display: flex; flex-wrap: wrap; gap: 6px; }
+.adm-kachel-aktionen .adm-btn { padding: 6px 10px; font-size: 13px; }
+
+@media (max-width: 760px) {
+    .adm-typgrid, .adm-kachelgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 /* Neue-Instanz-Zeile */
 .adm-neuzeile { margin: 4px 0 20px; }
 .adm-neu-form { display: inline-flex; gap: 8px; align-items: center; }

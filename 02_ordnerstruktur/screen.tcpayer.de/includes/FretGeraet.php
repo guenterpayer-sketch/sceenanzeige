@@ -56,6 +56,19 @@ final class FretGeraet
         return ['neu' => $neu, 'gesamt' => count($computers)];
     }
 
+    /** @return array<string,string> uuid => Anzeigename (Fallback: FRET-Name/uuid) */
+    public static function alleAlsMap(): array
+    {
+        $map = [];
+        foreach (get_pdo()->query('SELECT uuid, fret_name, anzeige_name FROM fret_geraete')->fetchAll() as $g) {
+            $name = ($g['anzeige_name'] !== null && $g['anzeige_name'] !== '')
+                ? $g['anzeige_name']
+                : (($g['fret_name'] !== null && $g['fret_name'] !== '') ? $g['fret_name'] : $g['uuid']);
+            $map[$g['uuid']] = $name;
+        }
+        return $map;
+    }
+
     /**
      * Speichert Anzeigename + Freigabe für mehrere Geräte aus dem Admin-Formular.
      *
