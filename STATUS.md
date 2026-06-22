@@ -38,6 +38,13 @@ Editor mit Bild-Picker), FRET-Geräte-Whitelist (Dropdown im FRET-Editor).
 Migrationen 03/04/05 live eingespielt. `test-module3.php`/`test-module4.php`
 liegen noch auf dem Server (fachlich abgelöst, dürfen weg).
 
+UI-Nachbesserungen (Kacheln-Phase): Bibliothek 2-stufig als Kacheln (Modulart
+→ Instanzen) mit statischer Mini-Vorschau; Mediathek 2-stufig als
+Ordner-Kacheln (Cover + Anzahl) → Bild-Ansicht je Ordner; Lösch-Rückfrage in
+der Bibliothek gefixt (HTML-Attribut-Quote-Bug) + Rückfrage beim Entfernen
+einer Editor-Eintragszeile; Doppelnamen-Prüfung pro Modultyp
+(`ModulInstanz::nameExistiert`). Akzentfarbe #ad2121.
+
 **Code-Stand (alles committet + gepusht):**
 - Module in `02_ordnerstruktur/screen.tcpayer.de/modules/`: `uhrzeit`, `bild`,
   `stundenplan`, `ankuendigung`, `fret` (Registry enthält genau diese 5;

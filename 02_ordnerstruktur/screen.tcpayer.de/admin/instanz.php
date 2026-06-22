@@ -60,6 +60,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'speic
 
     if ($werteName === '') {
         $fehler[] = 'Bitte einen Namen für die Instanz angeben.';
+    } elseif (ModulInstanz::nameExistiert($werteName, $modulTyp, $istNeu ? null : $id)) {
+        $fehler[] = 'Es gibt bereits eine ' . $meta['label'] . '-Instanz mit diesem Namen. Bitte einen anderen Namen wählen.';
     }
 
     if (empty($fehler)) {
@@ -312,7 +314,7 @@ admin_header(($istNeu ? 'Neue ' : '') . $meta['label'] . '-Instanz', 'bibliothek
             return;
         }
         var akt = e.target.getAttribute('data-akt');
-        if (akt === 'weg')   { zeile.remove(); }
+        if (akt === 'weg')   { if (confirm('Diesen Eintrag entfernen?')) { zeile.remove(); } }
         if (akt === 'hoch'   && zeile.previousElementSibling) { liste.insertBefore(zeile, zeile.previousElementSibling); }
         if (akt === 'runter' && zeile.nextElementSibling)     { liste.insertBefore(zeile.nextElementSibling, zeile); }
     });

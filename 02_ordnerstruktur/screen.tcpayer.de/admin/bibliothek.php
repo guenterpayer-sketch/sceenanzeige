@@ -172,7 +172,7 @@ if ($istTypAnsicht) {
                         <input type="hidden" name="typ" value="<?= htmlspecialchars($typ) ?>">
                         <button type="submit" class="adm-btn adm-btn-grau"><?= $inst['aktiv'] ? 'Pausieren' : 'Aktivieren' ?></button>
                     </form>
-                    <form method="post" class="adm-inline" onsubmit="return confirm('Instanz „<?= htmlspecialchars(addslashes($inst['name'])) ?>" wirklich löschen?');">
+                    <form method="post" class="adm-inline adm-del-form" data-name="<?= htmlspecialchars($inst['name']) ?>">
                         <input type="hidden" name="aktion" value="loeschen">
                         <input type="hidden" name="id" value="<?= (int)$inst['id'] ?>">
                         <input type="hidden" name="typ" value="<?= htmlspecialchars($typ) ?>">
@@ -184,6 +184,16 @@ if ($istTypAnsicht) {
     <?php endforeach; ?>
 </div>
 <?php endif; ?>
+
+<script>
+document.querySelectorAll('.adm-del-form').forEach(function (f) {
+    f.addEventListener('submit', function (e) {
+        if (!confirm('Instanz „' + (f.dataset.name || '') + '" wirklich löschen?')) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
 
 <?php endif; ?>
 

@@ -61,6 +61,25 @@ final class ModulInstanz
             ->execute([':a' => $aktiv ? 1 : 0, ':id' => $id]);
     }
 
+    /**
+     * Prüft, ob bereits eine Instanz desselben Modultyps diesen Namen trägt
+     * (case-insensitiv). $exceptId schließt die eigene Instanz beim Bearbeiten aus.
+     */
+    public static function nameExistiert(string $name, string $modulTyp, ?int $exceptId = null): bool
+    {
+        $pdo = get_pdo();
+        $sql = 'SELECT COUNT(*) FROM modul_instanzen
+                WHERE modul_typ = :typ AND LOWER(name) = LOWER(:name)';
+        $params = [':typ' => $modulTyp, ':name' => trim($name)];
+        if ($exceptId !== null) {
+            $sql .= ' AND id <> :id';
+            $params[':id'] = $exceptId;
+        }
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        return (int)$stmt->fetchColumn() > 0;
+    }
+
     public static function find(int $id): ?array
     {
         $pdo = get_pdo();
