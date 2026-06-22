@@ -1,0 +1,33 @@
+{
+  "id": "fret",
+  "label": "FRET – Aktueller Song",
+  "icon": "music",
+  "has_proxy": true,
+  "has_inhalte": false,
+  "settings": [
+    {
+      "key": "computer_id",
+      "type": "text",
+      "label": "FRET-Computer-UUID (Saal-Zuordnung; über Backend-Auswahl ermittelbar)",
+      "default": ""
+    },
+    {
+      "key": "zeige_playlist",
+      "type": "bool",
+      "label": "Kommende Songs anzeigen",
+      "default": true
+    },
+    {
+      "key": "anzahl_kommende",
+      "type": "number",
+      "label": "Anzahl kommender Songs",
+      "default": 3
+    },
+    {
+      "key": "poll_sek",
+      "type": "number",
+      "label": "Aktualisierungsintervall in Sek. (5–10 empfohlen)",
+      "default": 7
+    }
+  ]
+}
