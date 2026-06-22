@@ -20,8 +20,8 @@ A/B erledigt, Live-Test steht noch aus)._
 | 2 | Ordnerstruktur + .htaccess | ✅ live |
 | 3 | Modul-Registry + `uhrzeit`, `bild` | ✅ live |
 | 4 | `stundenplan`, `ankuendigung`, `fret` + NC-/FRET-Proxy + Testseite | ✅ live getestet (alle 5 Module inkl. `stundenplan`) |
-| 5 | Backend-Bibliothek + Mediathek | 🟡 5a Mediathek + Ordner/Tags ✅ live; 5b Bibliothek/Instanz-CRUD + Inhalte-Editor gebaut (Live-Test offen) |
-| 6 | Playlist-Editor (Layout-Konfigurator) | offen |
+| 5 | Backend-Bibliothek + Mediathek | ✅ live getestet (Mediathek + Ordner/Tags, Bibliothek/Instanz-Editor, FRET-Geräte-Whitelist) |
+| 6 | Playlist-Editor (Layout-Konfigurator) | ▶️ als Nächstes |
 | 7 | Zeitregeln + Saal-Zuweisung | offen |
 | 8 | Ticker-Verwaltung | offen |
 | 9 | Monitor-Frontend (Anzeige-/Zeitlogik) | offen |
@@ -30,7 +30,13 @@ A/B erledigt, Live-Test steht noch aus)._
 
 ---
 
-## Aktueller Fokus: Schritt 4 ✅ erledigt → als Nächstes Schritt 5
+## Aktueller Fokus: Schritt 5 ✅ erledigt → als Nächstes Schritt 6 (Playlist-Editor)
+
+Schritt 5 vollständig live getestet: Mediathek (Upload/Dup-Erkennung, Ordner,
+Tags, Anzeigename), Bibliothek + Instanz-Editor (alle Modultypen, Inhalte-
+Editor mit Bild-Picker), FRET-Geräte-Whitelist (Dropdown im FRET-Editor).
+Migrationen 03/04/05 live eingespielt. `test-module3.php`/`test-module4.php`
+liegen noch auf dem Server (fachlich abgelöst, dürfen weg).
 
 **Code-Stand (alles committet + gepusht):**
 - Module in `02_ordnerstruktur/screen.tcpayer.de/modules/`: `uhrzeit`, `bild`,
