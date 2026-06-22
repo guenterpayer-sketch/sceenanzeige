@@ -23,8 +23,9 @@ function admin_header(string $titel, string $aktiv = ''): void
         'bibliothek'   => ['Bibliothek',   'bibliothek.php',   true],
         'mediathek'    => ['Mediathek',    'mediathek.php',    true],
         'fret-geraete' => ['FRET-Geräte',  'fret-geraete.php', true],
+        'playlists'    => ['Playlists',    'playlists.php',    true],
     ];
-    $kommtNoch = ['Playlists', 'Ticker', 'Säle'];
+    $kommtNoch = ['Ticker', 'Säle'];
     ?>
 <!DOCTYPE html>
 <html lang="de">

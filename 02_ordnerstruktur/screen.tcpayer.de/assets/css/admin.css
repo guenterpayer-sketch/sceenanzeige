@@ -428,3 +428,74 @@ body {
 .adm-picker-bild span {
     font-size: 11px; padding: 4px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+
+/* ===== Playlist-Editor (Schritt 6) ===== */
+
+/* Layout-Auswahl als Radio-Kacheln mit Mini-Schema */
+.adm-layoutwahl { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+.adm-layoutopt {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    border: 2px solid #dde3ea; border-radius: 8px; padding: 12px 14px;
+    cursor: pointer; background: #fff; min-width: 120px;
+}
+.adm-layoutopt:hover { border-color: #ad2121; }
+.adm-layoutopt.aktiv,
+.adm-layoutopt:has(input:checked) { border-color: #ad2121; background: #fbeaea; }
+.adm-layoutopt input { position: absolute; opacity: 0; pointer-events: none; }
+.adm-layout-mini { display: flex; gap: 3px; width: 96px; height: 52px; }
+.adm-layout-mini span { background: #ad2121; border-radius: 3px; opacity: .75; }
+.adm-layout-label { font-size: 13px; color: #33424f; text-align: center; }
+
+/* Breitenregler (2-spaltig) */
+.adm-breitenregler { display: flex; align-items: center; gap: 12px; }
+.adm-breitenregler input[type="range"] { flex: 1; max-width: 360px; accent-color: #ad2121; }
+.adm-breiten-anzeige { font-weight: 600; color: #ad2121; white-space: nowrap; }
+
+/* Schematische Vorschau */
+.adm-vorschau {
+    border: 1px solid #dde3ea; border-radius: 8px; background: #f4f6f9;
+    padding: 8px; display: flex; flex-direction: column; gap: 6px;
+    aspect-ratio: 16 / 9; max-width: 480px;
+}
+.adm-vorschau-header, .adm-vorschau-footer {
+    background: #2b3a4c; color: #fff; border-radius: 4px; text-align: center;
+    font-size: 12px; padding: 4px; flex: 0 0 auto;
+}
+.adm-vorschau-spalten { display: flex; gap: 6px; flex: 1; min-height: 0; }
+.adm-vorschau-spalte {
+    background: #fff; border: 1px dashed #ad2121; border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; color: #6b7a8d; text-align: center; padding: 4px;
+}
+
+/* Spalten-Editor */
+.adm-spalten { display: flex; gap: 14px; align-items: flex-start; }
+.adm-spalten[data-anzahl="1"] .adm-spalte { max-width: 520px; }
+.adm-spalte {
+    flex: 1; border: 1px solid #dde3ea; border-radius: 8px; background: #f8fafc;
+    padding: 12px; min-width: 0;
+}
+.adm-spalte-kopf { font-weight: 600; color: #33424f; margin-bottom: 10px; }
+.adm-spalte-liste { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.adm-spalte-leer { color: #889; font-size: 13px; margin: 4px 0; }
+.adm-spalte-add { width: 100%; }
+
+.adm-spalte-eintrag {
+    display: flex; align-items: center; gap: 8px; background: #fff;
+    border: 1px solid #dde3ea; border-radius: 6px; padding: 8px 10px;
+}
+.adm-spalte-eintrag.inaktiv { opacity: .6; }
+.adm-eintrag-icon { font-size: 20px; flex: 0 0 auto; }
+.adm-eintrag-text { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.adm-eintrag-name { font-size: 14px; color: #1c2733; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.adm-eintrag-typ { font-size: 12px; color: #8a97a6; }
+.adm-eintrag-steuer { display: flex; gap: 4px; flex: 0 0 auto; }
+
+/* Instanz-Picker */
+.adm-picker-instanzen { display: flex; flex-direction: column; gap: 8px; max-height: 50vh; overflow: auto; padding: 4px; }
+.adm-picker-instanz {
+    display: flex; align-items: center; gap: 10px; text-align: left;
+    border: 1px solid #dde3ea; border-radius: 6px; background: #fff; cursor: pointer; padding: 8px 10px;
+}
+.adm-picker-instanz:hover { border-color: #ad2121; box-shadow: 0 0 0 2px rgba(173,33,33,.15); }
+.adm-picker-instanz.inaktiv { opacity: .6; }
