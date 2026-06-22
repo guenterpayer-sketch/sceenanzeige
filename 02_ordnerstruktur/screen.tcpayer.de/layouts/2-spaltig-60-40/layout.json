@@ -1,0 +1,8 @@
+{
+  "id": "2-spaltig-60-40",
+  "label": "2 Spalten · 60 / 40",
+  "spalten": 2,
+  "default_breiten": [60, 40],
+  "breiten_frei": true,
+  "beschreibung": "Zwei Spalten, links breiter. Verhältnis frei einstellbar."
+}

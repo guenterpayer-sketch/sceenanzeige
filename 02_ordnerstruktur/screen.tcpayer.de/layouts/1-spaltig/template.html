@@ -1,0 +1,14 @@
+<!--
+  layouts/1-spaltig/template.html
+
+  CSS-Grid-Gerüst für die Monitor-Hauptfläche (Full-HD 1920×1080).
+  Die Platzhalter {{spalteN_breite}} werden vom Monitor-Frontend (Schritt 9)
+  durch die in playlist_layout gespeicherten Prozentwerte ersetzt; ohne
+  Ersetzung gelten die Default-Breiten aus layout.json (hier 100 %).
+
+  Jede .tm-spalte trägt ihr data-spalte-Attribut (1–3); der Renderer füllt
+  sie mit den zugewiesenen Modul-Instanzen (playlist_spalten_inhalte).
+-->
+<div class="tm-layout tm-layout-1sp" style="grid-template-columns: {{spalte1_breite}}%;">
+  <div class="tm-spalte" data-spalte="1"></div>
+</div>
