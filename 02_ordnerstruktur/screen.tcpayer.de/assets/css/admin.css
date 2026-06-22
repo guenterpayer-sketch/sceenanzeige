@@ -4,6 +4,7 @@
    ============================================================================ */
 
 * { box-sizing: border-box; }
+/* Tanzschul-Akzentfarbe: #ad2121 (Rot). Dunkler Hover: #8f1a1a. */
 
 body {
     margin: 0;
@@ -33,7 +34,7 @@ body {
     color: #c6d2e0;
 }
 .adm-nav a:hover { background: #2b3a4c; color: #fff; }
-.adm-nav a.aktiv { background: #3a72c4; color: #fff; }
+.adm-nav a.aktiv { background: #ad2121; color: #fff; }
 .adm-nav .adm-nav-disabled { color: #6b7a8d; cursor: default; }
 
 /* --- Hauptbereich --- */
@@ -53,15 +54,15 @@ body {
     cursor: pointer;
     transition: border-color .15s, background .15s;
 }
-.adm-dropzone:hover { border-color: #3a72c4; }
-.adm-dropzone.aktiv { border-color: #3a72c4; background: #eef4fc; color: #1c2733; }
-.adm-dropzone .adm-link { color: #3a72c4; text-decoration: underline; }
+.adm-dropzone:hover { border-color: #ad2121; }
+.adm-dropzone.aktiv { border-color: #ad2121; background: #fbeaea; color: #1c2733; }
+.adm-dropzone .adm-link { color: #ad2121; text-decoration: underline; }
 
 .adm-upload-status {
     margin: 12px 0;
     padding: 10px 14px;
     border-radius: 6px;
-    background: #eef4fc;
+    background: #fbeaea;
     color: #244;
     font-size: 14px;
 }
@@ -141,8 +142,8 @@ body {
     text-decoration: none;
     font-size: 14px;
 }
-.adm-ordner:hover { border-color: #3a72c4; }
-.adm-ordner.aktiv { background: #3a72c4; border-color: #3a72c4; color: #fff; }
+.adm-ordner:hover { border-color: #ad2121; }
+.adm-ordner.aktiv { background: #ad2121; border-color: #ad2121; color: #fff; }
 .adm-ordner .adm-zahl {
     font-size: 12px;
     background: rgba(0,0,0,.08);
@@ -154,13 +155,13 @@ body {
     border: none; background: none; cursor: pointer;
     color: #8a97a6; font-size: 14px; padding: 2px 4px;
 }
-.adm-ordner-edit:hover { color: #3a72c4; }
+.adm-ordner-edit:hover { color: #ad2121; }
 .adm-ordner-del:hover { color: #ad2121; }
 .adm-ordner-neu {
-    border: 1px dashed #aab8c8; background: #fff; color: #3a72c4;
+    border: 1px dashed #aab8c8; background: #fff; color: #ad2121;
     border-radius: 16px; padding: 6px 12px; cursor: pointer; font-size: 14px;
 }
-.adm-ordner-neu:hover { border-color: #3a72c4; background: #eef4fc; }
+.adm-ordner-neu:hover { border-color: #ad2121; background: #fbeaea; }
 
 /* --- Suche + Tag-Filter --- */
 .adm-filterzeile {
@@ -172,7 +173,7 @@ body {
     padding: 7px 10px; border: 1px solid #dde3ea; border-radius: 6px; min-width: 220px; font-size: 14px;
 }
 .adm-suche button {
-    padding: 7px 12px; border: none; border-radius: 6px; background: #3a72c4; color: #fff; cursor: pointer;
+    padding: 7px 12px; border: none; border-radius: 6px; background: #ad2121; color: #fff; cursor: pointer;
 }
 .adm-clear, .adm-suche .adm-clear {
     text-decoration: none; color: #8a97a6; font-size: 18px; padding: 0 4px;
@@ -184,7 +185,7 @@ body {
     padding: 4px 10px; border-radius: 14px; background: #eef1f5; color: #33424f;
     text-decoration: none; font-size: 13px;
 }
-.adm-tagchip:hover { background: #dde6f2; }
+.adm-tagchip:hover { background: #f0d6d6; }
 .adm-tagchip.aktiv { background: #e0a800; color: #2a2200; }
 .adm-tagchip .adm-zahl { font-size: 11px; opacity: .7; }
 
@@ -202,7 +203,7 @@ body {
     width: 26px; height: 26px; border: none; border-radius: 50%;
     background: rgba(28,39,51,.65); color: #fff; font-size: 14px; line-height: 1; cursor: pointer;
 }
-.adm-bild-edit:hover { background: #3a72c4; }
+.adm-bild-edit:hover { background: #ad2121; }
 
 /* --- Bearbeiten-Dialog --- */
 .adm-overlay {
@@ -226,11 +227,11 @@ body {
 }
 .adm-dialog-aktionen { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
 .adm-dialog-aktionen button {
-    padding: 8px 16px; border: none; border-radius: 6px; background: #3a72c4; color: #fff; cursor: pointer;
+    padding: 8px 16px; border: none; border-radius: 6px; background: #ad2121; color: #fff; cursor: pointer;
 }
 
 /* Hervorhebungen für frisch hochgeladene / erkannte Duplikate */
-@keyframes admNeu { from { box-shadow: 0 0 0 3px #3a72c4; } to { box-shadow: 0 0 0 0 transparent; } }
+@keyframes admNeu { from { box-shadow: 0 0 0 3px #ad2121; } to { box-shadow: 0 0 0 0 transparent; } }
 .adm-bild.adm-neu { animation: admNeu 1.5s ease-out; }
 @keyframes admDup { 0%,100% { box-shadow: 0 0 0 0 transparent; } 50% { box-shadow: 0 0 0 3px #e0a800; } }
 .adm-bild.adm-dup-blink { animation: admDup 1.5s ease-out; }
@@ -241,16 +242,16 @@ body {
 .adm-flash { margin: 0 0 16px; padding: 10px 14px; border-radius: 6px; background: #e6f4ea; color: #1e6b34; }
 .adm-flash-fehler { background: #fbe9e9; color: #ad2121; }
 
-.adm-zurueck { color: #3a72c4; text-decoration: none; }
+.adm-zurueck { color: #ad2121; text-decoration: none; }
 .adm-zurueck:hover { text-decoration: underline; }
 
 /* Buttons (einheitlich) */
 .adm-btn, .adm-btn-primary {
     display: inline-block; padding: 8px 14px; border: none; border-radius: 6px;
-    background: #3a72c4; color: #fff; cursor: pointer; font-size: 14px;
+    background: #ad2121; color: #fff; cursor: pointer; font-size: 14px;
     text-decoration: none; line-height: 1.3;
 }
-.adm-btn:hover, .adm-btn-primary:hover { background: #2f63ad; }
+.adm-btn:hover, .adm-btn-primary:hover { background: #8f1a1a; }
 .adm-btn-grau { background: #8a97a6 !important; }
 .adm-btn-grau:hover { background: #76828f !important; }
 .adm-btn-rot { background: #c0392b !important; }
@@ -316,7 +317,7 @@ body {
     width: 30px; height: 28px; border: 1px solid #cdd6e0; border-radius: 6px;
     background: #fff; cursor: pointer; font-size: 14px;
 }
-.adm-mini:hover { border-color: #3a72c4; }
+.adm-mini:hover { border-color: #ad2121; }
 .adm-mini-rot:hover { border-color: #c0392b; color: #c0392b; }
 
 /* FRET-Geräte-Tabelle */
@@ -343,7 +344,7 @@ body {
     border: 1px solid #dde3ea; border-radius: 6px; background: #fff; cursor: pointer;
     padding: 0; overflow: hidden; display: flex; flex-direction: column; text-align: center;
 }
-.adm-picker-bild:hover { border-color: #3a72c4; box-shadow: 0 0 0 2px rgba(58,114,196,.2); }
+.adm-picker-bild:hover { border-color: #ad2121; box-shadow: 0 0 0 2px rgba(173,33,33,.2); }
 .adm-picker-bild img { width: 100%; height: 90px; object-fit: contain; background: #f0f2f5; }
 .adm-picker-bild span {
     font-size: 11px; padding: 4px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
