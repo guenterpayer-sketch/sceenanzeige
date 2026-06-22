@@ -19,7 +19,7 @@ A/B erledigt, Live-Test steht noch aus)._
 | 1 | DB-Schema | ✅ live |
 | 2 | Ordnerstruktur + .htaccess | ✅ live |
 | 3 | Modul-Registry + `uhrzeit`, `bild` | ✅ live |
-| 4 | `stundenplan`, `ankuendigung`, `fret` + NC-/FRET-Proxy + Testseite | 🟡 Live-Test läuft: `uhrzeit`/`bild`/`ankuendigung`/`fret` ✅; `stundenplan` offen (NC-Werte) |
+| 4 | `stundenplan`, `ankuendigung`, `fret` + NC-/FRET-Proxy + Testseite | ✅ live getestet (alle 5 Module inkl. `stundenplan`) |
 | 5 | Backend-Bibliothek + Mediathek | offen |
 | 6 | Playlist-Editor (Layout-Konfigurator) | offen |
 | 7 | Zeitregeln + Saal-Zuweisung | offen |
@@ -30,7 +30,7 @@ A/B erledigt, Live-Test steht noch aus)._
 
 ---
 
-## Aktueller Fokus: Schritt 4 — Live-Test
+## Aktueller Fokus: Schritt 4 ✅ erledigt → als Nächstes Schritt 5
 
 **Code-Stand (alles committet + gepusht):**
 - Module in `02_ordnerstruktur/screen.tcpayer.de/modules/`: `uhrzeit`, `bild`,
@@ -50,16 +50,13 @@ A/B erledigt, Live-Test steht noch aus)._
     schickt kein `saal_id` mehr, `test-module4.php` ohne Saal-Auswahl/`SAAL_ID`.
     Begründung: NC hat genau EINEN schulweiten Key, keinen pro Saal.
 
-**Live-Test-Stand (22.06.2026):**
-- ✅ Live laufen bereits: `uhrzeit`, `bild`, `ankuendigung`, `fret`.
-- 🟡 Offen: `stundenplan` — sobald in der Server-`config.php` echte Werte stehen:
-  - `NC_API_BASE` (echte Nimbuscloud-Subdomain, …/api/json/v1)
-  - `NC_API_KEY` (Berechtigung „Stundenplan — Lesezugriff")
-  - (FRET läuft, also `FRET_API_BASE` + `FRET_SCHOOL_ID` bereits gesetzt.)
-- Nach dem Saal-Fix die zwei Dateien neu hochladen:
-  `modules/stundenplan/frontend.js`, `test-module4.php`.
+**Live-Test-Stand (22.06.2026): ✅ Schritt 4 abgeschlossen.**
+- Alle 5 Module laufen live über `test-module4.php`: `uhrzeit`, `bild`,
+  `ankuendigung`, `fret` und `stundenplan` (NC Legacy-API liefert Daten).
+- Server-`config.php` ist mit echten Werten bestückt: `NC_API_BASE`,
+  `NC_API_KEY` (schulweit), `FRET_API_BASE`, `FRET_SCHOOL_ID`.
 - Layout/Schriftgrößen werden bewusst erst in Schritt 6/9 angepasst — die
-  rohe Test-Darstellung ist hier erwartet.
+  rohe Test-Darstellung war hier erwartet.
 
 Altlast auf dem Server (stört nicht): `modules/song/`, `modules/community/`,
 `proxies/song.php`. `index.htm` bleibt bewusst stehen (all-inkl-Default-Seite
