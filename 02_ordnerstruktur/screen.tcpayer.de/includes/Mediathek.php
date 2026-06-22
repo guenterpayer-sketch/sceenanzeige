@@ -120,8 +120,11 @@ final class Mediathek
         }
 
         if (!empty($filter['suche'])) {
-            $where[] = '(m.original_name LIKE :q OR m.dateiname LIKE :q)';
-            $params[':q'] = '%' . $filter['suche'] . '%';
+            // Zwei getrennte Platzhalter: bei EMULATE_PREPARES=false darf ein
+            // benannter Parameter nicht mehrfach im Statement vorkommen.
+            $where[] = '(m.original_name LIKE :q1 OR m.dateiname LIKE :q2)';
+            $params[':q1'] = '%' . $filter['suche'] . '%';
+            $params[':q2'] = '%' . $filter['suche'] . '%';
         }
 
         if (!empty($filter['tag'])) {
