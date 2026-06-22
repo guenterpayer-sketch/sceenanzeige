@@ -234,3 +234,107 @@ body {
 .adm-bild.adm-neu { animation: admNeu 1.5s ease-out; }
 @keyframes admDup { 0%,100% { box-shadow: 0 0 0 0 transparent; } 50% { box-shadow: 0 0 0 3px #e0a800; } }
 .adm-bild.adm-dup-blink { animation: admDup 1.5s ease-out; }
+
+/* ============================================================================
+   Bibliothek + Instanz-Editor (Schritt 5b)
+   ============================================================================ */
+.adm-flash { margin: 0 0 16px; padding: 10px 14px; border-radius: 6px; background: #e6f4ea; color: #1e6b34; }
+.adm-flash-fehler { background: #fbe9e9; color: #ad2121; }
+
+.adm-zurueck { color: #3a72c4; text-decoration: none; }
+.adm-zurueck:hover { text-decoration: underline; }
+
+/* Buttons (einheitlich) */
+.adm-btn, .adm-btn-primary {
+    display: inline-block; padding: 8px 14px; border: none; border-radius: 6px;
+    background: #3a72c4; color: #fff; cursor: pointer; font-size: 14px;
+    text-decoration: none; line-height: 1.3;
+}
+.adm-btn:hover, .adm-btn-primary:hover { background: #2f63ad; }
+.adm-btn-grau { background: #8a97a6 !important; }
+.adm-btn-grau:hover { background: #76828f !important; }
+.adm-btn-rot { background: #c0392b !important; }
+.adm-btn-rot:hover { background: #a52f23 !important; }
+.adm-inline { display: inline; margin: 0; }
+
+/* Neue-Instanz-Zeile */
+.adm-neuzeile { margin: 4px 0 20px; }
+.adm-neu-form { display: inline-flex; gap: 8px; align-items: center; }
+.adm-neu-form select { padding: 7px 10px; border: 1px solid #dde3ea; border-radius: 6px; }
+
+/* Instanzliste */
+.adm-instanzliste { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+.adm-instanz {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    background: #fff; border: 1px solid #dde3ea; border-radius: 8px; padding: 10px 14px;
+}
+.adm-instanz.inaktiv { opacity: .6; }
+.adm-instanz-name { font-weight: 500; }
+.adm-badge-pause {
+    margin-left: 8px; font-size: 12px; background: #f0e2c0; color: #7a5b00;
+    border-radius: 10px; padding: 1px 8px;
+}
+.adm-instanz-aktionen { display: flex; gap: 6px; align-items: center; }
+
+/* Karten + Felder */
+.adm-card { background: #fff; border: 1px solid #dde3ea; border-radius: 8px; padding: 18px; margin-bottom: 16px; }
+.adm-card h2 { margin-top: 0; }
+.field { margin-bottom: 14px; }
+.field > label { display: block; font-size: 14px; color: #33424f; margin-bottom: 4px; }
+.field input[type="text"], .field input[type="number"], .field select, .field textarea {
+    width: 100%; max-width: 520px; padding: 8px 10px; border: 1px solid #dde3ea; border-radius: 6px; font-size: 14px;
+}
+.field-bool > label { display: flex; align-items: center; gap: 8px; }
+.field-bool input { width: auto; }
+
+.adm-aktionsleiste { display: flex; gap: 10px; align-items: center; margin: 8px 0 32px; }
+
+/* Inhalte-Editor */
+.adm-inhalte { display: flex; flex-direction: column; gap: 12px; margin-bottom: 14px; }
+.adm-inhalt-zeile {
+    display: flex; gap: 14px; align-items: flex-start; flex-wrap: wrap;
+    border: 1px solid #e3e8ee; border-radius: 8px; padding: 12px; background: #fafbfc;
+}
+.adm-inhalt-bild { display: flex; flex-direction: column; gap: 6px; width: 150px; }
+.adm-inhalt-vorschau {
+    width: 150px; height: 100px; background: #eef1f5; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+.adm-inhalt-vorschau img { width: 100%; height: 100%; object-fit: contain; }
+.adm-kein-bild { color: #9aa6b2; font-size: 13px; }
+.adm-inhalt-text { flex: 1; min-width: 220px; }
+.adm-inhalt-text label { display: block; font-size: 13px; color: #33424f; margin-bottom: 4px; }
+.adm-inhalt-text textarea { width: 100%; min-height: 84px; padding: 8px 10px; border: 1px solid #dde3ea; border-radius: 6px; }
+.adm-inhalt-meta { display: flex; flex-direction: column; gap: 8px; min-width: 150px; }
+.adm-inhalt-meta label { display: flex; flex-direction: column; font-size: 13px; color: #33424f; gap: 2px; }
+.adm-inhalt-meta input[type="number"], .adm-inhalt-meta input[type="date"] {
+    padding: 6px 8px; border: 1px solid #dde3ea; border-radius: 6px; width: 150px;
+}
+.adm-inhalt-aktiv { flex-direction: row !important; align-items: center; gap: 6px !important; }
+.adm-inhalt-steuer { display: flex; flex-direction: column; gap: 4px; }
+.adm-mini {
+    width: 30px; height: 28px; border: 1px solid #cdd6e0; border-radius: 6px;
+    background: #fff; cursor: pointer; font-size: 14px;
+}
+.adm-mini:hover { border-color: #3a72c4; }
+.adm-mini-rot:hover { border-color: #c0392b; color: #c0392b; }
+
+/* Bild-Picker im Editor */
+.adm-dialog-breit { width: min(760px, 94vw); }
+.adm-picker-filter { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.adm-picker-filter select, .adm-picker-filter input {
+    padding: 7px 10px; border: 1px solid #dde3ea; border-radius: 6px; font-size: 14px;
+}
+.adm-picker-galerie {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px; max-height: 50vh; overflow: auto; padding: 4px;
+}
+.adm-picker-bild {
+    border: 1px solid #dde3ea; border-radius: 6px; background: #fff; cursor: pointer;
+    padding: 0; overflow: hidden; display: flex; flex-direction: column; text-align: center;
+}
+.adm-picker-bild:hover { border-color: #3a72c4; box-shadow: 0 0 0 2px rgba(58,114,196,.2); }
+.adm-picker-bild img { width: 100%; height: 90px; object-fit: contain; background: #f0f2f5; }
+.adm-picker-bild span {
+    font-size: 11px; padding: 4px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}

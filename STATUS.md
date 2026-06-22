@@ -20,7 +20,7 @@ A/B erledigt, Live-Test steht noch aus)._
 | 2 | Ordnerstruktur + .htaccess | ✅ live |
 | 3 | Modul-Registry + `uhrzeit`, `bild` | ✅ live |
 | 4 | `stundenplan`, `ankuendigung`, `fret` + NC-/FRET-Proxy + Testseite | ✅ live getestet (alle 5 Module inkl. `stundenplan`) |
-| 5 | Backend-Bibliothek + Mediathek | 🟡 5a Mediathek ✅ live getestet; 5a.1 Ordner + 5a.2 Tags gebaut (Migration 04 + Live-Test offen); 5b Bibliothek-CRUD folgt |
+| 5 | Backend-Bibliothek + Mediathek | 🟡 5a Mediathek + Ordner/Tags ✅ live; 5b Bibliothek/Instanz-CRUD + Inhalte-Editor gebaut (Live-Test offen) |
 | 6 | Playlist-Editor (Layout-Konfigurator) | offen |
 | 7 | Zeitregeln + Saal-Zuweisung | offen |
 | 8 | Ticker-Verwaltung | offen |
@@ -119,11 +119,23 @@ wird als Duplikat erkannt (kein Doppel), Löschen funktioniert.
   + `assets/`-Dateien hochladen; dann Ordner anlegen, Bilder verschieben,
   Tags setzen, nach Ordner/Tag/Name filtern.
 
-**5b folgt:** Bibliotheks-Übersicht + Instanz-CRUD (Einstellungen aus
-`module.json`) + Inhalte-Editor für `bild`/`ankuendigung` (Mediathek-Auswahl
-oder Neu-Upload, `reihenfolge`/`dauer_sek`/`gueltig_bis`/`aktiv` pro Eintrag).
-Dabei `ModulInstanz::listInhalte` per `LEFT JOIN mediathek` einen aufgelösten
-`dateiname` liefern (hält `bild/frontend.js` abwärtskompatibel).
+**5b Bibliothek/Instanz-CRUD — Code fertig, Live-Test offen.** (Keine Migration nötig.)
+- `includes/ModulInstanz.php`: `setAktiv`, `ersetzeInhalte` (bulk), `listInhalte`
+  jetzt per `LEFT JOIN mediathek` mit aufgelöstem `dateiname` (COALESCE) →
+  `bild/frontend.js` bleibt abwärtskompatibel.
+- `admin/bibliothek.php`: Übersicht aller Instanzen nach Typ, Aktiv-Schalter,
+  Bearbeiten/Löschen, „Neue Instanz".
+- `admin/instanz.php`: Editor — Name + Aktiv + Einstellungen (generisch aus
+  `module.json`) + Inhalte-Editor für `bild`/`ankuendigung` (Mediathek-Bild-
+  Picker mit Ordner/Tag/Suche-Filter, Dauer, Gültig-bis, Aktiv, ↑/↓-Reihenfolge).
+- `admin/api/mediathek-list.php`: JSON-Quelle für den Picker.
+- Nav: Bibliothek aktiviert.
+- `test-module4.php` ist damit fachlich abgelöst (kann später entfernt werden).
+
+**Live-Test 5b:** neue/aktualisierte `admin/`- + `includes/ModulInstanz.php` +
+`assets/css/admin.css` hochladen; in der Bibliothek eine Bild- und eine
+Ankündigungs-Instanz anlegen (Bilder aus Mediathek wählen), Reihenfolge/Aktiv/
+Gültig-bis testen, pausieren/löschen.
 
 ## Zugriffsschutz / Benutzerkonten
 

@@ -20,7 +20,7 @@ function admin_header(string $titel, string $aktiv = ''): void
     // Nav-Punkte: key => [Label, Link, aktiv?]. Noch nicht gebaute Bereiche
     // sind als "kommt später" deaktiviert.
     $nav = [
-        'bibliothek' => ['Bibliothek', 'bibliothek.php', false],
+        'bibliothek' => ['Bibliothek', 'bibliothek.php', true],
         'mediathek'  => ['Mediathek',  'mediathek.php',  true],
     ];
     $kommtNoch = ['Playlists', 'Ticker', 'Säle'];
