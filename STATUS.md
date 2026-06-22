@@ -20,7 +20,7 @@ A/B erledigt, Live-Test steht noch aus)._
 | 2 | Ordnerstruktur + .htaccess | ✅ live |
 | 3 | Modul-Registry + `uhrzeit`, `bild` | ✅ live |
 | 4 | `stundenplan`, `ankuendigung`, `fret` + NC-/FRET-Proxy + Testseite | ✅ live getestet (alle 5 Module inkl. `stundenplan`) |
-| 5 | Backend-Bibliothek + Mediathek | 🟡 5a Mediathek gebaut (Live-Test offen); 5b Bibliothek/Instanz-CRUD folgt |
+| 5 | Backend-Bibliothek + Mediathek | 🟡 5a Mediathek ✅ live getestet; 5a.1 Ordner + 5a.2 Tags gebaut (Migration 04 + Live-Test offen); 5b Bibliothek-CRUD folgt |
 | 6 | Playlist-Editor (Layout-Konfigurator) | offen |
 | 7 | Zeitregeln + Saal-Zuweisung | offen |
 | 8 | Ticker-Verwaltung | offen |
@@ -101,6 +101,23 @@ bearbeiten).
 `assets/css/admin.css` hochladen, dann `admin/mediathek.php` aufrufen: Bilder
 per Drag&Drop hochladen (Maße/Galerie erscheinen), gleiches Bild erneut →
 wird als Duplikat erkannt (kein Doppel), Löschen funktioniert.
+
+**5a.1 Ordner + 5a.2 Tags — Code fertig, Migration + Live-Test offen.**
+- Migration **`04_migration_mediathek_ordner_tags.sql`** (einmalig live einspielen):
+  Tabelle `mediathek_ordner` + `mediathek.ordner_id` (FK ON DELETE SET NULL),
+  Tabellen `mediathek_tags` + `mediathek_tag` (n:m).
+- Neue Klassen: `includes/MediathekOrdner.php`, `includes/MediathekTag.php`;
+  `Mediathek.php` erweitert (gefilterte `listAll(ordner/suche/tag)`, Upload mit
+  `ordner_id`, `verschiebe`).
+- Neue API: `admin/api/ordner.php` (Ordner-CRUD), `admin/api/mediathek-update.php`
+  (Ordner + Tags pro Bild); `mediathek-upload.php` nimmt `ordner_id`.
+- `admin/mediathek.php` überarbeitet: Ordner-Leiste (anlegen/umbenennen/löschen,
+  Filter), Namens-Suche, Tag-Filter-Chips, Bearbeiten-Dialog (Ordner + Tags).
+- Ordner = eine Ebene, ein Bild in genau einem Ordner; Tags = mehrere pro Bild,
+  n:m, verwaiste Tags werden automatisch aufgeräumt.
+- **Live-Test 5a.1/5a.2:** Migration 04 einspielen, neue `admin/`- + `includes/`-
+  + `assets/`-Dateien hochladen; dann Ordner anlegen, Bilder verschieben,
+  Tags setzen, nach Ordner/Tag/Name filtern.
 
 **5b folgt:** Bibliotheks-Übersicht + Instanz-CRUD (Einstellungen aus
 `module.json`) + Inhalte-Editor für `bild`/`ankuendigung` (Mediathek-Auswahl

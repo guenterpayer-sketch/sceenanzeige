@@ -35,21 +35,27 @@ if (!isset($_FILES['datei'])) {
     antwort(['ok' => false, 'error' => 'Kein Datei-Feld "datei" übermittelt.'], 400);
 }
 
-$res = Mediathek::speichereUpload($_FILES['datei']);
+$ordnerId = isset($_POST['ordner_id']) && ctype_digit((string)$_POST['ordner_id'])
+    ? (int)$_POST['ordner_id'] : null;
+
+$res = Mediathek::speichereUpload($_FILES['datei'], $ordnerId);
 if (!$res['ok']) {
     antwort(['ok' => false, 'error' => $res['error'] ?? 'Unbekannter Fehler.'], 422);
 }
 
 $e = $res['eintrag'];
+$tags = MediathekTag::tagsFuerBilder([(int)$e['id']])[(int)$e['id']] ?? [];
 antwort([
     'ok'       => true,
     'duplikat' => (bool)$res['duplikat'],
     'eintrag'  => [
         'id'            => (int)$e['id'],
+        'ordner_id'     => $e['ordner_id'] !== null ? (int)$e['ordner_id'] : null,
         'dateiname'     => $e['dateiname'],
         'original_name' => $e['original_name'],
         'breite'        => $e['breite'] !== null ? (int)$e['breite'] : null,
         'hoehe'         => $e['hoehe'] !== null ? (int)$e['hoehe'] : null,
+        'tags'          => $tags,
         'url'           => rtrim(UPLOADS_URL, '/') . '/' . rawurlencode($e['dateiname']),
     ],
 ]);

@@ -29,10 +29,13 @@ final class Mediathek
     /**
      * Verarbeitet einen einzelnen $_FILES-Eintrag.
      *
-     * @param array $file z.B. $_FILES['datei'] (name, tmp_name, error, size)
+     * @param array    $file     z.B. $_FILES['datei'] (name, tmp_name, error, size)
+     * @param int|null $ordnerId Zielordner für NEUE Bilder (NULL = "Ohne Ordner").
+     *                           Bei einem erkannten Duplikat bleibt der bestehende
+     *                           Ordner unverändert.
      * @return array{ok:bool, error?:string, eintrag?:array, duplikat?:bool}
      */
-    public static function speichereUpload(array $file): array
+    public static function speichereUpload(array $file, ?int $ordnerId = null): array
     {
         if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
             return ['ok' => false, 'error' => 'Upload fehlgeschlagen (Fehlercode ' . (int)($file['error'] ?? -1) . ').'];
@@ -73,10 +76,11 @@ final class Mediathek
         $originalName = mb_substr((string)($file['name'] ?? ''), 0, 255);
 
         $stmt = $pdo->prepare(
-            'INSERT INTO mediathek (dateiname, original_name, datei_hash, breite, hoehe)
-             VALUES (:dn, :on, :h, :b, :hh)'
+            'INSERT INTO mediathek (ordner_id, dateiname, original_name, datei_hash, breite, hoehe)
+             VALUES (:oid, :dn, :on, :h, :b, :hh)'
         );
         $stmt->execute([
+            ':oid' => $ordnerId,
             ':dn' => $dateiname,
             ':on' => $originalName !== '' ? $originalName : null,
             ':h'  => $hash,
@@ -88,10 +92,77 @@ final class Mediathek
         return ['ok' => true, 'eintrag' => $eintrag, 'duplikat' => false];
     }
 
-    /** @return array<int,array> Alle Bilder, neueste zuerst */
-    public static function listAll(): array
+    /**
+     * Bilder (neueste zuerst), optional gefiltert. Jeder Treffer enthält
+     * zusätzlich 'tags' => string[].
+     *
+     * @param array $filter Schlüssel (alle optional):
+     *   'ordner' => int|null|'none'  int = bestimmter Ordner,
+     *                                'none' = nur "Ohne Ordner",
+     *                                null/fehlt = alle Ordner
+     *   'suche'  => string           Teiltreffer in original_name/dateiname
+     *   'tag'    => int              nur Bilder mit diesem Tag
+     * @return array<int,array>
+     */
+    public static function listAll(array $filter = []): array
     {
-        return get_pdo()->query('SELECT * FROM mediathek ORDER BY hochgeladen_am DESC, id DESC')->fetchAll();
+        $where = [];
+        $params = [];
+
+        if (array_key_exists('ordner', $filter)) {
+            $o = $filter['ordner'];
+            if ($o === 'none') {
+                $where[] = 'm.ordner_id IS NULL';
+            } elseif (is_int($o) || (is_string($o) && ctype_digit($o))) {
+                $where[] = 'm.ordner_id = :oid';
+                $params[':oid'] = (int)$o;
+            }
+        }
+
+        if (!empty($filter['suche'])) {
+            $where[] = '(m.original_name LIKE :q OR m.dateiname LIKE :q)';
+            $params[':q'] = '%' . $filter['suche'] . '%';
+        }
+
+        if (!empty($filter['tag'])) {
+            $where[] = 'm.id IN (SELECT mediathek_id FROM mediathek_tag WHERE tag_id = :tid)';
+            $params[':tid'] = (int)$filter['tag'];
+        }
+
+        $sql = 'SELECT m.* FROM mediathek m';
+        if ($where) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
+        }
+        $sql .= ' ORDER BY m.hochgeladen_am DESC, m.id DESC';
+
+        $stmt = get_pdo()->prepare($sql);
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll();
+
+        // Tags pro Bild ergänzen (eine Sammelabfrage)
+        $tagMap = MediathekTag::tagsFuerBilder(array_column($rows, 'id'));
+        foreach ($rows as &$row) {
+            $row['tags'] = $tagMap[(int)$row['id']] ?? [];
+        }
+        return $rows;
+    }
+
+    /**
+     * Verschiebt ein Bild in einen anderen Ordner (oder nach "Ohne Ordner").
+     *
+     * @return array{ok:bool, error?:string}
+     */
+    public static function verschiebe(int $id, ?int $ordnerId): array
+    {
+        if (self::find($id) === null) {
+            return ['ok' => false, 'error' => 'Bild nicht gefunden.'];
+        }
+        if ($ordnerId !== null && MediathekOrdner::find($ordnerId) === null) {
+            return ['ok' => false, 'error' => 'Zielordner nicht gefunden.'];
+        }
+        get_pdo()->prepare('UPDATE mediathek SET ordner_id = :oid WHERE id = :id')
+            ->execute([':oid' => $ordnerId, ':id' => $id]);
+        return ['ok' => true];
     }
 
     public static function find(int $id): ?array

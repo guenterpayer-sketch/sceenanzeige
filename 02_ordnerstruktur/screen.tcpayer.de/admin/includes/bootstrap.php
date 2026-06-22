@@ -23,6 +23,8 @@ $WURZEL = dirname(__DIR__, 2); // .../screen.tcpayer.de
 require $WURZEL . '/config.php';
 require $WURZEL . '/includes/ModuleRegistry.php';
 require $WURZEL . '/includes/ModulInstanz.php';
+require $WURZEL . '/includes/MediathekOrdner.php';
+require $WURZEL . '/includes/MediathekTag.php';
 require $WURZEL . '/includes/Mediathek.php';
 
 // ----------------------------------------------------------------------------

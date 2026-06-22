@@ -120,6 +120,111 @@ body {
 }
 .adm-bild-del:hover { background: #ad2121; }
 
+/* --- Ordner-Leiste --- */
+.adm-ordnerleiste {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0 16px;
+}
+.adm-ordner-wrap { display: inline-flex; align-items: center; }
+.adm-ordner {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 1px solid #dde3ea;
+    border-radius: 16px;
+    background: #fff;
+    color: #1c2733;
+    text-decoration: none;
+    font-size: 14px;
+}
+.adm-ordner:hover { border-color: #3a72c4; }
+.adm-ordner.aktiv { background: #3a72c4; border-color: #3a72c4; color: #fff; }
+.adm-ordner .adm-zahl {
+    font-size: 12px;
+    background: rgba(0,0,0,.08);
+    border-radius: 10px;
+    padding: 0 7px;
+}
+.adm-ordner.aktiv .adm-zahl { background: rgba(255,255,255,.25); }
+.adm-ordner-edit, .adm-ordner-del {
+    border: none; background: none; cursor: pointer;
+    color: #8a97a6; font-size: 14px; padding: 2px 4px;
+}
+.adm-ordner-edit:hover { color: #3a72c4; }
+.adm-ordner-del:hover { color: #ad2121; }
+.adm-ordner-neu {
+    border: 1px dashed #aab8c8; background: #fff; color: #3a72c4;
+    border-radius: 16px; padding: 6px 12px; cursor: pointer; font-size: 14px;
+}
+.adm-ordner-neu:hover { border-color: #3a72c4; background: #eef4fc; }
+
+/* --- Suche + Tag-Filter --- */
+.adm-filterzeile {
+    display: flex; flex-wrap: wrap; gap: 14px 24px;
+    align-items: center; margin-bottom: 16px;
+}
+.adm-suche { display: inline-flex; align-items: center; gap: 6px; }
+.adm-suche input[type="search"] {
+    padding: 7px 10px; border: 1px solid #dde3ea; border-radius: 6px; min-width: 220px; font-size: 14px;
+}
+.adm-suche button {
+    padding: 7px 12px; border: none; border-radius: 6px; background: #3a72c4; color: #fff; cursor: pointer;
+}
+.adm-clear, .adm-suche .adm-clear {
+    text-decoration: none; color: #8a97a6; font-size: 18px; padding: 0 4px;
+}
+.adm-tagfilter { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.adm-tagfilter-label { color: #5a6b7d; font-size: 13px; }
+.adm-tagchip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 14px; background: #eef1f5; color: #33424f;
+    text-decoration: none; font-size: 13px;
+}
+.adm-tagchip:hover { background: #dde6f2; }
+.adm-tagchip.aktiv { background: #e0a800; color: #2a2200; }
+.adm-tagchip .adm-zahl { font-size: 11px; opacity: .7; }
+
+/* Generische Button-Variante */
+.adm-btn-grau { background: #8a97a6 !important; }
+
+/* --- Mini-Tags an der Bild-Kachel --- */
+.adm-bild-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.adm-minitag {
+    font-size: 11px; background: #eef1f5; color: #4a5764;
+    border-radius: 8px; padding: 1px 6px;
+}
+.adm-bild-edit {
+    position: absolute; top: 6px; right: 38px;
+    width: 26px; height: 26px; border: none; border-radius: 50%;
+    background: rgba(28,39,51,.65); color: #fff; font-size: 14px; line-height: 1; cursor: pointer;
+}
+.adm-bild-edit:hover { background: #3a72c4; }
+
+/* --- Bearbeiten-Dialog --- */
+.adm-overlay {
+    position: fixed; inset: 0; background: rgba(20,28,38,.55);
+    display: flex; align-items: center; justify-content: center; z-index: 50;
+}
+.adm-dialog {
+    background: #fff; border-radius: 10px; padding: 24px; width: min(420px, 92vw);
+    box-shadow: 0 12px 40px rgba(0,0,0,.25);
+}
+.adm-dialog h3 { margin: 0 0 6px; }
+.adm-dialog-name { color: #5a6b7d; font-size: 13px; margin: 0 0 16px; word-break: break-all; }
+.adm-feld { display: block; margin-bottom: 14px; }
+.adm-feld > span { display: block; font-size: 13px; color: #33424f; margin-bottom: 4px; }
+.adm-feld select, .adm-feld input[type="text"] {
+    width: 100%; padding: 8px 10px; border: 1px solid #dde3ea; border-radius: 6px; font-size: 14px;
+}
+.adm-dialog-aktionen { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
+.adm-dialog-aktionen button {
+    padding: 8px 16px; border: none; border-radius: 6px; background: #3a72c4; color: #fff; cursor: pointer;
+}
+
 /* Hervorhebungen für frisch hochgeladene / erkannte Duplikate */
 @keyframes admNeu { from { box-shadow: 0 0 0 3px #3a72c4; } to { box-shadow: 0 0 0 0 transparent; } }
 .adm-bild.adm-neu { animation: admNeu 1.5s ease-out; }
