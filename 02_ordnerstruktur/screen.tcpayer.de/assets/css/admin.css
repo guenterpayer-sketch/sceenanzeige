@@ -1,0 +1,127 @@
+/* ============================================================================
+   admin.css — gemeinsames Styling für den Backend-Bereich (admin/)
+   Bewusst schlank, kein Framework. Bedienung am Desktop/Laptop.
+   ============================================================================ */
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: #1c2733;
+    background: #f4f6f9;
+}
+
+/* --- Kopfleiste + Navigation --- */
+.adm-topbar {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 0 24px;
+    height: 56px;
+    background: #1c2733;
+    color: #fff;
+}
+.adm-brand { font-weight: 600; white-space: nowrap; }
+.adm-nav { display: flex; gap: 4px; flex-wrap: wrap; }
+.adm-nav a,
+.adm-nav .adm-nav-disabled {
+    padding: 8px 14px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 15px;
+    color: #c6d2e0;
+}
+.adm-nav a:hover { background: #2b3a4c; color: #fff; }
+.adm-nav a.aktiv { background: #3a72c4; color: #fff; }
+.adm-nav .adm-nav-disabled { color: #6b7a8d; cursor: default; }
+
+/* --- Hauptbereich --- */
+.adm-main { max-width: 1100px; margin: 0 auto; padding: 24px; }
+.adm-main h1 { margin: 0 0 16px; font-size: 24px; }
+.adm-main h2 { margin: 28px 0 12px; font-size: 18px; }
+.adm-hilfe { color: #5a6b7d; max-width: 760px; line-height: 1.5; }
+
+/* --- Drop-Zone --- */
+.adm-dropzone {
+    border: 2px dashed #aab8c8;
+    border-radius: 10px;
+    background: #fff;
+    padding: 32px;
+    text-align: center;
+    color: #5a6b7d;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+}
+.adm-dropzone:hover { border-color: #3a72c4; }
+.adm-dropzone.aktiv { border-color: #3a72c4; background: #eef4fc; color: #1c2733; }
+.adm-dropzone .adm-link { color: #3a72c4; text-decoration: underline; }
+
+.adm-upload-status {
+    margin: 12px 0;
+    padding: 10px 14px;
+    border-radius: 6px;
+    background: #eef4fc;
+    color: #244;
+    font-size: 14px;
+}
+
+/* --- Galerie --- */
+.adm-galerie {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+}
+.adm-leer { color: #889; grid-column: 1 / -1; }
+
+.adm-bild {
+    position: relative;
+    margin: 0;
+    background: #fff;
+    border: 1px solid #dde3ea;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+.adm-bild img {
+    width: 100%;
+    height: 140px;
+    object-fit: contain;
+    background: #f0f2f5;
+    display: block;
+}
+.adm-bild figcaption {
+    padding: 8px 10px;
+    font-size: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.adm-bild-name {
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.adm-bild-meta { color: #8a97a6; }
+
+.adm-bild-del {
+    position: absolute;
+    top: 6px; right: 6px;
+    width: 26px; height: 26px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(28,39,51,.65);
+    color: #fff;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+}
+.adm-bild-del:hover { background: #ad2121; }
+
+/* Hervorhebungen für frisch hochgeladene / erkannte Duplikate */
+@keyframes admNeu { from { box-shadow: 0 0 0 3px #3a72c4; } to { box-shadow: 0 0 0 0 transparent; } }
+.adm-bild.adm-neu { animation: admNeu 1.5s ease-out; }
+@keyframes admDup { 0%,100% { box-shadow: 0 0 0 0 transparent; } 50% { box-shadow: 0 0 0 3px #e0a800; } }
+.adm-bild.adm-dup-blink { animation: admDup 1.5s ease-out; }

@@ -20,7 +20,7 @@ A/B erledigt, Live-Test steht noch aus)._
 | 2 | Ordnerstruktur + .htaccess | ✅ live |
 | 3 | Modul-Registry + `uhrzeit`, `bild` | ✅ live |
 | 4 | `stundenplan`, `ankuendigung`, `fret` + NC-/FRET-Proxy + Testseite | ✅ live getestet (alle 5 Module inkl. `stundenplan`) |
-| 5 | Backend-Bibliothek + Mediathek | offen |
+| 5 | Backend-Bibliothek + Mediathek | 🟡 5a Mediathek gebaut (Live-Test offen); 5b Bibliothek/Instanz-CRUD folgt |
 | 6 | Playlist-Editor (Layout-Konfigurator) | offen |
 | 7 | Zeitregeln + Saal-Zuweisung | offen |
 | 8 | Ticker-Verwaltung | offen |
@@ -84,13 +84,40 @@ bearbeiten).
 
 ---
 
-## Nächste Schritte
+## Schritt 5 — Stand
 
-1. **Schritt 4 Live-Test** durchführen (siehe oben); Fehlermeldungen aus
-   `nc.php`/`fret.php` zurückmelden → gezielt fixen.
-2. Danach **Schritt 5**: Backend-Bibliothek (Modul-Instanzen verwalten inkl.
-   `aktiv`/`gueltig_bis`) + **Mediathek** (zentrale Bildtabelle, SHA-256-
-   Duplikaterkennung, Drag&Drop). Schema ist durch die Migration vorhanden.
+**5a Mediathek — Code fertig, Live-Test offen.** Neue Dateien:
+- `includes/Mediathek.php` — Upload mit SHA-256-Duplikaterkennung, `listAll`/
+  `find`/`anzahlVerwendungen`/`delete` (Löschschutz, solange verwendet).
+- `admin/` (neuer, separat schützbarer Backend-Ordner):
+  - `includes/bootstrap.php` — zentraler Einstieg aller Admin-Seiten (lädt
+    config + Klassen; **eine Stelle** für späteren Login-Guard).
+  - `includes/layout.php` — gemeinsamer HTML-Rahmen + Nav.
+  - `mediathek.php` — Galerie + Drag&Drop-Upload (fetch, kein Reload).
+  - `api/mediathek-upload.php`, `api/mediathek-delete.php` — JSON-Endpoints.
+- `assets/css/admin.css` — Backend-Styling.
+
+**Live-Test 5a (To-do Nutzer):** `admin/` + `includes/Mediathek.php` +
+`assets/css/admin.css` hochladen, dann `admin/mediathek.php` aufrufen: Bilder
+per Drag&Drop hochladen (Maße/Galerie erscheinen), gleiches Bild erneut →
+wird als Duplikat erkannt (kein Doppel), Löschen funktioniert.
+
+**5b folgt:** Bibliotheks-Übersicht + Instanz-CRUD (Einstellungen aus
+`module.json`) + Inhalte-Editor für `bild`/`ankuendigung` (Mediathek-Auswahl
+oder Neu-Upload, `reihenfolge`/`dauer_sek`/`gueltig_bis`/`aktiv` pro Eintrag).
+Dabei `ModulInstanz::listInhalte` per `LEFT JOIN mediathek` einen aufgelösten
+`dateiname` liefern (hält `bild/frontend.js` abwärtskompatibel).
+
+## Zugriffsschutz / Benutzerkonten
+
+- Root-`.htaccess` (Referenz im Repo: `02_ordnerstruktur/screen.tcpayer.de/.htaccess`)
+  schützt `config.php`/`includes/` + CORS, hat **keinen Login**.
+- **Interim:** all-inkl Verzeichnisschutz (Basic-Auth) NUR auf `admin/`
+  (KAS → Tools → Verzeichnisschutz). `proxies/`, `uploads/`, `modules/`
+  bleiben offen für die Monitore — kein Basic-Auth auf der ganzen Subdomain!
+- **Geplanter eigener Schritt „Benutzerkonten":** PHP-Login + Tabelle
+  `benutzer` (inkl. `rolle`) + Verwaltung; Guard zentral in
+  `admin/includes/bootstrap.php` einhängen. Vorbereitet, niedriger Aufwand.
 
 ---
 
