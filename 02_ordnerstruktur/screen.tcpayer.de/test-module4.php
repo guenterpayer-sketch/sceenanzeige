@@ -4,17 +4,18 @@
  *
  * MEILENSTEIN-TESTSEITE für Schritt 4 (Teststrategie siehe Chat-
  * Zusammenfassung Schritt 1-2). Erweitert test-module3.php um:
- *   - Saal-Auswahl (wird als window.SAAL_ID gesetzt; nötig für stundenplan,
- *     da der NC-API-Key pro Saal in der Tabelle einstellungen liegt)
  *   - alle registrierten Module im Anlegen-Formular (uhrzeit, bild,
  *     stundenplan, ankuendigung, fret)
  *   - ankuendigung: bis zu 3 Einträge mit Text + optionalem Bild + Ablaufdatum
  *
+ * Hinweis: Der Stundenplan braucht KEINE Saal-Auswahl — es gibt genau EINEN
+ * schulweiten NC-API-Key (config.php → NC_API_KEY), nicht einen pro Saal.
+ *
  * WICHTIG: Wie test-module3.php nur ein Test-Werkzeug, kein Teil der finalen
  * Bibliotheks-Verwaltung (kommt in Schritt 5). Render erfolgt über die
  * Schritt-3-Loader-Signatur: render(modulId, container, settings, inhalte).
- * Die Proxy-Module lesen ihre Parameter clientseitig aus settings bzw.
- * window.SAAL_ID — der API-Key/schoolId bleibt serverseitig im Proxy.
+ * Die Proxy-Module lesen ihre Parameter clientseitig aus settings — der
+ * API-Key/schoolId bleibt serverseitig im Proxy.
  */
 
 declare(strict_types=1);
@@ -104,10 +105,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'loesc
 
 $alleModule = ModuleRegistry::getAll();
 $instanzen = ModulInstanz::listAll();
-
-// Säle laden (für die Saal-Auswahl, nötig für den stundenplan-Test)
-$saele = get_pdo()->query('SELECT id, name, subdomain FROM saele ORDER BY name')->fetchAll();
-$gewaehlterSaal = isset($_GET['saal_id']) ? (int)$_GET['saal_id'] : ($saele[0]['id'] ?? 0);
 ?>
 <!DOCTYPE html>
 <html lang="de">
@@ -126,25 +123,6 @@ $gewaehlterSaal = isset($_GET['saal_id']) ? (int)$_GET['saal_id'] : ($saele[0]['
 <?php if ($erfolg): ?>
     <div class="tm-card" style="border-color:#2e7d32;color:#2e7d32;"><?= htmlspecialchars($erfolg) ?></div>
 <?php endif; ?>
-
-<div class="tm-card">
-    <h2>Saal für den Test wählen</h2>
-    <p>Wird als <code>SAAL_ID</code> für den stundenplan-Test gebraucht (NC-API-Key liegt pro Saal in <code>einstellungen.nc_api_key_stundenplan</code>).</p>
-    <form method="get">
-        <div class="field">
-            <select name="saal_id" onchange="this.form.submit()">
-                <?php foreach ($saele as $s): ?>
-                    <option value="<?= $s['id'] ?>" <?= $s['id'] == $gewaehlterSaal ? 'selected' : '' ?>>
-                        <?= htmlspecialchars($s['name']) ?> (<?= htmlspecialchars($s['subdomain']) ?>)
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-    </form>
-    <?php if (empty($saele)): ?>
-        <p style="color:#ad2121;">Noch keine Säle/Einstellungen angelegt — uhrzeit/bild/ankuendigung/fret lassen sich trotzdem testen; stundenplan braucht einen Saal mit hinterlegtem NC-Key.</p>
-    <?php endif; ?>
-</div>
 
 <div class="tm-card">
     <h2>Neue Modul-Instanz anlegen</h2>
@@ -189,7 +167,7 @@ $gewaehlterSaal = isset($_GET['saal_id']) ? (int)$_GET['saal_id'] : ($saele[0]['
                 <?php endif; ?>
 
                 <?php if ($id === 'stundenplan'): ?>
-                    <p style="font-size:13px;color:#888;">Nutzt die Legacy-API <code>POST /timetable/data</code>. Voraussetzung: <code>NC_API_BASE</code> in config.php gesetzt und für den gewählten Saal ein <code>nc_api_key_stundenplan</code> hinterlegt.</p>
+                    <p style="font-size:13px;color:#888;">Nutzt die Legacy-API <code>POST /timetable/data</code>. Voraussetzung: <code>NC_API_BASE</code> und <code>NC_API_KEY</code> (schulweit) in config.php gesetzt. Kein Saal nötig.</p>
                 <?php endif; ?>
 
                 <?php if ($id === 'fret'): ?>
@@ -226,7 +204,6 @@ $gewaehlterSaal = isset($_GET['saal_id']) ? (int)$_GET['saal_id'] : ($saele[0]['
 <script>
     window.BACKEND_BASE = '';
     window.UPLOADS_URL = '<?= UPLOADS_URL ?>';
-    window.SAAL_ID = <?= json_encode($gewaehlterSaal) ?>;
 </script>
 <script src="/assets/js/module-loader.js"></script>
 <script>

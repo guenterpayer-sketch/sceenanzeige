@@ -19,7 +19,7 @@ A/B erledigt, Live-Test steht noch aus)._
 | 1 | DB-Schema | ✅ live |
 | 2 | Ordnerstruktur + .htaccess | ✅ live |
 | 3 | Modul-Registry + `uhrzeit`, `bild` | ✅ live |
-| 4 | `stundenplan`, `ankuendigung`, `fret` + NC-/FRET-Proxy + Testseite | 🟡 Code fertig, **Live-Test offen** |
+| 4 | `stundenplan`, `ankuendigung`, `fret` + NC-/FRET-Proxy + Testseite | 🟡 Live-Test läuft: `uhrzeit`/`bild`/`ankuendigung`/`fret` ✅; `stundenplan` offen (NC-Werte) |
 | 5 | Backend-Bibliothek + Mediathek | offen |
 | 6 | Playlist-Editor (Layout-Konfigurator) | offen |
 | 7 | Zeitregeln + Saal-Zuweisung | offen |
@@ -46,25 +46,28 @@ A/B erledigt, Live-Test steht noch aus)._
   - `ModulInstanz::addInhalt` schreibt `gueltig_bis` (statt umbenanntem
     `ablaufdatum`).
   - NC-Key schulweit: `config.php` → `NC_API_KEY`; `nc.php` liest ihn von dort.
+  - **Saal-Altlast beim Stundenplan entfernt** (22.06.): `stundenplan/frontend.js`
+    schickt kein `saal_id` mehr, `test-module4.php` ohne Saal-Auswahl/`SAAL_ID`.
+    Begründung: NC hat genau EINEN schulweiten Key, keinen pro Saal.
 
-**Damit der Live-Test läuft (To-do des Nutzers):**
-1. Drei geänderte Dateien neu auf `screen.tcpayer.de/` hochladen:
-   `includes/ModulInstanz.php`, `config.php`, `proxies/nc.php`.
-2. In `config.php` (Server) die echten Werte setzen:
-   - `NC_API_BASE` (echte Nimbuscloud-Subdomain, …/api/json/v1)
-   - `NC_API_KEY` (Berechtigung „Stundenplan — Lesezugriff")
-   - `FRET_API_BASE` = `https://fret-api.azurewebsites.net/api/v1`
-   - `FRET_SCHOOL_ID` (steht im alten Standalone-Proxy als `$schoolId`)
-   - DB-Passwort ist auf dem Server bereits gesetzt.
-3. Kein weiterer DB-Eingriff nötig.
-4. `https://screen.tcpayer.de/test-module4.php` aufrufen:
-   - `uhrzeit`/`bild`/`ankuendigung` laufen ohne API.
-   - `fret`: Computer-UUID via `/proxies/fret.php?action=list` ermitteln,
-     in die fret-Instanz eintragen.
-   - `stundenplan`: zeigt Kurse, sobald `NC_API_BASE` + `NC_API_KEY` stehen.
+**Live-Test-Stand (22.06.2026):**
+- ✅ Live laufen bereits: `uhrzeit`, `bild`, `ankuendigung`, `fret`.
+- 🟡 Offen: `stundenplan` — sobald in der Server-`config.php` echte Werte stehen:
+  - `NC_API_BASE` (echte Nimbuscloud-Subdomain, …/api/json/v1)
+  - `NC_API_KEY` (Berechtigung „Stundenplan — Lesezugriff")
+  - (FRET läuft, also `FRET_API_BASE` + `FRET_SCHOOL_ID` bereits gesetzt.)
+- Nach dem Saal-Fix die zwei Dateien neu hochladen:
+  `modules/stundenplan/frontend.js`, `test-module4.php`.
+- Layout/Schriftgrößen werden bewusst erst in Schritt 6/9 angepasst — die
+  rohe Test-Darstellung ist hier erwartet.
 
-Altlast auf dem Server (stört nicht, darf gelöscht werden):
-`modules/song/`, `modules/community/`, `proxies/song.php`.
+Altlast auf dem Server (stört nicht): `modules/song/`, `modules/community/`,
+`proxies/song.php`. `index.htm` bleibt bewusst stehen (all-inkl-Default-Seite
+für direkte Aufrufe der Domain).
+
+Live-Snapshot des Server-Stands zum Abgleich: Ordner
+`Live abgleich 220620261145/` (DB-Dump + screen.tcpayer.de, Referenz, nicht
+bearbeiten).
 
 ---
 

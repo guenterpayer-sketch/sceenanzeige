@@ -3,14 +3,16 @@
  *
  * Holt die Kursdaten serverseitig über proxies/nc.php (Nimbuscloud Legacy-API)
  * und rendert eine Liste. Der API-Key bleibt im Proxy, das Frontend übergibt
- * nur die nicht-sensiblen Anzeige-Einstellungen (saal_id, nur_heute, anzahl).
+ * nur die nicht-sensiblen Anzeige-Einstellungen (nur_heute, anzahl).
+ *
+ * Hinweis: Es gibt genau EINEN schulweiten NC-API-Key (config.php → NC_API_KEY),
+ * KEINEN Key pro Saal. Der Stundenplan braucht daher KEINE SAAL_ID.
  *
  * Konvention (siehe module-loader.js):
  *   window.TanzschuleModule.stundenplan = function(container, settings, inhalte)
  *
  * Globale Werte (vom Saal-Frontend gesetzt, siehe Abschnitt 10 der Doku):
  *   window.BACKEND_BASE  Basis-URL von screen.tcpayer.de
- *   window.SAAL_ID       ID des aktuellen Saals (für den API-Key im Proxy)
  *
  * Daten werden bei jedem Neu-Rendern einmal geholt; das Monitor-Frontend
  * rendert die Module beim ~60-Sek-Refresh ohnehin neu (Abschnitt 10).
@@ -30,13 +32,11 @@
         container.innerHTML = '<div class="tm-sp-status">Lade Stundenplan…</div>';
 
         var basis = window.BACKEND_BASE || '';
-        var saalId = window.SAAL_ID != null ? window.SAAL_ID : '';
         var nurHeute = settings.nur_heute === false ? '0' : '1';
         var anzahl = (settings.anzahl_kurse != null) ? settings.anzahl_kurse : 0;
 
         var url = basis + '/proxies/nc.php'
-            + '?saal_id=' + encodeURIComponent(saalId)
-            + '&nur_heute=' + nurHeute
+            + '?nur_heute=' + nurHeute
             + '&anzahl=' + encodeURIComponent(anzahl);
 
         fetch(url, { cache: 'no-store' })
