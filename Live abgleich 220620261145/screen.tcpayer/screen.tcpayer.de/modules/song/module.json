@@ -1,0 +1,12 @@
+{
+  "id": "song",
+  "label": "Aktueller Song",
+  "icon": "music",
+  "has_proxy": true,
+  "has_inhalte": false,
+  "settings": [
+    { "key": "schoolId", "type": "text", "label": "FRET schoolId (UUID)" },
+    { "key": "computerId", "type": "text", "label": "FRET computerId (UUID)" },
+    { "key": "anzeigename", "type": "text", "label": "Anzeigename (optional, z.B. \"Großer Saal\")" }
+  ]
+}

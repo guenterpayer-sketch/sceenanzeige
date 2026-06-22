@@ -1,0 +1,106 @@
+/* assets/css/module-test.css — nur für die Schritt-3-Testseite */
+
+body {
+    font-family: system-ui, sans-serif;
+    background: #f4f4f5;
+    color: #1a1a1a;
+    margin: 0;
+    padding: 24px;
+}
+
+h1, h2 { margin-top: 0; }
+
+.tm-card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+}
+
+.field { margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 13px; font-weight: 600; color: #444; }
+.field input, .field select, .field textarea {
+    padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;
+}
+.field-bool { flex-direction: row; align-items: center; }
+.field-bool input { width: auto; }
+
+button {
+    background: #ad2121; color: #fff; border: none; border-radius: 4px;
+    padding: 8px 16px; cursor: pointer; font-size: 14px;
+}
+button:hover { background: #8c1a1a; }
+
+.tm-instanz-liste { display: flex; flex-direction: column; gap: 10px; }
+.tm-instanz-zeile {
+    display: flex; justify-content: space-between; align-items: center;
+    border: 1px solid #eee; border-radius: 6px; padding: 8px 12px;
+}
+
+.tm-preview-monitor {
+    width: 480px; height: 270px; background: #0e0e0e; color: #fff;
+    position: relative; overflow: hidden; border-radius: 6px;
+}
+/* WICHTIG (siehe "Bekannte Bugs & Fixes" oben): diese Marker-Klassen dürfen
+   der äußeren Box (.tm-preview-monitor bzw. später der Playlist-Spalte)
+   KEINE eigene Höhe/Breite per Prozent aufzwingen, sonst kollabiert die Box
+   auf 0, sobald der Modul-Inhalt aus dem normalen Fluss genommen ist
+   (z.B. position:absolute bei den Bild-Layern). */
+.tm-modul-uhrzeit { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.tm-uhrzeit-zeit { font-size: 48px; font-weight: 700; }
+.tm-uhrzeit-datum { font-size: 18px; opacity: 0.8; }
+.tm-modul-bild { }
+.tm-bild-stage { position: relative; width: 100%; height: 100%; }
+.tm-bild-img {
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%; display: block;
+}
+.tm-bild-leer { display: flex; align-items: center; justify-content: center; height: 100%; opacity: 0.6; }
+
+/* ---- Schritt-4-Module (Vorschau-Styles, TV-Richtwerte vereinfacht) ---- */
+
+/* stundenplan */
+.tm-modul-stundenplan { padding: 12px 16px; box-sizing: border-box; overflow: hidden; }
+.tm-sp-status { opacity: 0.7; }
+.tm-sp-fehler { color: #ff8080; }
+.tm-sp-liste { list-style: none; margin: 0; padding: 0; }
+.tm-sp-eintrag {
+    display: flex; gap: 10px; align-items: baseline;
+    padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.12);
+}
+.tm-sp-zeit { color: #ff9d9d; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tm-sp-name { font-weight: 600; flex: 1; }
+.tm-sp-raum, .tm-sp-lehrer { opacity: 0.7; font-size: 0.85em; white-space: nowrap; }
+
+/* fret (Songanzeige) */
+.tm-modul-fret { padding: 12px 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; }
+.tm-song-status { opacity: 0.7; }
+.tm-song-titel { font-size: 1.6em; font-weight: 700; line-height: 1.1; }
+.tm-song-artist { opacity: 0.8; }
+.tm-song-badges, .tm-song-k-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.tm-song-badge {
+    display: inline-block; padding: 2px 10px; border-radius: 999px;
+    font-size: 0.8em; font-weight: 600;
+}
+.tm-song-badge-main { background: #ad2121; color: #fff; }
+.tm-song-badge-sub { background: #f0f0f0; color: #ad2121; border: 2px solid #ad2121; }
+.tm-song-progress { height: 8px; background: rgba(255,255,255,0.15); border-radius: 4px; overflow: hidden; }
+.tm-song-progress-bar { height: 100%; width: 0; background: #ad2121; transition: width 1s linear; }
+.tm-song-kommende-liste { list-style: none; margin: 6px 0 0; padding: 0; }
+.tm-song-kommende-eintrag {
+    display: flex; gap: 8px; align-items: baseline; opacity: 0.85;
+    padding: 3px 0; border-top: 1px solid rgba(255,255,255,0.1);
+}
+.tm-song-k-titel { flex: 1; }
+
+/* ankuendigung */
+.tm-modul-ankuendigung { }
+.tm-ank-slide {
+    display: flex; flex-direction: column; gap: 10px;
+    align-items: center; justify-content: center; text-align: center;
+    padding: 16px; box-sizing: border-box;
+}
+.tm-ank-bild img { max-width: 100%; max-height: 60%; object-fit: contain; }
+.tm-ank-text { font-size: 1.4em; font-weight: 600; line-height: 1.2; }
+.tm-ank-leer { display: flex; align-items: center; justify-content: center; height: 100%; opacity: 0.6; }

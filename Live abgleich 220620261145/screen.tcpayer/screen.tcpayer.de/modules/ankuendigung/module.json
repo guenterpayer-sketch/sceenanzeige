@@ -1,0 +1,25 @@
+{
+  "id": "ankuendigung",
+  "label": "Ankündigung",
+  "icon": "megaphone",
+  "has_proxy": false,
+  "has_inhalte": true,
+  "settings": [
+    {
+      "key": "intervall_sek",
+      "type": "number",
+      "label": "Standard-Anzeigedauer in Sek. (falls beim Eintrag keine eigene Dauer gesetzt ist)",
+      "default": 12
+    },
+    {
+      "key": "uebergang",
+      "type": "select",
+      "label": "Übergangseffekt",
+      "default": "fade",
+      "options": [
+        { "value": "fade", "label": "Sanft überblenden" },
+        { "value": "none", "label": "Kein Übergang (harter Schnitt)" }
+      ]
+    }
+  ]
+}
