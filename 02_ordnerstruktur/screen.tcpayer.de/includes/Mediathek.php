@@ -151,6 +151,25 @@ final class Mediathek
     }
 
     /**
+     * Setzt den Anzeigenamen (original_name) eines Bilds. Leer = zurück auf
+     * NULL (dann zeigt die Galerie den technischen Dateinamen). Die echte
+     * Datei in uploads/ bleibt unverändert.
+     *
+     * @return array{ok:bool, error?:string, original_name?:?string}
+     */
+    public static function setzeAnzeigename(int $id, ?string $name): array
+    {
+        if (self::find($id) === null) {
+            return ['ok' => false, 'error' => 'Bild nicht gefunden.'];
+        }
+        $name = $name !== null ? mb_substr(trim($name), 0, 255) : '';
+        $wert = $name !== '' ? $name : null;
+        get_pdo()->prepare('UPDATE mediathek SET original_name = :n WHERE id = :id')
+            ->execute([':n' => $wert, ':id' => $id]);
+        return ['ok' => true, 'original_name' => $wert];
+    }
+
+    /**
      * Verschiebt ein Bild in einen anderen Ordner (oder nach "Ohne Ordner").
      *
      * @return array{ok:bool, error?:string}

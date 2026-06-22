@@ -8,9 +8,11 @@
  * POST:
  *   id        (int, Pflicht)
  *   ordner_id (int oder leer/0 = "Ohne Ordner")
+ *   original_name (String, optional; leer = zurück auf technischen Dateinamen)
  *   tags      (String, kommagetrennt; leere/doppelte werden ignoriert)
  *
- * Antwort: { ok:true, ordner_id:int|null, tags:string[] } oder { ok:false, error }
+ * Antwort: { ok:true, ordner_id:int|null, original_name:string|null, tags:string[] }
+ *          oder { ok:false, error }
  */
 
 declare(strict_types=1);
@@ -43,8 +45,17 @@ if (!$resMove['ok']) {
     antwort(['ok' => false, 'error' => $resMove['error']], 422);
 }
 
+$anzeigeName = null;
+if (array_key_exists('original_name', $_POST)) {
+    $resName = Mediathek::setzeAnzeigename($id, (string)$_POST['original_name']);
+    $anzeigeName = $resName['original_name'] ?? null;
+} else {
+    $aktuell = Mediathek::find($id);
+    $anzeigeName = $aktuell['original_name'] ?? null;
+}
+
 $tagsRoh = (string)($_POST['tags'] ?? '');
 $tagNamen = $tagsRoh === '' ? [] : preg_split('/[,\n]/', $tagsRoh);
 $gesetzteTags = MediathekTag::setzeTagsFuerBild($id, $tagNamen);
 
-antwort(['ok' => true, 'ordner_id' => $ordnerId, 'tags' => $gesetzteTags]);
+antwort(['ok' => true, 'ordner_id' => $ordnerId, 'original_name' => $anzeigeName, 'tags' => $gesetzteTags]);

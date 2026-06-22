@@ -125,7 +125,8 @@ admin_header('Mediathek', 'mediathek');
         <figure class="adm-bild" data-id="<?= (int)$b['id'] ?>"
                 data-ordner="<?= $b['ordner_id'] !== null ? (int)$b['ordner_id'] : '' ?>"
                 data-tags="<?= htmlspecialchars($tagText) ?>"
-                data-name="<?= htmlspecialchars((string)($b['original_name'] ?? $b['dateiname'])) ?>">
+                data-dateiname="<?= htmlspecialchars((string)$b['dateiname']) ?>"
+                data-name="<?= htmlspecialchars((string)($b['original_name'] ?? '')) ?>">
             <img src="<?= htmlspecialchars($uploadsBasis . rawurlencode($b['dateiname'])) ?>" alt="<?= htmlspecialchars((string)$b['original_name']) ?>" loading="lazy">
             <figcaption>
                 <span class="adm-bild-name" title="<?= htmlspecialchars((string)$b['original_name']) ?>"><?= htmlspecialchars((string)($b['original_name'] ?? $b['dateiname'])) ?></span>
@@ -142,7 +143,11 @@ admin_header('Mediathek', 'mediathek');
 <div id="edit-overlay" class="adm-overlay" hidden>
     <div class="adm-dialog">
         <h3>Bild bearbeiten</h3>
-        <p id="edit-name" class="adm-dialog-name"></p>
+        <p id="edit-datei" class="adm-dialog-name"></p>
+        <label class="adm-feld">
+            <span>Anzeigename</span>
+            <input type="text" id="edit-anzeige" placeholder="z.B. Logo Tanzschule">
+        </label>
         <label class="adm-feld">
             <span>Ordner</span>
             <select id="edit-ordner">
@@ -198,16 +203,18 @@ admin_header('Mediathek', 'mediathek');
 
     function ergaenzeKachel(e) {
         entferneLeerHinweis();
+        var anzeige = e.original_name || e.dateiname;
         var fig = document.createElement('figure');
         fig.className = 'adm-bild adm-neu';
         fig.setAttribute('data-id', e.id);
         fig.setAttribute('data-ordner', e.ordner_id != null ? e.ordner_id : '');
         fig.setAttribute('data-tags', (e.tags || []).join(', '));
-        fig.setAttribute('data-name', e.original_name || e.dateiname);
+        fig.setAttribute('data-dateiname', e.dateiname);
+        fig.setAttribute('data-name', e.original_name || '');
         fig.innerHTML =
-            '<img src="' + escapeHtml(e.url) + '" alt="' + escapeHtml(e.original_name || '') + '">' +
+            '<img src="' + escapeHtml(e.url) + '" alt="' + escapeHtml(anzeige) + '">' +
             '<figcaption>' +
-                '<span class="adm-bild-name" title="' + escapeHtml(e.original_name || '') + '">' + escapeHtml(e.original_name || e.dateiname) + '</span>' +
+                '<span class="adm-bild-name" title="' + escapeHtml(anzeige) + '">' + escapeHtml(anzeige) + '</span>' +
                 '<span class="adm-bild-meta">' + (e.breite || '?') + '×' + (e.hoehe || '?') + ' px</span>' +
                 '<span class="adm-bild-tags">' + tagsHtml(e.tags) + '</span>' +
             '</figcaption>' +
@@ -292,7 +299,8 @@ admin_header('Mediathek', 'mediathek');
 
     // --- Bearbeiten-Dialog ---
     var overlay   = document.getElementById('edit-overlay');
-    var editName  = document.getElementById('edit-name');
+    var editDatei = document.getElementById('edit-datei');
+    var editAnzeige = document.getElementById('edit-anzeige');
     var editOrdner= document.getElementById('edit-ordner');
     var editTags  = document.getElementById('edit-tags');
     var aktuelleId = null;
@@ -301,11 +309,12 @@ admin_header('Mediathek', 'mediathek');
         var fig = bildEl(id);
         if (!fig) { return; }
         aktuelleId = id;
-        editName.textContent = fig.getAttribute('data-name') || '';
+        editDatei.textContent = 'Datei: ' + (fig.getAttribute('data-dateiname') || '');
+        editAnzeige.value = fig.getAttribute('data-name') || '';
         editOrdner.value = fig.getAttribute('data-ordner') || '';
         editTags.value = fig.getAttribute('data-tags') || '';
         overlay.hidden = false;
-        editTags.focus();
+        editAnzeige.focus();
     }
     function schliesseEdit() { overlay.hidden = true; aktuelleId = null; }
 
@@ -316,6 +325,7 @@ admin_header('Mediathek', 'mediathek');
         if (!aktuelleId) { return; }
         var fd = new FormData();
         fd.append('id', aktuelleId);
+        fd.append('original_name', editAnzeige.value);
         fd.append('ordner_id', editOrdner.value);
         fd.append('tags', editTags.value);
         fetch('api/mediathek-update.php', { method: 'POST', body: fd })
@@ -327,6 +337,12 @@ admin_header('Mediathek', 'mediathek');
                 if (fig) {
                     fig.setAttribute('data-ordner', neuerOrdner);
                     fig.setAttribute('data-tags', (data.tags || []).join(', '));
+                    fig.setAttribute('data-name', data.original_name || '');
+                    var anzeige = data.original_name || fig.getAttribute('data-dateiname') || '';
+                    var nameSpan = fig.querySelector('.adm-bild-name');
+                    if (nameSpan) { nameSpan.textContent = anzeige; nameSpan.title = anzeige; }
+                    var imgEl = fig.querySelector('img');
+                    if (imgEl) { imgEl.alt = anzeige; }
                     var tagSpan = fig.querySelector('.adm-bild-tags');
                     if (tagSpan) { tagSpan.innerHTML = tagsHtml(data.tags); }
                     // Wenn nach Ordner gefiltert wird und das Bild rausgewandert ist: entfernen
