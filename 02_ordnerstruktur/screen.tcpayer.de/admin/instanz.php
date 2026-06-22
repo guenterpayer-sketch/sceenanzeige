@@ -168,7 +168,31 @@ admin_header(($istNeu ? 'Neue ' : '') . $meta['label'] . '-Instanz', 'bibliothek
 
     <div class="adm-card">
         <h2>Einstellungen</h2>
-        <?= ModuleRegistry::renderSettingsForm($modulTyp, $werteEinstellungen) ?>
+        <?php
+        // FRET: Computer-UUID als Dropdown der freigegebenen Geräte einspeisen.
+        $dynamicOptions = [];
+        if ($modulTyp === 'fret') {
+            $opts = [['value' => '', 'label' => '— Gerät wählen —']];
+            $vorhanden = [];
+            foreach (FretGeraet::freigegebene() as $g) {
+                $label = $g['anzeige_name'] !== null && $g['anzeige_name'] !== ''
+                    ? $g['anzeige_name']
+                    : ($g['fret_name'] !== '' && $g['fret_name'] !== null ? $g['fret_name'] : $g['uuid']);
+                $opts[] = ['value' => $g['uuid'], 'label' => $label];
+                $vorhanden[$g['uuid']] = true;
+            }
+            $aktuellUuid = (string)($werteEinstellungen['computer_id'] ?? '');
+            if ($aktuellUuid !== '' && empty($vorhanden[$aktuellUuid])) {
+                $opts[] = ['value' => $aktuellUuid, 'label' => $aktuellUuid . ' (nicht freigegeben)'];
+            }
+            $dynamicOptions['computer_id'] = $opts;
+        }
+        echo ModuleRegistry::renderSettingsForm($modulTyp, $werteEinstellungen, $dynamicOptions);
+        ?>
+        <?php if ($modulTyp === 'fret' && count(FretGeraet::freigegebene()) === 0): ?>
+            <p class="adm-hilfe">Noch kein FRET-Gerät freigegeben — im Bereich
+                <a href="fret-geraete.php">FRET-Geräte</a> aktualisieren und freigeben.</p>
+        <?php endif; ?>
     </div>
 
     <?php if ($hasInhalte): ?>

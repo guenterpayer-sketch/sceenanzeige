@@ -72,13 +72,21 @@ final class ModuleRegistry
      * kein eigenes <form>-Tag, damit die aufrufende Seite den Rahmen bestimmt).
      *
      * @param array<string,mixed> $values Aktuell gespeicherte Werte (überschreiben defaults)
+     * @param array<string,array> $dynamicOptions Pro Feld-Key zur Laufzeit gelieferte
+     *        Select-Optionen ([['value'=>..,'label'=>..], ...]); ersetzt die Optionen
+     *        des Feldes und erzwingt Darstellung als Dropdown (z.B. FRET-Geräteliste).
      */
-    public static function renderSettingsForm(string $id, array $values = []): string
+    public static function renderSettingsForm(string $id, array $values = [], array $dynamicOptions = []): string
     {
         $module = self::load($id);
         $html = '';
         foreach ($module['settings'] as $field) {
-            $html .= self::renderField($field, $values[$field['key']] ?? $field['default'] ?? null);
+            $key = $field['key'];
+            if (isset($dynamicOptions[$key])) {
+                $field['type'] = 'select';
+                $field['options'] = $dynamicOptions[$key];
+            }
+            $html .= self::renderField($field, $values[$key] ?? $field['default'] ?? null);
         }
         return $html;
     }

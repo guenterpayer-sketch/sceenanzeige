@@ -319,6 +319,16 @@ body {
 .adm-mini:hover { border-color: #3a72c4; }
 .adm-mini-rot:hover { border-color: #c0392b; color: #c0392b; }
 
+/* FRET-Geräte-Tabelle */
+.adm-tabelle { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #dde3ea; border-radius: 8px; overflow: hidden; }
+.adm-tabelle th, .adm-tabelle td { padding: 9px 12px; border-bottom: 1px solid #eef1f5; text-align: left; font-size: 14px; }
+.adm-tabelle th { background: #f4f6f9; color: #33424f; font-weight: 600; }
+.adm-tabelle tr:last-child td { border-bottom: none; }
+.adm-tabelle tr.inaktiv { opacity: .55; }
+.adm-tabelle .adm-mitte { text-align: center; }
+.adm-tabelle .adm-uuid { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #6b7a8d; }
+.adm-tabelle input[type="text"] { width: 100%; max-width: 240px; padding: 6px 8px; border: 1px solid #dde3ea; border-radius: 6px; }
+
 /* Bild-Picker im Editor */
 .adm-dialog-breit { width: min(760px, 94vw); }
 .adm-picker-filter { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }

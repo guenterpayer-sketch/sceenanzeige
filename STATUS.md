@@ -137,6 +137,22 @@ wird als Duplikat erkannt (kein Doppel), Löschen funktioniert.
 Ankündigungs-Instanz anlegen (Bilder aus Mediathek wählen), Reihenfolge/Aktiv/
 Gültig-bis testen, pausieren/löschen.
 
+**5b-Erweiterung FRET-Geräte-Whitelist — gebaut, Migration + Live-Test offen.**
+- Migration **`05_migration_fret_geraete.sql`**: Tabelle `fret_geraete`
+  (uuid unique, fret_name, anzeige_name, freigegeben, gesehen_am).
+- `includes/FretApi.php` (`listComputers()` serverseitig, schoolId bleibt in
+  config), `includes/FretGeraet.php` (Sync via INSERT…ON DUP KEY, CRUD).
+- `admin/fret-geraete.php` (Nav „FRET-Geräte"): „Von FRET aktualisieren" holt
+  Computerliste, Admin vergibt Anzeigenamen + Freigabe.
+- `modules/fret/module.json`: `computer_id` → `select`; `ModuleRegistry`
+  unterstützt jetzt **dynamische Select-Optionen** (`renderSettingsForm` 3.
+  Parameter). `admin/instanz.php` speist im FRET-Editor nur **freigegebene**
+  Geräte als Dropdown ein (nicht-freigegebener Altwert bleibt sichtbar markiert).
+- FRET-Proxy (`proxies/fret.php`) bewusst unverändert.
+- **Live-Test:** Migration 05 einspielen, Dateien hochladen, „FRET-Geräte" →
+  aktualisieren → Saal benennen + freigeben → im FRET-Modul-Editor erscheint
+  das Dropdown.
+
 ## Zugriffsschutz / Benutzerkonten
 
 - Root-`.htaccess` (Referenz im Repo: `02_ordnerstruktur/screen.tcpayer.de/.htaccess`)

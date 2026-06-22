@@ -26,6 +26,8 @@ require $WURZEL . '/includes/ModulInstanz.php';
 require $WURZEL . '/includes/MediathekOrdner.php';
 require $WURZEL . '/includes/MediathekTag.php';
 require $WURZEL . '/includes/Mediathek.php';
+require $WURZEL . '/includes/FretApi.php';
+require $WURZEL . '/includes/FretGeraet.php';
 
 // ----------------------------------------------------------------------------
 // PLATZHALTER für späteren Login-Schutz (eigener Schritt):

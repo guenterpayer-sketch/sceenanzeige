@@ -7,9 +7,10 @@
   "settings": [
     {
       "key": "computer_id",
-      "type": "text",
-      "label": "FRET-Computer-UUID (Saal-Zuordnung; über Backend-Auswahl ermittelbar)",
-      "default": ""
+      "type": "select",
+      "label": "FRET-Gerät (nur freigegebene; im Bereich „FRET-Geräte“ verwalten)",
+      "default": "",
+      "options": []
     },
     {
       "key": "zeige_playlist",
