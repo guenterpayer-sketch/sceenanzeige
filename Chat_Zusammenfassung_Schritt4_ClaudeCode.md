@@ -5,27 +5,24 @@
 
 ---
 
-## 0. Wichtigster Punkt zuerst (offen / zu erledigen!)
+## 0. Status der zuletzt offenen Fixes — ERLEDIGT ✅
 
-Es gibt **zwei noch nicht umgesetzte Code-Änderungen**, für die zuletzt das
-GO ausstand. **Punkt A ist dringend**, weil der Live-Server sonst beim
-Anlegen von Bild-/Ankündigungs-Inhalten einen SQL-Fehler wirft:
+Beide zuvor offenen Code-Änderungen sind inzwischen umgesetzt, committet
+und gepusht:
 
-**A) PFLICHT-FIX — `includes/ModulInstanz.php`, Funktion `addInhalt`:**
-Die bereits eingespielte Migration hat die Spalte `ablaufdatum` in
-**`gueltig_bis`** umbenannt. `addInhalt` schreibt aber noch in `ablaufdatum`
-→ muss auf `gueltig_bis` geändert werden. (Die Frontends lesen `gueltig_bis`
-schon korrekt; nur das Schreiben fehlt.)
+**A) ERLEDIGT — `includes/ModulInstanz.php`, `addInhalt`:** schreibt jetzt in
+`gueltig_bis` statt `ablaufdatum` (passend zum migrierten Live-Schema).
 
-**B) NC-Key schulweit (Design-Korrektur des Nutzers):**
-Es gibt **je Software genau einen Key/Identifier, schulweit** — nicht pro Saal.
-- `config.php`: Konstante **`NC_API_KEY`** ergänzen.
-- `proxies/nc.php`: Key aus `NC_API_KEY` (config) lesen statt aus der
-  DB-Tabelle `einstellungen`; `saal_id` wird für den Key nicht mehr gebraucht.
-- Die Spalten `nc_api_key_stundenplan`/`nc_api_key_stammdaten` in
-  `einstellungen` bleiben als ungenutzte Altlast stehen (kein DB-Eingriff).
+**B) ERLEDIGT — NC-Key schulweit:** `config.php` hat jetzt die Konstante
+`NC_API_KEY`; `proxies/nc.php` liest den Key von dort (nicht mehr pro Saal
+aus der DB). `saal_id` wird für den Key nicht mehr gebraucht. Die Spalten
+`nc_api_key_stundenplan`/`nc_api_key_stammdaten` in `einstellungen` bleiben
+ungenutzte Altlast.
 
-→ Im neuen Chat als Erstes: **GO einholen und A + B umsetzen.**
+→ Nächster Schritt im neuen Chat: **die drei geänderten Dateien neu auf den
+Server laden** (`includes/ModulInstanz.php`, `config.php`, `proxies/nc.php`),
+in `config.php` die echten Werte eintragen und den **Live-Test** (Abschnitt 5)
+durchführen.
 
 ---
 
@@ -144,8 +141,9 @@ dem Server sind Altlast (stören nicht, dürfen gelöscht werden).
 
 ## 6. Nächste Schritte
 
-1. **Fix A (Pflicht) + Fix B (NC-Key)** umsetzen (GO einholen) → pushen.
-2. **Live-Test** Schritt 4 (Testseite) durchführen, Fehler zurückmelden.
+1. ~~Fix A + Fix B umsetzen~~ ✅ erledigt (siehe Abschnitt 0).
+2. Geänderte Dateien neu hochladen + **Live-Test** Schritt 4 durchführen,
+   Fehler zurückmelden.
 3. Danach **Schritt 5**: Backend-Bibliothek (Modul-Instanzen verwalten inkl.
    `aktiv`/`gueltig_bis`) + **Mediathek** (zentrale Bildtabelle mit SHA-256-
    Duplikaterkennung, Drag&Drop) — Schema dafür ist durch die Migration

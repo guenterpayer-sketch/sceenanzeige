@@ -6,14 +6,14 @@
  * Siehe NC_Legacy_API_Stundenplan.md sowie Abschnitt 9 der Projektdoku.
  *
  * WICHTIG (Sicherheit):
- *   - Der API-Key wird AUSSCHLIESSLICH serverseitig aus der Tabelle
- *     `einstellungen` (Spalte nc_api_key_stundenplan) gelesen und niemals
- *     ans Frontend übertragen.
+ *   - Es gibt genau EINEN NC-API-Key pro Schule. Er wird serverseitig aus
+ *     `config.php` (Konstante NC_API_KEY) gelesen und niemals ans Frontend
+ *     übertragen.
  *   - Auth-Mechanismus der Legacy-API: API-Key als POST-FORM-Parameter
  *     `apikey` (NICHT im Header X-API-Key — Unterschied zur aktuellen API!).
  *
  * Aufruf vom (Saal-)Frontend:
- *   GET proxies/nc.php?saal_id=<int>[&nur_heute=0|1][&anzahl=<int>]
+ *   GET proxies/nc.php[?nur_heute=0|1][&anzahl=<int>]
  *
  * Nicht-sensible Anzeige-Einstellungen (nur_heute, anzahl) dürfen als
  * Query-Parameter kommen, da sie ohnehin in den Modul-Instanz-Einstellungen
@@ -28,35 +28,18 @@ require __DIR__ . '/_cors.php';
 proxy_cors_und_json();
 
 // ----------------------------------------------------------------------------
-// Parameter einlesen
+// Parameter einlesen (nur nicht-sensible Anzeige-Einstellungen)
 // ----------------------------------------------------------------------------
-$saalId   = isset($_GET['saal_id']) ? (int)$_GET['saal_id'] : 0;
 $nurHeute = ($_GET['nur_heute'] ?? '1') !== '0';
 $anzahl   = isset($_GET['anzahl']) ? max(0, (int)$_GET['anzahl']) : 0; // 0 = ohne Begrenzung
 $days     = $nurHeute ? 1 : 7; // Legacy-API: max. 7 Tage
 
 // ----------------------------------------------------------------------------
-// API-Key serverseitig laden (pro Saal; Fallback: erster gesetzter Key)
+// API-Key serverseitig aus config.php (ein Key pro Schule, schulweit)
 // ----------------------------------------------------------------------------
-try {
-    $pdo = get_pdo();
-    if ($saalId > 0) {
-        $stmt = $pdo->prepare('SELECT nc_api_key_stundenplan FROM einstellungen WHERE saal_id = :sid');
-        $stmt->execute([':sid' => $saalId]);
-        $apiKey = $stmt->fetchColumn();
-    } else {
-        $apiKey = $pdo->query(
-            "SELECT nc_api_key_stundenplan FROM einstellungen
-             WHERE nc_api_key_stundenplan IS NOT NULL AND nc_api_key_stundenplan <> ''
-             ORDER BY saal_id LIMIT 1"
-        )->fetchColumn();
-    }
-} catch (Throwable $e) {
-    proxy_fehler('Datenbankfehler beim Laden des API-Keys.', 500);
-}
-
-if (!$apiKey) {
-    proxy_fehler('Kein Nimbuscloud-Stundenplan-Key für diesen Saal hinterlegt.', 500);
+$apiKey = defined('NC_API_KEY') ? NC_API_KEY : '';
+if ($apiKey === '') {
+    proxy_fehler('NC_API_KEY ist nicht konfiguriert (config.php).', 500);
 }
 
 // ----------------------------------------------------------------------------

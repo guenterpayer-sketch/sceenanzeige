@@ -31,10 +31,12 @@ define('UPLOADS_URL', 'https://screen.tcpayer.de/uploads');
 // ----------------------------------------------------------------------------
 // Nimbuscloud Legacy-API (stundenplan-Modul, siehe NC_Legacy_API_Stundenplan.md)
 // Basis-URL der schul-spezifischen Instanz, OHNE abschließenden Slash.
-// Der eigentliche API-Key liegt NICHT hier, sondern pro Saal serverseitig in
-// der Tabelle `einstellungen` (Spalte nc_api_key_stundenplan).
+// Es gibt genau EINEN Nimbuscloud-API-Key pro Schule (nicht pro Saal) — er
+// liegt daher schulweit hier, serverseitig, und gelangt nie ans Frontend.
+// Berechtigung des Keys: "Stundenplan — Lesezugriff".
 // ----------------------------------------------------------------------------
 define('NC_API_BASE', 'https://xyz.nimbuscloud.at/api/json/v1');
+define('NC_API_KEY', '');
 
 // ----------------------------------------------------------------------------
 // FRET-API (song-Modul, siehe Projektzusammenfassung_Song_Anzeige.md)

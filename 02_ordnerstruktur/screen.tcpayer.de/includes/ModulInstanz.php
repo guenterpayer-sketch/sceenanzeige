@@ -89,18 +89,18 @@ final class ModulInstanz
     // Unter-Inhalte (z.B. einzelne Bilder einer "bild"-Instanz)
     // ------------------------------------------------------------------
 
-    public static function addInhalt(int $modulInstanzId, ?string $dateiname, ?string $textInhalt, int $reihenfolge, int $dauerSek, ?string $ablaufdatum = null): int
+    public static function addInhalt(int $modulInstanzId, ?string $dateiname, ?string $textInhalt, int $reihenfolge, int $dauerSek, ?string $gueltigBis = null): int
     {
         $pdo = get_pdo();
         $stmt = $pdo->prepare(
-            'INSERT INTO modul_instanz_inhalte (modul_instanz_id, dateiname, text_inhalt, ablaufdatum, reihenfolge, dauer_sek)
-             VALUES (:mid, :dateiname, :text, :ablauf, :reihenfolge, :dauer)'
+            'INSERT INTO modul_instanz_inhalte (modul_instanz_id, dateiname, text_inhalt, gueltig_bis, reihenfolge, dauer_sek)
+             VALUES (:mid, :dateiname, :text, :gueltig, :reihenfolge, :dauer)'
         );
         $stmt->execute([
             ':mid' => $modulInstanzId,
             ':dateiname' => $dateiname,
             ':text' => $textInhalt,
-            ':ablauf' => $ablaufdatum,
+            ':gueltig' => $gueltigBis,
             ':reihenfolge' => $reihenfolge,
             ':dauer' => $dauerSek,
         ]);
