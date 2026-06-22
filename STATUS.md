@@ -7,8 +7,8 @@
 > **Branch:** `claude/nifty-johnson-3q6u7g` (gesamter Stand liegt hier,
 > **nicht** auf `main`).
 
-_Letzte Aktualisierung: Ende Schritt-4-Arbeit (Module + Proxys gebaut, Fixes
-A/B erledigt, Live-Test steht noch aus)._
+_Letzte Aktualisierung: Ende Schritt-6-Arbeit (Playlist-Editor gebaut, lokal
+per `php -l` geprüft, Live-Test steht noch aus)._
 
 ---
 
@@ -21,8 +21,8 @@ A/B erledigt, Live-Test steht noch aus)._
 | 3 | Modul-Registry + `uhrzeit`, `bild` | ✅ live |
 | 4 | `stundenplan`, `ankuendigung`, `fret` + NC-/FRET-Proxy + Testseite | ✅ live getestet (alle 5 Module inkl. `stundenplan`) |
 | 5 | Backend-Bibliothek + Mediathek | ✅ live getestet (Mediathek + Ordner/Tags, Bibliothek/Instanz-Editor, FRET-Geräte-Whitelist) |
-| 6 | Playlist-Editor (Layout-Konfigurator) | ▶️ als Nächstes |
-| 7 | Zeitregeln + Saal-Zuweisung | offen |
+| 6 | Playlist-Editor (Layout-Konfigurator) | 🧪 Code fertig, Live-Test offen |
+| 7 | Zeitregeln + Saal-Zuweisung | ▶️ als Nächstes |
 | 8 | Ticker-Verwaltung | offen |
 | 9 | Monitor-Frontend (Anzeige-/Zeitlogik) | offen |
 | 10 | Live-Vorschau (iFrame) | offen |
@@ -30,12 +30,16 @@ A/B erledigt, Live-Test steht noch aus)._
 
 ---
 
-## Aktueller Fokus: Schritt 5 ✅ erledigt → Schritt 6 startet in eigenem Chat
+## Aktueller Fokus: Schritt 6 🧪 Code fertig (Live-Test offen) → Schritt 7 als Nächstes
 
-Schritt 6 (Playlist-Editor) wird in einem **neuen Chat** begonnen. Briefing
-dafür: **`Schritt6_Vorbereitung.md`** (Ziel, Abgrenzung zu Schritt 7/9/10,
-vorhandene Bausteine, empfohlener Aufbau, offene Fragen). Zu Beginn dort
-`CLAUDE.md` + `STATUS.md` + `Schritt6_Vorbereitung.md` lesen.
+Schritt 6 (Playlist-Editor) ist gebaut und committet/gepusht; Live-Test durch
+den Nutzer steht aus. **Keine Migration** (Playlist-Tabellen waren bereits
+live). Deployment-ZIP: **`Schritt6_playlist-editor.zip`** (Struktur unter
+`screen.tcpayer.de/`, einfach in den Subdomain-Ordner entpacken).
+
+Schritt 7 (Zeitregeln + Saal-Zuweisung) baut darauf auf: Tabellen
+`playlist_zeitregeln` + `playlist_saele` sind live vorhanden und in Schritt 6
+bewusst unberührt geblieben.
 
 Schritt 5 vollständig live getestet: Mediathek (Upload/Dup-Erkennung, Ordner,
 Tags, Anzeigename), Bibliothek + Instanz-Editor (alle Modultypen, Inhalte-
@@ -170,6 +174,54 @@ Gültig-bis testen, pausieren/löschen.
 - **Live-Test:** Migration 05 einspielen, Dateien hochladen, „FRET-Geräte" →
   aktualisieren → Saal benennen + freigeben → im FRET-Modul-Editor erscheint
   das Dropdown.
+
+## Schritt 6 — Stand (Playlist-Editor, Code fertig, Live-Test offen)
+
+**Keine Migration** — `playlists`, `playlist_layout`, `playlist_spalten_inhalte`
+waren bereits live. Deployment-ZIP: `Schritt6_playlist-editor.zip`.
+
+Neue/aktualisierte Dateien (alle committet + gepusht):
+- **Layouts** (öffentlich, für Monitor-Rendering Schritt 9): je `layout.json` +
+  `template.html` für `1-spaltig`, `2-spaltig-60-40`, `2-spaltig-50-50`,
+  `3-spaltig-gleich`. Template = CSS-Grid-Gerüst mit `{{spalteN_breite}}`-
+  Platzhaltern; `.tm-spalte[data-spalte]` füllt der Renderer später.
+- `includes/LayoutRegistry.php` — analog `ModuleRegistry` (`getAll/load/exists`,
+  `templateHtml`, `gleichBreiten`).
+- `includes/Playlist.php` — CRUD (`create` legt Default-Layout 1-spaltig mit an,
+  `update/find/listAll/delete/setAktiv`, `nameExistiert`), Layout-UPSERT
+  (`speichereLayout` via `ON DUPLICATE KEY UPDATE`/`VALUES()`, MariaDB-konform),
+  `ladeLayout`, `layoutIdAus` (leitet Layout-ID aus spalten_anzahl+Breiten ab,
+  da das Schema keine Layout-ID-Spalte hat), `listSpaltenInhalte`,
+  `ersetzeSpaltenInhalte` (Bulk in Transaktion, Reihenfolge je Spalte).
+- `admin/playlists.php` — Kachel-Übersicht (Layout-Kurzinfo + Modul-Anzahl),
+  Aktiv-Toggle, Bearbeiten, Löschen (Rückfrage), „+ Neue Playlist".
+- `admin/playlist.php` — Editor: Name, Aktiv, Layout-Auswahl (Radio-Kacheln mit
+  Mini-Schema), **Breitenregler nur 2-spaltig (gekoppelt), 3-spaltig immer
+  gleich, 1-spaltig 100 %**, Header/Footer-Schalter, schematische 16:9-Vorschau,
+  Spalten-Editor mit Instanz-Picker (Filter nach Modulart) + ↑/↓/Entfernen.
+- `admin/api/instanz-list.php` — JSON-Quelle für den Picker.
+- `admin/includes/layout.php` — Nav „Playlists" aktiviert.
+- `admin/includes/bootstrap.php` — lädt `LayoutRegistry` + `Playlist`.
+- `assets/css/admin.css` — Editor-Styles ergänzt (Akzent #ad2121).
+
+**Design-Entscheidungen Schritt 6 (vom Nutzer bestätigt):**
+- Spaltenbreiten: 2-spaltig gekoppelter Schieberegler; 3-spaltig immer
+  gleichmäßig (34/33/33); 1-spaltig fix 100 %.
+- `layout_override` pro Instanz auf **Schritt 9 vertagt** (DB-Spalte bleibt,
+  keine UI).
+- Schematische Vorschau: ja (nur Proportionen).
+- Schema speichert **keine** Layout-ID-Spalte → Layout-Zuordnung wird aus
+  `spalten_anzahl` + Breiten abgeleitet (`Playlist::layoutIdAus`).
+
+**Bewusste UX-Details:** Beim Verringern der Spaltenzahl werden Einträge aus
+wegfallenden Spalten in die letzte sichtbare Spalte verschoben (nichts geht
+unbemerkt verloren); doppelte Instanz in derselben Spalte wird verhindert.
+
+**Live-Test 6 (To-do Nutzer):** ZIP in `screen.tcpayer.de/` entpacken, im
+Backend „Playlists" → „Neue Playlist": Name, Layout wählen (Regler bei
+2-spaltig testen), Instanzen je Spalte zuweisen (Picker), Reihenfolge ↑/↓,
+speichern; danach erneut öffnen (Vorbelegung prüft Layout + Spalten),
+Pausieren/Löschen testen.
 
 ## Zugriffsschutz / Benutzerkonten
 
