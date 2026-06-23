@@ -94,8 +94,7 @@ final class Playlist
                        l.spalten_anzahl, l.spalte1_breite, l.spalte2_breite, l.spalte3_breite,
                        l.header_uhrzeit, l.footer_ticker,
                        (SELECT COUNT(*) FROM playlist_spalten_inhalte s WHERE s.playlist_id = p.id) AS anzahl_module,
-                       (SELECT COUNT(*) FROM playlist_zeitregeln z WHERE z.playlist_id = p.id) AS anzahl_zeitregeln,
-                       (SELECT COUNT(*) FROM playlist_saele ps WHERE ps.playlist_id = p.id) AS anzahl_saele
+                       (SELECT COUNT(DISTINCT z.monitor_id) FROM monitor_zeitplan z WHERE z.playlist_id = p.id) AS anzahl_monitore
                 FROM playlists p
                 LEFT JOIN playlist_layout l ON l.playlist_id = p.id
                 ORDER BY p.name';
@@ -251,106 +250,7 @@ final class Playlist
         }
     }
 
-    // ------------------------------------------------------------------
-    // Zeitregeln (playlist_zeitregeln) — Schritt 7
-    // ------------------------------------------------------------------
-
-    /**
-     * Zeitregeln einer Playlist, sortiert nach Priorität (hoch zuerst), dann Uhrzeit.
-     * @return array<int,array>
-     */
-    public static function ladeZeitregeln(int $playlistId): array
-    {
-        $stmt = get_pdo()->prepare(
-            'SELECT id, wochentage, von_uhrzeit, bis_uhrzeit, prioritaet
-             FROM playlist_zeitregeln
-             WHERE playlist_id = :id
-             ORDER BY prioritaet DESC, von_uhrzeit, id'
-        );
-        $stmt->execute([':id' => $playlistId]);
-        return $stmt->fetchAll();
-    }
-
-    /**
-     * Ersetzt alle Zeitregeln einer Playlist durch die übergebene Liste.
-     *
-     * @param array<int,array{wochentage:string,von:string,bis:string,prioritaet?:int}> $regeln
-     */
-    public static function ersetzeZeitregeln(int $playlistId, array $regeln): void
-    {
-        $pdo = get_pdo();
-        $pdo->beginTransaction();
-        try {
-            $pdo->prepare('DELETE FROM playlist_zeitregeln WHERE playlist_id = :id')
-                ->execute([':id' => $playlistId]);
-
-            $stmt = $pdo->prepare(
-                'INSERT INTO playlist_zeitregeln
-                    (playlist_id, wochentage, von_uhrzeit, bis_uhrzeit, prioritaet)
-                 VALUES (:pid, :tage, :von, :bis, :prio)'
-            );
-            foreach ($regeln as $r) {
-                $tage = trim((string)($r['wochentage'] ?? ''));
-                $von  = trim((string)($r['von'] ?? ''));
-                $bis  = trim((string)($r['bis'] ?? ''));
-                if ($tage === '' || $von === '' || $bis === '') {
-                    continue;
-                }
-                $stmt->execute([
-                    ':pid'  => $playlistId,
-                    ':tage' => $tage,
-                    ':von'  => $von,
-                    ':bis'  => $bis,
-                    ':prio' => (int)($r['prioritaet'] ?? 0),
-                ]);
-            }
-            $pdo->commit();
-        } catch (Throwable $e) {
-            $pdo->rollBack();
-            throw $e;
-        }
-    }
-
-    // ------------------------------------------------------------------
-    // Saal-Zuweisung (playlist_saele) — Schritt 7
-    // ------------------------------------------------------------------
-
-    /** @return int[] saal_ids, die dieser Playlist zugewiesen sind */
-    public static function ladeSaele(int $playlistId): array
-    {
-        $stmt = get_pdo()->prepare('SELECT saal_id FROM playlist_saele WHERE playlist_id = :id');
-        $stmt->execute([':id' => $playlistId]);
-        return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
-    }
-
-    /**
-     * Ersetzt die Saal-Zuweisung einer Playlist durch die übergebene Liste.
-     * @param int[] $saalIds
-     */
-    public static function ersetzeSaele(int $playlistId, array $saalIds): void
-    {
-        $pdo = get_pdo();
-        $pdo->beginTransaction();
-        try {
-            $pdo->prepare('DELETE FROM playlist_saele WHERE playlist_id = :id')
-                ->execute([':id' => $playlistId]);
-
-            $stmt = $pdo->prepare(
-                'INSERT INTO playlist_saele (playlist_id, saal_id) VALUES (:pid, :sid)'
-            );
-            $gesehen = [];
-            foreach ($saalIds as $sid) {
-                $sid = (int)$sid;
-                if ($sid <= 0 || isset($gesehen[$sid])) {
-                    continue;
-                }
-                $gesehen[$sid] = true;
-                $stmt->execute([':pid' => $playlistId, ':sid' => $sid]);
-            }
-            $pdo->commit();
-        } catch (Throwable $e) {
-            $pdo->rollBack();
-            throw $e;
-        }
-    }
+    // Hinweis: Zeitplanung + Monitor-Zuordnung sind monitor-zentrisch und
+    // liegen jetzt in Monitor::ladeZeitplan/ersetzeZeitplan (Tabelle
+    // monitor_zeitplan), nicht mehr an der Playlist.
 }
