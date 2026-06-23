@@ -378,6 +378,7 @@ function pl_modul_icon(string $icon): string
         e.innerHTML =
             '<input type="hidden" data-feld="modul_instanz_id" value="' + escapeHtml(data.modul_instanz_id) + '">' +
             '<input type="hidden" data-feld="spalte" value="">' +
+            '<span class="adm-eintrag-griff" title="Ziehen zum Verschieben (auch zwischen Spalten)">⠿</span>' +
             '<span class="adm-eintrag-icon">' + icon(data.icon) + '</span>' +
             '<span class="adm-eintrag-text">' +
                 '<span class="adm-eintrag-name">' + escapeHtml(data.name) +
@@ -424,6 +425,86 @@ function pl_modul_icon(string $icon): string
         if (akt === 'runter' && eintrag.nextElementSibling) {
             liste.insertBefore(eintrag.nextElementSibling, eintrag);
         }
+    });
+
+    // ---- Drag & Drop (Einträge innerhalb + zwischen Spalten verschieben) ----
+    // Nur über den Griff (⠿) ziehbar, damit Klicks auf ↑/↓/× nicht ziehen.
+    var gezogen = null, urParent = null, urNext = null, griffEintrag = null;
+
+    spaltenWrap.addEventListener('mousedown', function (e) {
+        if (e.target.closest('.adm-eintrag-griff')) {
+            griffEintrag = e.target.closest('.adm-spalte-eintrag');
+            if (griffEintrag) { griffEintrag.setAttribute('draggable', 'true'); }
+        }
+    });
+    // Aufräumen: nach Klick/Drag draggable wieder zurücknehmen
+    document.addEventListener('mouseup', function () {
+        if (griffEintrag && griffEintrag !== gezogen) {
+            griffEintrag.removeAttribute('draggable');
+        }
+        griffEintrag = null;
+    });
+
+    function getEintragNach(liste, y) {
+        var els = Array.prototype.slice.call(
+            liste.querySelectorAll('.adm-spalte-eintrag:not(.wird-gezogen)')
+        );
+        var naechste = { offset: Number.NEGATIVE_INFINITY, element: null };
+        els.forEach(function (child) {
+            var box = child.getBoundingClientRect();
+            var offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > naechste.offset) {
+                naechste = { offset: offset, element: child };
+            }
+        });
+        return naechste.element; // null = ans Ende anhängen
+    }
+
+    spaltenWrap.addEventListener('dragstart', function (e) {
+        var eintrag = e.target.closest('.adm-spalte-eintrag');
+        if (!eintrag || eintrag.getAttribute('draggable') !== 'true') { return; }
+        gezogen  = eintrag;
+        urParent = eintrag.parentElement;
+        urNext   = eintrag.nextElementSibling;
+        e.dataTransfer.effectAllowed = 'move';
+        try { e.dataTransfer.setData('text/plain', eintrag.getAttribute('data-mid')); } catch (ex) {}
+        setTimeout(function () { eintrag.classList.add('wird-gezogen'); }, 0);
+    });
+
+    spaltenWrap.addEventListener('dragover', function (e) {
+        if (!gezogen) { return; }
+        var liste = e.target.closest('.adm-spalte-liste');
+        if (!liste) { return; }
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        var nach = getEintragNach(liste, e.clientY);
+        if (nach) { liste.insertBefore(gezogen, nach); }
+        else      { liste.appendChild(gezogen); }
+        pruefeLeer(liste.closest('.adm-spalte')); // Platzhalter im Ziel entfernen
+    });
+
+    spaltenWrap.addEventListener('drop', function (e) {
+        if (!gezogen) { return; }
+        e.preventDefault();
+        var zielListe = gezogen.parentElement;
+        var mid = gezogen.getAttribute('data-mid');
+        // Doppelte Instanz in derselben Spalte verhindern → zurück an Ursprung
+        var doppelt = Array.prototype.slice.call(
+            zielListe.querySelectorAll('.adm-spalte-eintrag')
+        ).some(function (el) { return el !== gezogen && el.getAttribute('data-mid') === mid; });
+        if (doppelt) {
+            if (urParent) { urParent.insertBefore(gezogen, urNext); }
+            alert('Diese Instanz ist in der Zielspalte bereits enthalten.');
+        }
+    });
+
+    spaltenWrap.addEventListener('dragend', function () {
+        if (gezogen) {
+            gezogen.classList.remove('wird-gezogen');
+            gezogen.removeAttribute('draggable');
+        }
+        gezogen = urParent = urNext = null;
+        spaltenWrap.querySelectorAll('.adm-spalte').forEach(pruefeLeer);
     });
 
     // Layout-Wechsel

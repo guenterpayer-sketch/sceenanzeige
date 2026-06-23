@@ -199,6 +199,10 @@ Neue/aktualisierte Dateien (alle committet + gepusht):
   Mini-Schema), **Breitenregler nur 2-spaltig (gekoppelt), 3-spaltig immer
   gleich, 1-spaltig 100 %**, Header/Footer-Schalter, schematische 16:9-Vorschau,
   Spalten-Editor mit Instanz-Picker (Filter nach Modulart) + ↑/↓/Entfernen.
+  **Drag & Drop:** Einträge per Griff (⠿) innerhalb einer Spalte umsortieren
+  und zwischen Spalten verschieben (native HTML5-DnD, vanilla JS, keine
+  Library); ↑/↓ bleiben als Fallback. Dublette in derselben Spalte wird beim
+  Drop verhindert (zurück an Ursprung).
 - `admin/api/instanz-list.php` — JSON-Quelle für den Picker.
 - `admin/includes/layout.php` — Nav „Playlists" aktiviert.
 - `admin/includes/bootstrap.php` — lädt `LayoutRegistry` + `Playlist`.

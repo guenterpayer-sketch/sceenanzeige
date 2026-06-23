@@ -499,3 +499,13 @@ body {
 }
 .adm-picker-instanz:hover { border-color: #ad2121; box-shadow: 0 0 0 2px rgba(173,33,33,.15); }
 .adm-picker-instanz.inaktiv { opacity: .6; }
+
+/* Drag & Drop im Spalten-Editor */
+.adm-eintrag-griff {
+    flex: 0 0 auto; cursor: grab; color: #8a97a6; font-size: 18px;
+    line-height: 1; padding: 0 2px; user-select: none; touch-action: none;
+}
+.adm-eintrag-griff:active { cursor: grabbing; }
+.adm-spalte-eintrag.wird-gezogen { opacity: .4; outline: 2px dashed #ad2121; }
+/* leere Spalten als bequeme Drop-Fläche */
+.adm-spalte-liste { min-height: 44px; }
