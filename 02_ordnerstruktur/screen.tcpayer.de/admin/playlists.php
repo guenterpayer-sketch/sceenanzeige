@@ -83,6 +83,10 @@ admin_header('Playlists', 'playlists');
                     <?= (int)$p['anzahl_module'] ?> Modul-Instanz<?= (int)$p['anzahl_module'] === 1 ? '' : 'en' ?>
                 </span>
             </div>
+            <div class="adm-kachel-badges">
+                <span class="adm-meta-badge" title="Zeitregeln">🕒 <?= (int)$p['anzahl_zeitregeln'] ?></span>
+                <span class="adm-meta-badge" title="zugewiesene Säle">🏠 <?= (int)$p['anzahl_saele'] ?></span>
+            </div>
             <div class="adm-kachel-body">
                 <div class="adm-kachel-name">
                     <?= htmlspecialchars($p['name']) ?>

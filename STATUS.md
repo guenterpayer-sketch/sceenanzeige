@@ -7,8 +7,8 @@
 > **Branch:** `claude/nifty-johnson-3q6u7g` (gesamter Stand liegt hier,
 > **nicht** auf `main`).
 
-_Letzte Aktualisierung: Schritt 6 abgeschlossen (Playlist-Editor inkl. Drag &
-Drop live getestet, vom Nutzer bestätigt)._
+_Letzte Aktualisierung: Ende Schritt-7-Arbeit (Säle-Verwaltung + Zeitregeln +
+Saal-Zuweisung gebaut, lokal per `php -l` geprüft, Live-Test steht noch aus)._
 
 ---
 
@@ -22,26 +22,24 @@ Drop live getestet, vom Nutzer bestätigt)._
 | 4 | `stundenplan`, `ankuendigung`, `fret` + NC-/FRET-Proxy + Testseite | ✅ live getestet (alle 5 Module inkl. `stundenplan`) |
 | 5 | Backend-Bibliothek + Mediathek | ✅ live getestet (Mediathek + Ordner/Tags, Bibliothek/Instanz-Editor, FRET-Geräte-Whitelist) |
 | 6 | Playlist-Editor (Layout-Konfigurator) | ✅ live getestet (inkl. Drag & Drop der Spalten-Inhalte) |
-| 7 | Zeitregeln + Saal-Zuweisung | ▶️ als Nächstes |
-| 8 | Ticker-Verwaltung | offen |
+| 7 | Zeitregeln + Saal-Zuweisung (inkl. Säle-Verwaltung) | 🧪 Code fertig, Live-Test offen |
+| 8 | Ticker-Verwaltung | ▶️ als Nächstes |
 | 9 | Monitor-Frontend (Anzeige-/Zeitlogik) | offen |
 | 10 | Live-Vorschau (iFrame) | offen |
 | 11 | Deployment-Guide | offen |
 
 ---
 
-## Aktueller Fokus: Schritt 6 ✅ abgeschlossen → Schritt 7 als Nächstes
+## Aktueller Fokus: Schritt 7 🧪 Code fertig (Live-Test offen) → Schritt 8 als Nächstes
 
-Schritt 6 (Playlist-Editor) ist **live getestet und vom Nutzer bestätigt**
-(inkl. Drag & Drop der Spalten-Inhalte). **Keine Migration** (Playlist-Tabellen
-waren bereits live). Deployment-ZIP: **`Schritt6_playlist-editor.zip`**
+Schritt 7 (Säle-Verwaltung + Zeitregeln + Saal-Zuweisung) ist gebaut,
+committet/gepusht; Live-Test durch den Nutzer steht aus. **Keine Migration**
+(`saele`, `playlist_zeitregeln`, `playlist_saele` waren bereits live, `saele`
+hatte 0 Einträge). Deployment-ZIP: **`Schritt7_zeitregeln-saele.zip`**
 (Struktur unter `screen.tcpayer.de/`, in den Subdomain-Ordner entpacken).
 
-Schritt 7 (Zeitregeln + Saal-Zuweisung) baut darauf auf: Tabellen
-`playlist_zeitregeln` + `playlist_saele` sind live vorhanden und in Schritt 6
-bewusst unberührt geblieben. Briefing für Schritt 7 (Ziel, Abgrenzung,
-vorhandene Bausteine) wird zu Beginn des nächsten Chats erstellt — analog zu
-`Schritt6_Vorbereitung.md`.
+Schritt 6 (Playlist-Editor) bleibt **live getestet und bestätigt** (inkl.
+Drag & Drop). Deployment-ZIP dazu: `Schritt6_playlist-editor.zip`.
 
 Schritt 5 vollständig live getestet: Mediathek (Upload/Dup-Erkennung, Ordner,
 Tags, Anzeigename), Bibliothek + Instanz-Editor (alle Modultypen, Inhalte-
@@ -228,6 +226,45 @@ Backend „Playlists" → „Neue Playlist": Name, Layout wählen (Regler bei
 2-spaltig testen), Instanzen je Spalte zuweisen (Picker), Reihenfolge ↑/↓,
 speichern; danach erneut öffnen (Vorbelegung prüft Layout + Spalten),
 Pausieren/Löschen testen.
+
+## Schritt 7 — Stand (Zeitregeln + Saal-Zuweisung, Code fertig, Live-Test offen)
+
+**Keine Migration** — `saele`, `playlist_zeitregeln`, `playlist_saele` waren
+bereits live (`saele` hatte 0 Einträge, daher Säle-Verwaltung mitgebaut).
+Deployment-ZIP: `Schritt7_zeitregeln-saele.zip`.
+
+Neue/aktualisierte Dateien (alle committet + gepusht):
+- `includes/Saal.php` — CRUD, `normSubdomain` (klein, ohne Domain),
+  `subdomainExistiert`, `listAll` mit Anzahl zugewiesener Playlists.
+- `admin/saele.php` — Säle anlegen/bearbeiten (`?edit=<id>` füllt das Formular
+  vor)/löschen (Rückfrage warnt bei zugewiesenen Playlists). Nav „Säle" aktiv.
+- `includes/Playlist.php` — `ladeZeitregeln`/`ersetzeZeitregeln`,
+  `ladeSaele`/`ersetzeSaele` (Bulk in Transaktion); `listAll` zählt zusätzlich
+  Zeitregeln + zugewiesene Säle (Badges).
+- `admin/playlist.php` — zwei neue Karten: **Zeitregeln** (dynamische Zeilen,
+  7 Wochentag-Toggle-Buttons + Presets Alle/Mo–Fr/Wochenende, von/bis,
+  Priorität; Validierung `von < bis` und ≥1 Tag, Eingaben bleiben nach Fehler
+  erhalten) und **Säle** (Checkbox-Auswahl, nur existierende Säle).
+- `admin/playlists.php` — Kachel-Badges: Anzahl Zeitregeln (🕒) + Säle (🏠).
+- `admin/includes/{bootstrap,layout}.php`, `assets/css/admin.css` ergänzt.
+
+**Design-Entscheidungen Schritt 7 (vom Nutzer bestätigt):**
+- Säle-Verwaltung mitgebaut (sonst Saal-Zuweisung leer).
+- Wochentage: Toggle-Buttons + Presets.
+- Zeitregeln über Mitternacht: **nicht** in Schritt 7 — `von < bis` erzwungen
+  (über Mitternacht = zwei Regeln; echte Overnight-Logik später nachrüstbar).
+- Übersicht-Badges: ja.
+
+**Datenmodell-Notiz:** `wochentage` als `"1,2,3,4,5"` (1=Montag). Auswertung
+zur Laufzeit (welche Playlist *jetzt* je Saal, Prioritäts-Konflikt) bleibt
+**Schritt 9** (Monitor); Schritt 7 erfasst nur die Daten.
+
+**Live-Test 7 (To-do Nutzer):** ZIP in `screen.tcpayer.de/` entpacken. „Säle":
+einen/mehrere Säle anlegen (Subdomain wird normalisiert), bearbeiten, löschen.
+„Playlists" → Playlist bearbeiten: Zeitregel(n) anlegen (Tage/Presets, von/bis,
+Priorität), Säle zuweisen, speichern; erneut öffnen (Vorbelegung prüfen);
+Validierung testen (von ≥ bis bzw. kein Tag → Fehlermeldung, Eingaben bleiben);
+Badges auf der Übersicht prüfen.
 
 ## Zugriffsschutz / Benutzerkonten
 
