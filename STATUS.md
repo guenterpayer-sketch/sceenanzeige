@@ -3,7 +3,7 @@
 > **Branch:** `claude/nifty-johnson-3q6u7g`  
 > Eine neue Session liest `CLAUDE.md` (Konzept) + diese Datei (Stand) und kann sofort weiterarbeiten.
 
-_Letzte Aktualisierung: Schritt 8 (Ticker) live getestet + abgeschlossen._
+_Letzte Aktualisierung: Schritt 9 (Monitor-Frontend) implementiert — bereit zum Deployment + Live-Test._
 
 ---
 
@@ -19,17 +19,26 @@ _Letzte Aktualisierung: Schritt 8 (Ticker) live getestet + abgeschlossen._
 | 6 | Playlist-Editor | ✅ live getestet |
 | 7 | Zeitplanung monitor-zentrisch | ✅ live getestet |
 | 8 | Ticker-Verwaltung (monitor-zentrisch) | ✅ live getestet |
-| 9 | Monitor-Frontend | offen |
+| 9 | Monitor-Frontend | ✅ implementiert |
 | 10 | Live-Vorschau (iFrame) | offen |
 | 11 | Deployment-Guide | offen |
 
 ---
 
-## Aktueller Fokus: Schritt 9 — Monitor-Frontend
+## Aktueller Fokus: Schritt 10 — Live-Vorschau (iFrame)
 
-Alle Backend-Schritte 1–8 sind live. Nächster Schritt: Monitor-Frontend
-(HTML/JS, Anzeige- + Zeitlogik gemäß CLAUDE.md Abschnitt 10).
-Vormerk-Notiz: `Notiz_Schritt9_Monitor-Frontend.md`.
+Schritt 9 ist implementiert, bereit für Deployment + Live-Test.
+
+**Schritt 9 — Neue Dateien (auf Server hochladen):**
+- `09_migration_monitor_header_text.sql` — zuerst einspielen
+- `proxies/monitor.php` — öffentlicher API-Endpunkt
+- `assets/css/monitor.css` — Vollbild-Kiosk-CSS
+- `assets/js/monitor.js` — Kern-Frontend-Logik
+- `saalN.tcpayer.de/index.html` — identisch für alle Säle (aktualisieren)
+
+**Schritt 9 — Geänderte Dateien:**
+- `includes/Monitor.php` — `create()`/`update()` um `header_text` erweitert
+- `admin/monitore.php` — Formular um Header-Text-Feld erweitert
 
 ---
 
@@ -63,6 +72,15 @@ Monitor-Kachel-Übersicht (`admin/monitore.php`), Zeitplan-Editor
 (`admin/monitor-zeitplan.php`): Kachel-Picker, Wochentag-Toggles, optionale
 Uhrzeit, Priorität. Migrationen 06+07 live. `admin/saele.php` + `includes/Saal.php`
 auf Server entfernt.
+
+**Schritt 9 (Monitor-Frontend) ✅**
+`proxies/monitor.php` (API-Endpunkt: Subdomain → aktive Playlist + Ticker).
+`assets/css/monitor.css` + `assets/js/monitor.js` (Vollbild-Kiosk-Logik).
+`saalN.tcpayer.de/index.html` identisch für alle Säle; Subdomain-Selbsterkennung.
+Header: Logo links, `header_text` mittig (pro Monitor konfigurierbar), Uhrzeit rechts.
+Ticker: Laufschrift wenn zu lang, statisch+überblenden wenn kürzer.
+Migration `09_migration_monitor_header_text.sql` (neues Feld `header_text` in `monitore`).
+`includes/Monitor.php` + `admin/monitore.php` aktualisiert.
 
 **Schritt 8 (Ticker) ✅**  
 Ticker-Kachel-Übersicht (`admin/ticker.php`), Ticker-Editor (`admin/ticker-edit.php`:

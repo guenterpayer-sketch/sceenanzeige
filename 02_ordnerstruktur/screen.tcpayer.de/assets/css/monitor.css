@@ -1,0 +1,389 @@
+/* assets/css/monitor.css — Kiosk-Vollbild-Styles für die Saal-Monitore */
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #0a0a0a;
+    color: #fff;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ── Wrapper: Vollbild-Flex-Spalte ───────────────────────────────────────── */
+
+#tm-wrapper {
+    display: flex;
+    flex-direction: column;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+
+#tm-header {
+    flex: 0 0 80px;
+    display: flex;
+    align-items: center;
+    padding: 0 28px;
+    gap: 20px;
+    background: #111;
+    border-bottom: 3px solid #ad2121;
+}
+
+#tm-header-logo {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+}
+
+#tm-header-logo img {
+    height: 54px;
+    width: auto;
+    display: block;
+    object-fit: contain;
+}
+
+#tm-header-text {
+    flex: 1 1 auto;
+    text-align: center;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#tm-header-uhrzeit {
+    flex: 0 0 auto;
+    text-align: right;
+    line-height: 1;
+}
+
+#tm-header-zeit {
+    font-size: 38px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+#tm-header-datum {
+    font-size: 13px;
+    opacity: 0.75;
+    margin-top: 3px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ── Hauptfläche ─────────────────────────────────────────────────────────── */
+
+#tm-main {
+    flex: 1 1 auto;
+    min-height: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Fallback: kein Programm */
+.tm-main-leer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-size: 18px;
+    opacity: 0.2;
+}
+
+/* ── Layout-Grid (tm-layout) ─────────────────────────────────────────────── */
+
+.tm-layout {
+    display: grid;
+    width: 100%;
+    height: 100%;
+}
+
+.tm-spalte {
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+}
+
+/* Einzelne Modul-Instanz füllt die Spalte */
+.tm-modul-container {
+    position: absolute;
+    inset: 0;
+}
+
+/* ── Footer / Ticker ─────────────────────────────────────────────────────── */
+
+#tm-footer {
+    flex: 0 0 58px;
+    display: flex;
+    align-items: center;
+    padding: 0 28px;
+    background: #ad2121;
+    overflow: hidden;
+    position: relative;
+}
+
+#tm-footer.tm-hidden {
+    display: none;
+}
+
+.tm-ticker-text {
+    position: relative;
+    white-space: nowrap;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    will-change: transform, opacity;
+}
+
+/* ── Module: uhrzeit ─────────────────────────────────────────────────────── */
+
+.tm-modul-uhrzeit {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+
+.tm-uhrzeit-zeit {
+    font-size: 120px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+
+.tm-uhrzeit-datum {
+    font-size: 32px;
+    opacity: 0.8;
+    margin-top: 8px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ── Module: bild ────────────────────────────────────────────────────────── */
+
+.tm-modul-bild {
+    width: 100%;
+    height: 100%;
+}
+
+.tm-bild-stage {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.tm-bild-img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.tm-bild-leer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    opacity: 0.4;
+    font-size: 18px;
+}
+
+/* ── Module: ankuendigung ────────────────────────────────────────────────── */
+
+.tm-modul-ankuendigung {
+    width: 100%;
+    height: 100%;
+}
+
+.tm-ank-stage {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.tm-ank-slide {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 24px;
+}
+
+.tm-ank-bild img {
+    max-width: 100%;
+    max-height: 55vh;
+    object-fit: contain;
+    display: block;
+}
+
+.tm-ank-text {
+    font-size: 2em;
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+.tm-ank-leer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    opacity: 0.4;
+    font-size: 18px;
+}
+
+/* ── Module: stundenplan ─────────────────────────────────────────────────── */
+
+.tm-modul-stundenplan {
+    padding: 20px 24px;
+    overflow: hidden;
+    height: 100%;
+}
+
+.tm-sp-status {
+    opacity: 0.6;
+    font-size: 18px;
+}
+
+.tm-sp-fehler {
+    color: #ff8080;
+}
+
+.tm-sp-liste {
+    list-style: none;
+}
+
+.tm-sp-eintrag {
+    display: flex;
+    gap: 14px;
+    align-items: baseline;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 20px;
+}
+
+.tm-sp-eintrag:first-child {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tm-sp-zeit {
+    color: #ff9d9d;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    flex: 0 0 auto;
+}
+
+.tm-sp-name {
+    font-weight: 600;
+    flex: 1;
+}
+
+.tm-sp-raum,
+.tm-sp-lehrer {
+    opacity: 0.65;
+    font-size: 0.8em;
+    white-space: nowrap;
+    flex: 0 0 auto;
+}
+
+/* ── Module: fret (Song-Anzeige) ─────────────────────────────────────────── */
+
+.tm-modul-fret {
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    height: 100%;
+}
+
+.tm-song-status {
+    opacity: 0.6;
+    font-size: 18px;
+}
+
+.tm-song-titel {
+    font-size: 2.4em;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.tm-song-artist {
+    font-size: 1.2em;
+    opacity: 0.8;
+}
+
+.tm-song-badges,
+.tm-song-k-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.tm-song-badge {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 999px;
+    font-size: 0.85em;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.tm-song-badge-main {
+    background: #ad2121;
+    color: #fff;
+}
+
+.tm-song-badge-sub {
+    background: transparent;
+    color: #ad2121;
+    border: 2px solid #ad2121;
+}
+
+.tm-song-progress {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.tm-song-progress-bar {
+    height: 100%;
+    width: 0;
+    background: #ad2121;
+    transition: width 1s linear;
+}
+
+.tm-song-kommende-liste {
+    list-style: none;
+    margin-top: 4px;
+}
+
+.tm-song-kommende-eintrag {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    opacity: 0.75;
+    padding: 5px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 1.1em;
+}
+
+.tm-song-k-titel {
+    flex: 1;
+}

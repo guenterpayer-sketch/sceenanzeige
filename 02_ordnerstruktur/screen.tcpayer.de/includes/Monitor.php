@@ -52,18 +52,30 @@ final class Monitor
         return $row ?: null;
     }
 
-    public static function create(string $name, string $subdomain): int
+    public static function create(string $name, string $subdomain, string $headerText = ''): int
     {
         $pdo = get_pdo();
-        $stmt = $pdo->prepare('INSERT INTO monitore (name, subdomain) VALUES (:name, :sub)');
-        $stmt->execute([':name' => trim($name), ':sub' => $subdomain]);
+        $stmt = $pdo->prepare(
+            'INSERT INTO monitore (name, subdomain, header_text) VALUES (:name, :sub, :ht)'
+        );
+        $stmt->execute([
+            ':name' => trim($name),
+            ':sub'  => $subdomain,
+            ':ht'   => trim($headerText) !== '' ? trim($headerText) : null,
+        ]);
         return (int)$pdo->lastInsertId();
     }
 
-    public static function update(int $id, string $name, string $subdomain): void
+    public static function update(int $id, string $name, string $subdomain, string $headerText = ''): void
     {
-        get_pdo()->prepare('UPDATE monitore SET name = :name, subdomain = :sub WHERE id = :id')
-            ->execute([':name' => trim($name), ':sub' => $subdomain, ':id' => $id]);
+        get_pdo()->prepare(
+            'UPDATE monitore SET name = :name, subdomain = :sub, header_text = :ht WHERE id = :id'
+        )->execute([
+            ':name' => trim($name),
+            ':sub'  => $subdomain,
+            ':ht'   => trim($headerText) !== '' ? trim($headerText) : null,
+            ':id'   => $id,
+        ]);
     }
 
     public static function delete(int $id): void

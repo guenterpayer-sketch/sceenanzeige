@@ -17,9 +17,10 @@ require __DIR__ . '/includes/layout.php';
 $fehler = [];
 $flash  = null;
 
-$formId   = 0;
-$formName = '';
-$formSub  = '';
+$formId         = 0;
+$formName       = '';
+$formSub        = '';
+$formHeaderText = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $aktion = $_POST['aktion'] ?? '';
@@ -32,10 +33,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($aktion === 'speichern') {
-        $formId   = (int)($_POST['id'] ?? 0);
-        $formName = trim((string)($_POST['name'] ?? ''));
-        $formSub  = Monitor::normSubdomain((string)($_POST['subdomain'] ?? ''));
-        $istNeu   = ($formId === 0);
+        $formId         = (int)($_POST['id'] ?? 0);
+        $formName       = trim((string)($_POST['name'] ?? ''));
+        $formSub        = Monitor::normSubdomain((string)($_POST['subdomain'] ?? ''));
+        $formHeaderText = trim((string)($_POST['header_text'] ?? ''));
+        $istNeu         = ($formId === 0);
 
         if ($formName === '') {
             $fehler[] = 'Bitte einen Namen für den Monitor angeben.';
@@ -48,9 +50,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (empty($fehler)) {
             if ($istNeu) {
-                Monitor::create($formName, $formSub);
+                Monitor::create($formName, $formSub, $formHeaderText);
             } else {
-                Monitor::update($formId, $formName, $formSub);
+                Monitor::update($formId, $formName, $formSub, $formHeaderText);
             }
             header('Location: monitore.php?gespeichert=1');
             exit;
@@ -62,9 +64,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 if (empty($fehler) && $_SERVER['REQUEST_METHOD'] !== 'POST' && isset($_GET['edit'])) {
     $monitor = Monitor::find((int)$_GET['edit']);
     if ($monitor) {
-        $formId   = (int)$monitor['id'];
-        $formName = $monitor['name'];
-        $formSub  = $monitor['subdomain'];
+        $formId         = (int)$monitor['id'];
+        $formName       = $monitor['name'];
+        $formSub        = $monitor['subdomain'];
+        $formHeaderText = $monitor['header_text'] ?? '';
     }
 }
 
@@ -109,6 +112,12 @@ admin_header('Monitore', 'monitore');
             <label for="subdomain">Subdomain</label>
             <input type="text" id="subdomain" name="subdomain" value="<?= htmlspecialchars($formSub) ?>"
                    placeholder="z.B. saal1" required>
+        </div>
+        <div class="field">
+            <label for="header_text">Header-Text (Mitte des Monitors)</label>
+            <input type="text" id="header_text" name="header_text"
+                   value="<?= htmlspecialchars($formHeaderText) ?>"
+                   placeholder="z.B. Willkommen im Tanzcenter Payer">
         </div>
         <div class="adm-aktionsleiste">
             <button type="submit" class="adm-btn-primary"><?= $istEditieren ? 'Speichern' : 'Anlegen' ?></button>
