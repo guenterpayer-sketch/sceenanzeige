@@ -509,3 +509,39 @@ body {
 .adm-spalte-eintrag.wird-gezogen { opacity: .4; outline: 2px dashed #ad2121; }
 /* leere Spalten als bequeme Drop-Fläche */
 .adm-spalte-liste { min-height: 44px; }
+
+/* ===== Zeitregeln + Saal-Zuweisung (Schritt 7) ===== */
+.adm-zeitregeln { display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; }
+.adm-zeitregel {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 14px;
+    background: #f8fafc; border: 1px solid #dde3ea; border-radius: 8px; padding: 12px;
+}
+.adm-zr-tage { display: flex; flex-direction: column; gap: 6px; }
+.adm-tag-btns { display: flex; gap: 4px; }
+.adm-tag-btn {
+    min-width: 36px; padding: 6px 8px; border: 1px solid #dde3ea; border-radius: 6px;
+    background: #fff; color: #33424f; cursor: pointer; font-size: 13px;
+}
+.adm-tag-btn:hover { border-color: #ad2121; }
+.adm-tag-btn.an { background: #ad2121; border-color: #ad2121; color: #fff; }
+.adm-zr-presets { display: flex; gap: 6px; }
+.adm-zr-presets .adm-mini { width: auto; padding: 2px 8px; font-size: 12px; }
+.adm-zr-zeit { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.adm-zr-zeit label { display: flex; flex-direction: column; font-size: 13px; color: #33424f; gap: 3px; }
+.adm-zr-zeit input {
+    padding: 7px 9px; border: 1px solid #dde3ea; border-radius: 6px; font-size: 14px;
+}
+.adm-zr-weg { margin-left: auto; }
+
+.adm-saalwahl {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;
+}
+.adm-saalopt {
+    display: flex; align-items: center; gap: 8px; background: #fff;
+    border: 1px solid #dde3ea; border-radius: 8px; padding: 10px 12px; cursor: pointer;
+}
+.adm-saalopt:hover { border-color: #ad2121; }
+.adm-saalopt:has(input:checked) { border-color: #ad2121; background: #fbeaea; }
+.adm-saalopt input { accent-color: #ad2121; }
+.adm-saalopt-name { font-size: 14px; color: #1c2733; }
+.adm-saalopt-sub { font-size: 12px; color: #8a97a6; margin-left: auto; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }

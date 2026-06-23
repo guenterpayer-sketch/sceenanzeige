@@ -39,6 +39,7 @@ if ($id > 0) {
 $istNeu = ($playlist === null);
 
 $layouts = LayoutRegistry::getAll();
+$saele   = Saal::listAll();
 
 // --- Vorbelegung ---
 $werteName   = $playlist['name'] ?? '';
@@ -83,6 +84,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Zeitregeln für das JS (POST-Eingaben erhalten, sonst aus DB) — HH:MM
+$zeitregelnFuerJs = [];
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    foreach (($_POST['zeitregel'] ?? []) as $zr) {
+        $tage = array_values(array_filter(array_map('intval', (array)($zr['tage'] ?? [])),
+            static fn($d) => $d >= 1 && $d <= 7));
+        $zeitregelnFuerJs[] = [
+            'tage' => $tage,
+            'von'  => substr((string)($zr['von'] ?? ''), 0, 5),
+            'bis'  => substr((string)($zr['bis'] ?? ''), 0, 5),
+            'prio' => (int)($zr['prio'] ?? 0),
+        ];
+    }
+} elseif (!$istNeu) {
+    foreach (Playlist::ladeZeitregeln($id) as $zr) {
+        $tage = array_values(array_filter(array_map('intval', explode(',', (string)$zr['wochentage'])),
+            static fn($d) => $d >= 1 && $d <= 7));
+        $zeitregelnFuerJs[] = [
+            'tage' => $tage,
+            'von'  => substr((string)$zr['von_uhrzeit'], 0, 5),
+            'bis'  => substr((string)$zr['bis_uhrzeit'], 0, 5),
+            'prio' => (int)$zr['prioritaet'],
+        ];
+    }
+}
+
+// Zugewiesene Säle (POST-Auswahl erhalten, sonst aus DB)
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $saaleChecked = array_map('intval', (array)($_POST['saal_ids'] ?? []));
+} else {
+    $saaleChecked = $istNeu ? [] : Playlist::ladeSaele($id);
+}
+$saaleChecked = array_fill_keys($saaleChecked, true);
+
 // --- Speichern ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'speichern') {
     $werteName   = trim((string)($_POST['name'] ?? ''));
@@ -113,6 +148,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'speic
         $fehler[] = 'Es gibt bereits eine Playlist mit diesem Namen. Bitte einen anderen Namen wählen.';
     }
 
+    // Zeitregeln aus dem Formular einsammeln + validieren (von < bis, ≥1 Tag)
+    $zeitregeln = [];
+    foreach (($_POST['zeitregel'] ?? []) as $zr) {
+        $tage = array_values(array_unique(array_filter(
+            array_map('intval', (array)($zr['tage'] ?? [])),
+            static fn($d) => $d >= 1 && $d <= 7
+        )));
+        sort($tage);
+        $von = substr(trim((string)($zr['von'] ?? '')), 0, 5);
+        $bis = substr(trim((string)($zr['bis'] ?? '')), 0, 5);
+        if (empty($tage) && $von === '' && $bis === '') {
+            continue; // komplett leere Zeile ignorieren
+        }
+        if (empty($tage) || $von === '' || $bis === '') {
+            $fehler[] = 'Jede Zeitregel braucht mindestens einen Wochentag sowie Von- und Bis-Uhrzeit.';
+            continue;
+        }
+        if ($von >= $bis) {
+            $fehler[] = 'Bei einer Zeitregel muss „von" vor „bis" liegen (' . htmlspecialchars($von . '–' . $bis) . ').';
+            continue;
+        }
+        $zeitregeln[] = [
+            'wochentage' => implode(',', $tage),
+            'von'        => $von,
+            'bis'        => $bis,
+            'prioritaet' => (int)($zr['prio'] ?? 0),
+        ];
+    }
+    $fehler = array_values(array_unique($fehler));
+
+    // Saal-Auswahl (nur tatsächlich existierende Säle)
+    $gueltigeSaalIds = array_map(static fn($s) => (int)$s['id'], $saele);
+    $saalIds = array_values(array_intersect(
+        array_map('intval', (array)($_POST['saal_ids'] ?? [])),
+        $gueltigeSaalIds
+    ));
+
     if (empty($fehler)) {
         if ($istNeu) {
             $id = Playlist::create($werteName);
@@ -132,6 +204,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'speic
             }
         }
         Playlist::ersetzeSpaltenInhalte($id, $inhalte);
+        Playlist::ersetzeZeitregeln($id, $zeitregeln);
+        Playlist::ersetzeSaele($id, $saalIds);
 
         header('Location: playlists.php?gespeichert=1');
         exit;
@@ -233,6 +307,41 @@ function pl_modul_icon(string $icon): string
         <div class="adm-spalten" id="spalten"></div>
     </div>
 
+    <div class="adm-card">
+        <h2>Zeitregeln</h2>
+        <p class="adm-hilfe">
+            Wann läuft diese Playlist? Pro Regel Wochentage + Uhrzeit-Fenster und eine
+            Priorität (höher gewinnt bei Überschneidung im selben Saal). Ohne Zeitregel
+            wird die Playlist von keiner Zeitsteuerung aktiviert. Die Auswertung erfolgt
+            am Monitor (Schritt 9).
+        </p>
+        <div id="zeitregeln-liste" class="adm-zeitregeln"></div>
+        <button type="button" id="zeitregel-hinzu" class="adm-btn">+ Zeitregel hinzufügen</button>
+    </div>
+
+    <div class="adm-card">
+        <h2>Säle</h2>
+        <?php if (empty($saele)): ?>
+            <p class="adm-hilfe">
+                Noch keine Säle angelegt. Lege zuerst unter
+                <a href="saele.php">Säle</a> einen Saal an, dann kannst du diese Playlist
+                hier zuweisen.
+            </p>
+        <?php else: ?>
+            <p class="adm-hilfe">In welchen Sälen soll diese Playlist verfügbar sein? (Mehrfachauswahl)</p>
+            <div class="adm-saalwahl">
+                <?php foreach ($saele as $s): ?>
+                    <label class="adm-saalopt">
+                        <input type="checkbox" name="saal_ids[]" value="<?= (int)$s['id'] ?>"
+                               <?= isset($saaleChecked[(int)$s['id']]) ? 'checked' : '' ?>>
+                        <span class="adm-saalopt-name"><?= htmlspecialchars($s['name']) ?></span>
+                        <span class="adm-saalopt-sub"><?= htmlspecialchars($s['subdomain']) ?></span>
+                    </label>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+
     <div class="adm-aktionsleiste">
         <button type="submit" class="adm-btn-primary">Speichern</button>
         <a href="playlists.php" class="adm-btn adm-btn-grau">Abbrechen</a>
@@ -256,8 +365,11 @@ function pl_modul_icon(string $icon): string
 
 <script>
 (function () {
-    var START = <?= json_encode($inhalteFuerJs, JSON_UNESCAPED_UNICODE) ?>;
+    var START      = <?= json_encode($inhalteFuerJs, JSON_UNESCAPED_UNICODE) ?>;
+    var ZEITREGELN = <?= json_encode($zeitregelnFuerJs, JSON_UNESCAPED_UNICODE) ?>;
     var ICONS = { clock:'🕒', image:'🖼️', calendar:'📅', megaphone:'📢', music:'🎵' };
+    var TAGE  = [ [1,'Mo'], [2,'Di'], [3,'Mi'], [4,'Do'], [5,'Fr'], [6,'Sa'], [7,'So'] ];
+    var PRESETS = { alle:[1,2,3,4,5,6,7], woche:[1,2,3,4,5], we:[6,7] };
 
     var spaltenWrap   = document.getElementById('spalten');
     var breitenBlock  = document.getElementById('breiten-block');
@@ -588,8 +700,67 @@ function pl_modul_icon(string $icon): string
             .catch(function () { liste.innerHTML = '<p class="adm-leer">Netzwerkfehler.</p>'; });
     }
 
+    // ---- Zeitregeln ----
+    var zrListe = document.getElementById('zeitregeln-liste');
+
+    function baueZeitregel(data) {
+        data = data || {};
+        var tage = data.tage || [];
+        var zeile = document.createElement('div');
+        zeile.className = 'adm-zeitregel';
+
+        var tageBtns = TAGE.map(function (t) {
+            var an = tage.indexOf(t[0]) !== -1;
+            return '<button type="button" class="adm-tag-btn' + (an ? ' an' : '') +
+                   '" data-tag="' + t[0] + '" aria-pressed="' + (an ? 'true' : 'false') + '">' + t[1] + '</button>';
+        }).join('');
+
+        zeile.innerHTML =
+            '<div class="adm-zr-tage" data-feld="tage">' +
+                '<div class="adm-tag-btns">' + tageBtns + '</div>' +
+                '<div class="adm-zr-presets">' +
+                    '<button type="button" class="adm-mini" data-preset="alle">Alle</button>' +
+                    '<button type="button" class="adm-mini" data-preset="woche">Mo–Fr</button>' +
+                    '<button type="button" class="adm-mini" data-preset="we">Wochenende</button>' +
+                '</div>' +
+            '</div>' +
+            '<div class="adm-zr-zeit">' +
+                '<label>von <input type="time" data-feld="von" value="' + escapeHtml(data.von || '') + '"></label>' +
+                '<label>bis <input type="time" data-feld="bis" value="' + escapeHtml(data.bis || '') + '"></label>' +
+                '<label>Priorität <input type="number" data-feld="prio" value="' + (data.prio || 0) + '" step="1" style="width:5em"></label>' +
+            '</div>' +
+            '<button type="button" class="adm-mini adm-mini-rot adm-zr-weg" title="Zeitregel entfernen">×</button>';
+        return zeile;
+    }
+
+    function neueZeitregel(data) { zrListe.appendChild(baueZeitregel(data)); }
+
+    document.getElementById('zeitregel-hinzu').addEventListener('click', function () { neueZeitregel({}); });
+
+    zrListe.addEventListener('click', function (e) {
+        var zeile = e.target.closest('.adm-zeitregel');
+        if (!zeile) { return; }
+        if (e.target.closest('.adm-zr-weg')) { zeile.remove(); return; }
+        var tagBtn = e.target.closest('.adm-tag-btn');
+        if (tagBtn) {
+            var an = tagBtn.classList.toggle('an');
+            tagBtn.setAttribute('aria-pressed', an ? 'true' : 'false');
+            return;
+        }
+        var preset = e.target.getAttribute('data-preset');
+        if (preset && PRESETS[preset]) {
+            var set = PRESETS[preset];
+            zeile.querySelectorAll('.adm-tag-btn').forEach(function (b) {
+                var an = set.indexOf(parseInt(b.getAttribute('data-tag'), 10)) !== -1;
+                b.classList.toggle('an', an);
+                b.setAttribute('aria-pressed', an ? 'true' : 'false');
+            });
+        }
+    });
+
     // ---- Vor dem Absenden: Spalte + Feldnamen sequenziell vergeben ----
     document.getElementById('playlist-form').addEventListener('submit', function () {
+        // Spalten-Inhalte
         var i = 0;
         spaltenWrap.querySelectorAll('.adm-spalte').forEach(function (col) {
             var s = col.getAttribute('data-spalte');
@@ -601,6 +772,23 @@ function pl_modul_icon(string $icon): string
                 i++;
             });
         });
+        // Zeitregeln: pro Zeile Felder benennen, Wochentage als Hidden-Inputs erzeugen
+        zrListe.querySelectorAll('.adm-zeitregel').forEach(function (zeile, j) {
+            ['von', 'bis', 'prio'].forEach(function (f) {
+                var el = zeile.querySelector('[data-feld="' + f + '"]');
+                if (el) { el.setAttribute('name', 'zeitregel[' + j + '][' + f + ']'); }
+            });
+            // alte Hidden-Tage entfernen, aktive Tage neu als Hidden anhängen
+            zeile.querySelectorAll('input.adm-zr-taghidden').forEach(function (h) { h.remove(); });
+            zeile.querySelectorAll('.adm-tag-btn.an').forEach(function (b) {
+                var h = document.createElement('input');
+                h.type = 'hidden';
+                h.className = 'adm-zr-taghidden';
+                h.name = 'zeitregel[' + j + '][tage][]';
+                h.value = b.getAttribute('data-tag');
+                zeile.appendChild(h);
+            });
+        });
     });
 
     // ---- Initialaufbau ----
@@ -610,6 +798,7 @@ function pl_modul_icon(string $icon): string
     // Startdaten in ihre Spalten einsortieren
     START.forEach(function (d) { fuegeEinSpalte(Math.min(d.spalte, anzSpalten()), d); });
     aktualisiereVorschau();
+    ZEITREGELN.forEach(neueZeitregel);
 })();
 </script>
 
