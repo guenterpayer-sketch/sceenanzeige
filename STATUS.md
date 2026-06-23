@@ -24,7 +24,7 @@ Saal-Zuweisung gebaut, lokal per `php -l` geprüft, Live-Test steht noch aus)._
 | 6 | Playlist-Editor (Layout-Konfigurator) | ✅ live getestet (inkl. Drag & Drop der Spalten-Inhalte) |
 | 7 | Zeitregeln + Saal-Zuweisung (inkl. Säle-Verwaltung) | 🧪 Code fertig, Live-Test offen |
 | 8 | Ticker-Verwaltung | ▶️ als Nächstes |
-| 9 | Monitor-Frontend (Anzeige-/Zeitlogik) | offen |
+| 9 | Monitor-Frontend (Anzeige-/Zeitlogik) | offen · Vormerk-Notiz: `Notiz_Schritt9_Monitor-Frontend.md` |
 | 10 | Live-Vorschau (iFrame) | offen |
 | 11 | Deployment-Guide | offen |
 
@@ -40,6 +40,16 @@ hatte 0 Einträge). Deployment-ZIP: **`Schritt7_zeitregeln-saele.zip`**
 
 Schritt 6 (Playlist-Editor) bleibt **live getestet und bestätigt** (inkl.
 Drag & Drop). Deployment-ZIP dazu: `Schritt6_playlist-editor.zip`.
+
+> **Vorgemerkt (abgestimmt, noch NICHT gebaut): Umbau auf monitor-zentrisches
+> Modell.** Statt Zeitregeln/Säle im Playlist-Editor soll die Zeitplanung pro
+> **Monitor** erfolgen (Monitor wählen → „Playlist X läuft wann"). Beschlossen:
+> Rename `saele`→`monitore`/`saal_id`→`monitor_id` (auch DB), neue Tabelle
+> `monitor_zeitplan` ersetzt `playlist_saele` + `playlist_zeitregeln`
+> (Migration `06_…`), Zeitplan-Editor in die Monitor-Verwaltung, Playlist =
+> nur Inhalt/Layout. Details + Schritt-9-Auswirkung (Monitor-Selbsterkennung
+> per Subdomain) in **`Notiz_Schritt9_Monitor-Frontend.md`**. Umsetzung erst
+> nach ausdrücklichem „GO".
 
 Schritt 5 vollständig live getestet: Mediathek (Upload/Dup-Erkennung, Ordner,
 Tags, Anzeigename), Bibliothek + Instanz-Editor (alle Modultypen, Inhalte-
