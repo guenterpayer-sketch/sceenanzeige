@@ -47,16 +47,13 @@ höchster Priorität auflöst und die zugehörige Playlist (Layout + Spalten-
 Inhalte) liefert. Liegt unter `proxies/` o. ä. (öffentlich, da die Monitore
 ohne Login zugreifen).
 
-## Wichtige Abhängigkeit
-Diese Notiz setzt das **monitor-zentrische Modell** voraus
-(`monitore` + `monitor_zeitplan`, Zeitplanung pro Monitor). Dieses Modell ist
-**mit dem Nutzer abgestimmt, aber noch NICHT gebaut** — der aktuelle Code-Stand
-(Ende Schritt 7) ist weiterhin **playlist-zentrisch** (`playlist_saele` +
-`playlist_zeitregeln`, Zeitregeln/Säle im Playlist-Editor).
+## Datenbasis (bereits gebaut)
+Das **monitor-zentrische Modell** ist umgesetzt (Stand Ende Schritt 7):
+Tabelle `monitore` + `monitor_zeitplan` (`monitor_id`, `playlist_id`,
+`wochentage`, `von_uhrzeit`, `bis_uhrzeit`, `prioritaet`), gepflegt über
+Backend → „Monitore" → „Zeitplan". Migration `06_migration_monitor_zeitplan.sql`.
 
-**→ Vor Schritt 9 zuerst den Umbau auf das monitor-zentrische Modell
-durchführen** (Rename `saele`→`monitore`/`saal_id`→`monitor_id`, neue Tabelle
-`monitor_zeitplan` statt `playlist_saele`+`playlist_zeitregeln`, Zeitplan-Editor
-in der Monitor-Verwaltung statt im Playlist-Editor). Der konkrete Migrations-
-und Umbauplan wurde bereits im Chat abgestimmt (Migration
-`06_migration_monitor_zeitplan.sql`).
+Schritt 9 liest also: Monitor per Subdomain bestimmen → in `monitor_zeitplan`
+den **jetzt** gültigen Eintrag (Wochentag/Uhrzeit, höchste `prioritaet`) finden
+→ zugehörige Playlist (Layout + Spalten-Inhalte) rendern. Konzept-Details in
+CLAUDE.md Abschnitt 16c.

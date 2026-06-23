@@ -380,14 +380,20 @@ Fertig
 
 ## 8. Datenbankstruktur (vollständig)
 
+> **Hinweis (Konzept-Update, siehe Abschnitt 16c):** Das Datenmodell ist auf
+> ein **monitor-zentrisches** Modell umgestellt. `saele`→`monitore`,
+> `saal_id`→`monitor_id`; `playlist_zeitregeln` + `playlist_saele` sind durch
+> **`monitor_zeitplan`** ersetzt (Zeitplanung je Monitor). Die folgende
+> Struktur ist bereits aktualisiert.
+
 ```sql
--- Säle
-saele
+-- Monitore (je Monitor eine Subdomain; früher "Säle")
+monitore
   id, name, subdomain
 
--- Einstellungen pro Saal
+-- Einstellungen pro Monitor
 einstellungen
-  saal_id,
+  monitor_id,
   nc_api_key_stundenplan,   -- Stundenplan-Key (Legacy-API /timetable/data, niedrigere Sensibilität)
   nc_api_key_stammdaten,    -- Stammdaten-Key (für community-Modul, NICHT aktiv genutzt, siehe Abschnitt 9)
   song_api_url              -- (optional) FRET-API Basis-URL pro Saal; die
@@ -435,11 +441,12 @@ playlist_layout
   header_uhrzeit,        -- bool: Uhrzeit/Datum oben?
   footer_ticker          -- bool: Ticker-Footer aktiv?
 
-playlist_zeitregeln
-  id, playlist_id, wochentage, von_uhrzeit, bis_uhrzeit, prioritaet
-
-playlist_saele
-  playlist_id, saal_id   -- saalübergreifende Zuweisung möglich
+-- Monitor-Zeitplan (monitor-zentrisch): welche Playlist läuft wann auf welchem
+-- Monitor. Ersetzt die früheren playlist_zeitregeln + playlist_saele.
+monitor_zeitplan
+  id, monitor_id, playlist_id,
+  wochentage, von_uhrzeit, bis_uhrzeit,
+  prioritaet            -- höherer Wert gewinnt bei Überschneidung je Monitor
 
 -- Playlist-Inhalte: Verweis auf Modul-Instanzen, gruppiert nach Spalte
 playlist_spalten_inhalte
@@ -460,7 +467,7 @@ ticker_zeitregeln
   -- KEIN Prioritätsfeld nötig, da Ticker bei Überschneidung gemischt werden
 
 ticker_playlist_saele
-  ticker_playlist_id, saal_id
+  ticker_playlist_id, monitor_id   -- (Ticker-Bereich erst Schritt 8)
 ```
 
 ---
@@ -585,10 +592,10 @@ und kann bei Bedarf erneut bereitgestellt werden.
 | Bereich | Funktion |
 |---|---|
 | **Bibliothek** | Modul-Instanzen anlegen/verwalten (Bilder hochladen, Ankündigungstexte, Stundenplan-Einstellungen, etc.) |
-| **Playlists** | Anlegen, Layout konfigurieren, Spalten mit Modul-Instanzen befüllen, Zeitregeln + Saal-Zuweisung |
-| **Ticker** | Eigener Bereich: Ticker-Playlists anlegen, Texte verwalten, Zeitregeln + Saal-Zuweisung |
-| **Säle** | Säle anlegen (Name, Subdomain), NC-API-Key (Stundenplan) pro Saal hinterlegen; FRET-schoolId liegt zentral in `config.php` |
-| **Live-Vorschau** | iFrame, das den Monitor eines gewählten Saals in Echtzeit simuliert |
+| **Playlists** | Anlegen, Layout konfigurieren, Spalten mit Modul-Instanzen befüllen (nur Inhalt/Layout — Zeitplanung liegt beim Monitor, siehe Abschnitt 16c) |
+| **Ticker** | Eigener Bereich: Ticker-Playlists anlegen, Texte verwalten, Zeitregeln + Monitor-Zuweisung |
+| **Monitore** | Monitore anlegen (Name, Subdomain) und je Monitor den **Zeitplan** pflegen (welche Playlist wann läuft, mit Priorität). FRET-schoolId liegt zentral in `config.php` |
+| **Live-Vorschau** | iFrame, das einen gewählten Monitor in Echtzeit simuliert |
 | **Einstellungen** | NC-Verbindung testen, allgemeine Systemeinstellungen |
 
 ---
@@ -799,6 +806,37 @@ geeignet) und nach Abgleich mit dem bereits live liegenden Stand:
     sind Laufzeit-Konfiguration, keine Doku-Festlegung.
 21. **Bauplan-Status präzisiert** — Schritt 4 steht **am Anfang** (Modul-/
     Proxy-Grundgerüst im Repo, noch nicht live getestet).
+
+### 16c. Nachtrag — Umbau auf monitor-zentrisches Modell (Claude-Code-Chat)
+
+Nach dem Live-Test von Schritt 7 entschieden: Die Zeitplanung war im
+playlist-zentrischen Modell (Zeitregeln + Saal-Zuweisung **an der Playlist**)
+umständlich und konnte „Playlist A werktags in Saal 1, am Wochenende in Saal 2"
+gar nicht abbilden. Daher Umstellung auf ein **monitor-zentrisches** Modell.
+Dieser Nachtrag **überschreibt** die playlist-zentrischen Formulierungen in
+Abschnitt 6 (Zeitregeln/Saal-Zuweisung), 8, 10, 11 und 12.
+
+22. **Begriff „Saal" → „Monitor"** — Tabelle `saele`→`monitore`, Spalte
+    `saal_id`→`monitor_id` (auch in `einstellungen`, `ticker_playlist_saele`).
+    Die Subdomains (`saal1` …) bleiben unverändert (nur Frontend-Ordner).
+23. **Zeitplanung wandert von der Playlist auf den Monitor** — neue Tabelle
+    **`monitor_zeitplan`** (`monitor_id`, `playlist_id`, `wochentage`,
+    `von_uhrzeit`, `bis_uhrzeit`, `prioritaet`) **ersetzt** `playlist_zeitregeln`
+    **und** `playlist_saele`. Bedienung: Bereich **Monitore** → Monitor wählen →
+    „Zeitplan" (Playlist X läuft Mo–Fr 18–23 Uhr, Priorität N). Priorität löst
+    Überschneidungen **je Monitor**.
+24. **Playlist = nur Inhalt + Layout** — der Playlist-Editor enthält keine
+    Zeitregeln/Saal-Zuweisung mehr.
+25. **Migration** `06_migration_monitor_zeitplan.sql` (Rename + Drop der zwei
+    alten Tabellen + neue `monitor_zeitplan`). `01_schema.sql` entsprechend
+    aktualisiert.
+26. **Auswirkung auf Schritt 9** — der Monitor ermittelt seine aktive Playlist
+    künftig aus `monitor_zeitplan` (Wochentag/Uhrzeit + höchste Priorität).
+    Empfehlung zur Monitor-Identifikation per Subdomain siehe
+    `Notiz_Schritt9_Monitor-Frontend.md`.
+27. **Ticker (Schritt 8)** soll denselben monitor-zentrischen Ansatz bekommen;
+    `ticker_playlist_saele.saal_id` ist bereits auf `monitor_id` umgestellt,
+    die endgültige Ticker-Zeit-/Monitor-Logik wird in Schritt 8 gebaut.
 
 ---
 

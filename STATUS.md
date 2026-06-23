@@ -7,8 +7,9 @@
 > **Branch:** `claude/nifty-johnson-3q6u7g` (gesamter Stand liegt hier,
 > **nicht** auf `main`).
 
-_Letzte Aktualisierung: Ende Schritt-7-Arbeit (Säle-Verwaltung + Zeitregeln +
-Saal-Zuweisung gebaut, lokal per `php -l` geprüft, Live-Test steht noch aus)._
+_Letzte Aktualisierung: Umbau auf monitor-zentrisches Modell gebaut (Monitor-
+Verwaltung + Zeitplan je Monitor), lokal per `php -l` geprüft. Migration 06
++ Live-Test stehen noch aus._
 
 ---
 
@@ -22,7 +23,7 @@ Saal-Zuweisung gebaut, lokal per `php -l` geprüft, Live-Test steht noch aus)._
 | 4 | `stundenplan`, `ankuendigung`, `fret` + NC-/FRET-Proxy + Testseite | ✅ live getestet (alle 5 Module inkl. `stundenplan`) |
 | 5 | Backend-Bibliothek + Mediathek | ✅ live getestet (Mediathek + Ordner/Tags, Bibliothek/Instanz-Editor, FRET-Geräte-Whitelist) |
 | 6 | Playlist-Editor (Layout-Konfigurator) | ✅ live getestet (inkl. Drag & Drop der Spalten-Inhalte) |
-| 7 | Zeitregeln + Saal-Zuweisung (inkl. Säle-Verwaltung) | 🧪 Code fertig, Live-Test offen |
+| 7 | Zeitplanung (monitor-zentrisch: Monitor-Verwaltung + Zeitplan je Monitor) | 🧪 Code fertig, Migration 06 + Live-Test offen |
 | 8 | Ticker-Verwaltung | ▶️ als Nächstes |
 | 9 | Monitor-Frontend (Anzeige-/Zeitlogik) | offen · Vormerk-Notiz: `Notiz_Schritt9_Monitor-Frontend.md` |
 | 10 | Live-Vorschau (iFrame) | offen |
@@ -30,26 +31,26 @@ Saal-Zuweisung gebaut, lokal per `php -l` geprüft, Live-Test steht noch aus)._
 
 ---
 
-## Aktueller Fokus: Schritt 7 🧪 Code fertig (Live-Test offen) → Schritt 8 als Nächstes
+## Aktueller Fokus: Schritt 7 (monitor-zentrisch) 🧪 Code fertig → Live-Test, dann Schritt 8
 
-Schritt 7 (Säle-Verwaltung + Zeitregeln + Saal-Zuweisung) ist gebaut,
-committet/gepusht; Live-Test durch den Nutzer steht aus. **Keine Migration**
-(`saele`, `playlist_zeitregeln`, `playlist_saele` waren bereits live, `saele`
-hatte 0 Einträge). Deployment-ZIP: **`Schritt7_zeitregeln-saele.zip`**
-(Struktur unter `screen.tcpayer.de/`, in den Subdomain-Ordner entpacken).
+**Umbau auf monitor-zentrisches Modell ist gebaut** (committet/gepusht). Statt
+Zeitregeln/Säle im Playlist-Editor läuft die Zeitplanung jetzt **pro Monitor**:
+Bereich „Monitore" → Monitor wählen → „Zeitplan" (Playlist X läuft wann, mit
+Priorität).
+
+**⚠️ ZUERST Migration einspielen:** `06_migration_monitor_zeitplan.sql`
+(Rename `saele`→`monitore`/`saal_id`→`monitor_id`, Drop `playlist_saele` +
+`playlist_zeitregeln`, neue Tabelle `monitor_zeitplan`). Danach Deployment-ZIP
+**`Schritt7_monitor-zentrisch.zip`** entpacken. **Alte Dateien löschen:**
+`admin/saele.php`, `includes/Saal.php` (durch `monitore.php`/`monitor.php` +
+`Monitor.php` ersetzt).
+
+Konzept-Doku dazu: CLAUDE.md Abschnitt **16c** (überschreibt die playlist-
+zentrischen Stellen). Schritt-9-Auswirkung (Monitor-Selbsterkennung per
+Subdomain) in `Notiz_Schritt9_Monitor-Frontend.md`.
 
 Schritt 6 (Playlist-Editor) bleibt **live getestet und bestätigt** (inkl.
-Drag & Drop). Deployment-ZIP dazu: `Schritt6_playlist-editor.zip`.
-
-> **Vorgemerkt (abgestimmt, noch NICHT gebaut): Umbau auf monitor-zentrisches
-> Modell.** Statt Zeitregeln/Säle im Playlist-Editor soll die Zeitplanung pro
-> **Monitor** erfolgen (Monitor wählen → „Playlist X läuft wann"). Beschlossen:
-> Rename `saele`→`monitore`/`saal_id`→`monitor_id` (auch DB), neue Tabelle
-> `monitor_zeitplan` ersetzt `playlist_saele` + `playlist_zeitregeln`
-> (Migration `06_…`), Zeitplan-Editor in die Monitor-Verwaltung, Playlist =
-> nur Inhalt/Layout. Details + Schritt-9-Auswirkung (Monitor-Selbsterkennung
-> per Subdomain) in **`Notiz_Schritt9_Monitor-Frontend.md`**. Umsetzung erst
-> nach ausdrücklichem „GO".
+Drag & Drop); der Playlist-Editor ist jetzt auf Inhalt/Layout reduziert.
 
 Schritt 5 vollständig live getestet: Mediathek (Upload/Dup-Erkennung, Ordner,
 Tags, Anzeigename), Bibliothek + Instanz-Editor (alle Modultypen, Inhalte-
@@ -237,44 +238,47 @@ Backend „Playlists" → „Neue Playlist": Name, Layout wählen (Regler bei
 speichern; danach erneut öffnen (Vorbelegung prüft Layout + Spalten),
 Pausieren/Löschen testen.
 
-## Schritt 7 — Stand (Zeitregeln + Saal-Zuweisung, Code fertig, Live-Test offen)
+## Schritt 7 — Stand (monitor-zentrisch, Code fertig, Migration 06 + Live-Test offen)
 
-**Keine Migration** — `saele`, `playlist_zeitregeln`, `playlist_saele` waren
-bereits live (`saele` hatte 0 Einträge, daher Säle-Verwaltung mitgebaut).
-Deployment-ZIP: `Schritt7_zeitregeln-saele.zip`.
+Zeitplanung ist von der Playlist auf den **Monitor** verlagert. Konzept-Doku:
+CLAUDE.md Abschnitt **16c** (überschreibt die playlist-zentrischen Stellen).
+
+**⚠️ Migration `06_migration_monitor_zeitplan.sql` ZUERST einspielen:**
+`saele`→`monitore`, `saal_id`→`monitor_id` (in `einstellungen` +
+`ticker_playlist_saele`, FKs neu), `playlist_saele` + `playlist_zeitregeln`
+**entfernt**, neue Tabelle **`monitor_zeitplan`** (`monitor_id`, `playlist_id`,
+`wochentage`, `von_uhrzeit`, `bis_uhrzeit`, `prioritaet`).
+
+**Auf dem Server löschen** (ersetzt): `admin/saele.php`, `includes/Saal.php`.
 
 Neue/aktualisierte Dateien (alle committet + gepusht):
-- `includes/Saal.php` — CRUD, `normSubdomain` (klein, ohne Domain),
-  `subdomainExistiert`, `listAll` mit Anzahl zugewiesener Playlists.
-- `admin/saele.php` — Säle anlegen/bearbeiten (`?edit=<id>` füllt das Formular
-  vor)/löschen (Rückfrage warnt bei zugewiesenen Playlists). Nav „Säle" aktiv.
-- `includes/Playlist.php` — `ladeZeitregeln`/`ersetzeZeitregeln`,
-  `ladeSaele`/`ersetzeSaele` (Bulk in Transaktion); `listAll` zählt zusätzlich
-  Zeitregeln + zugewiesene Säle (Badges).
-- `admin/playlist.php` — zwei neue Karten: **Zeitregeln** (dynamische Zeilen,
-  7 Wochentag-Toggle-Buttons + Presets Alle/Mo–Fr/Wochenende, von/bis,
-  Priorität; Validierung `von < bis` und ≥1 Tag, Eingaben bleiben nach Fehler
-  erhalten) und **Säle** (Checkbox-Auswahl, nur existierende Säle).
-- `admin/playlists.php` — Kachel-Badges: Anzahl Zeitregeln (🕒) + Säle (🏠).
-- `admin/includes/{bootstrap,layout}.php`, `assets/css/admin.css` ergänzt.
+- `includes/Monitor.php` (ersetzt `Saal.php`) — CRUD auf `monitore` +
+  `ladeZeitplan`/`ersetzeZeitplan` (Tabelle `monitor_zeitplan`, Bulk in Transaktion).
+- `admin/monitore.php` (ersetzt `saele.php`) — Monitor-CRUD (Name+Subdomain),
+  „Zeitplan"-Button je Monitor, Löschrückfrage (warnt bei Zeitplan-Einträgen).
+- `admin/monitor.php` — **Zeitplan-Editor je Monitor:** dynamische Zeilen mit
+  Playlist-Dropdown + Wochentag-Toggles/Presets + von/bis + Priorität;
+  Validierung gültige Playlist + ≥1 Tag + `von < bis`.
+- `includes/Playlist.php` — Zeitregel-/Säle-Methoden entfernt; `listAll`-Badge
+  jetzt `anzahl_monitore` (COUNT DISTINCT `monitor_zeitplan.monitor_id`).
+- `admin/playlist.php` — Zeitregeln-/Säle-Karten entfernt → **Playlist = nur
+  Inhalt/Layout** (Drag&Drop bleibt); Hinweis auf Monitore→Zeitplan.
+- `admin/playlists.php` — Badge „auf N Monitoren eingeplant" (🖥️).
+- `admin/includes/{bootstrap,layout}.php` — `Monitor` statt `Saal`, Nav
+  „Monitore" statt „Säle". `assets/css/admin.css` — Playlist-Dropdown im Zeitplan.
+- `01_schema.sql` auf das neue Modell aktualisiert.
 
-**Design-Entscheidungen Schritt 7 (vom Nutzer bestätigt):**
-- Säle-Verwaltung mitgebaut (sonst Saal-Zuweisung leer).
-- Wochentage: Toggle-Buttons + Presets.
-- Zeitregeln über Mitternacht: **nicht** in Schritt 7 — `von < bis` erzwungen
-  (über Mitternacht = zwei Regeln; echte Overnight-Logik später nachrüstbar).
-- Übersicht-Badges: ja.
+**Design-Entscheidungen (vom Nutzer bestätigt):**
+- Monitor-zentrisch: Zeitplan je Monitor statt Zeitregeln/Säle an der Playlist.
+- Begriff/DB voll umbenannt (`saele`→`monitore`, `saal_id`→`monitor_id`).
+- Alte Tabellen `playlist_saele` + `playlist_zeitregeln` entfernt + ersetzt.
+- Wochentage Toggle-Buttons + Presets; `von < bis` erzwungen (über Mitternacht
+  später); Subdomains (`saal1` …) bleiben als Frontend-Ordner unverändert.
 
-**Datenmodell-Notiz:** `wochentage` als `"1,2,3,4,5"` (1=Montag). Auswertung
-zur Laufzeit (welche Playlist *jetzt* je Saal, Prioritäts-Konflikt) bleibt
-**Schritt 9** (Monitor); Schritt 7 erfasst nur die Daten.
-
-**Live-Test 7 (To-do Nutzer):** ZIP in `screen.tcpayer.de/` entpacken. „Säle":
-einen/mehrere Säle anlegen (Subdomain wird normalisiert), bearbeiten, löschen.
-„Playlists" → Playlist bearbeiten: Zeitregel(n) anlegen (Tage/Presets, von/bis,
-Priorität), Säle zuweisen, speichern; erneut öffnen (Vorbelegung prüfen);
-Validierung testen (von ≥ bis bzw. kein Tag → Fehlermeldung, Eingaben bleiben);
-Badges auf der Übersicht prüfen.
+**Live-Test 7 (To-do Nutzer):** Migration 06 einspielen, ZIP entpacken, alte
+`saele.php`/`Saal.php` löschen. „Monitore": Monitor(e) anlegen → „Zeitplan" →
+Playlist + Tage/Presets + von/bis + Priorität, speichern, erneut öffnen
+(Vorbelegung), Validierung prüfen. „Playlists": Badge „auf N Monitoren".
 
 ## Zugriffsschutz / Benutzerkonten
 
