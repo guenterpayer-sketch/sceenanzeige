@@ -445,8 +445,10 @@ playlist_layout
 -- Monitor. Ersetzt die früheren playlist_zeitregeln + playlist_saele.
 monitor_zeitplan
   id, monitor_id, playlist_id,
-  wochentage, von_uhrzeit, bis_uhrzeit,
-  prioritaet            -- höherer Wert gewinnt bei Überschneidung je Monitor
+  wochentage,
+  von_uhrzeit, bis_uhrzeit,  -- NULL/leer = keine Uhrzeitgrenze (läuft dauerhaft, Fallback)
+  prioritaet            -- höherer Wert gewinnt; Einträge OHNE Uhrzeit werden von
+                        -- Einträgen MIT Uhrzeit immer überschrieben (Fallback)
 
 -- Playlist-Inhalte: Verweis auf Modul-Instanzen, gruppiert nach Spalte
 playlist_spalten_inhalte

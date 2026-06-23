@@ -110,9 +110,9 @@ CREATE TABLE IF NOT EXISTS monitor_zeitplan (
     monitor_id  INT UNSIGNED NOT NULL,
     playlist_id INT UNSIGNED NOT NULL,
     wochentage  VARCHAR(20) NOT NULL,      -- z.B. "1,2,3,4,5" (Mo-Fr), 1=Montag
-    von_uhrzeit TIME NOT NULL,
-    bis_uhrzeit TIME NOT NULL,
-    prioritaet  INT NOT NULL DEFAULT 0,    -- höherer Wert gewinnt bei Überschneidung
+    von_uhrzeit TIME DEFAULT NULL,         -- NULL = keine Uhrzeitgrenze (dauerhaft)
+    bis_uhrzeit TIME DEFAULT NULL,         -- NULL = keine Uhrzeitgrenze (dauerhaft)
+    prioritaet  INT NOT NULL DEFAULT 0,    -- höherer Wert gewinnt; Einträge ohne Uhrzeit gelten als Fallback (niedrigste Priorität)
     PRIMARY KEY (id),
     KEY idx_monitor (monitor_id),
     KEY idx_playlist (playlist_id),

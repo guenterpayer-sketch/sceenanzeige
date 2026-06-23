@@ -52,12 +52,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'speic
             $fehler[] = 'Jeder Zeitplan-Eintrag braucht eine gültige Playlist.';
             continue;
         }
-        if (empty($tage) || $von === '' || $bis === '') {
-            $fehler[] = 'Jeder Eintrag braucht mindestens einen Wochentag sowie Von- und Bis-Uhrzeit.';
+        if (empty($tage)) {
+            $fehler[] = 'Jeder Eintrag braucht mindestens einen Wochentag.';
             continue;
         }
-        if ($von >= $bis) {
-            $fehler[] = 'Bei einem Eintrag muss „von" vor „bis" liegen (' . htmlspecialchars($von . '–' . $bis) . ').';
+        // Uhrzeit ist optional: entweder beide leer (= dauerhaft) ODER beide gesetzt mit von < bis.
+        if (($von === '') !== ($bis === '')) {
+            $fehler[] = 'Bitte entweder Von- UND Bis-Uhrzeit angeben oder beide leer lassen (dann läuft der Eintrag dauerhaft).';
+            continue;
+        }
+        if ($von !== '' && $von >= $bis) {
+            $fehler[] = 'Bei einem Eintrag mit Uhrzeit muss „von" vor „bis" liegen (' . htmlspecialchars($von . '–' . $bis) . ').';
             continue;
         }
         $eintraege[] = [
@@ -135,9 +140,12 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
     <div class="adm-card">
         <p class="adm-hilfe">
             Lege fest, welche Playlist wann auf diesem Monitor läuft. Pro Eintrag:
-            Playlist + Wochentage + Uhrzeit-Fenster + Priorität (höher gewinnt bei
-            Überschneidung). Ohne passenden Eintrag bleibt der Monitor zur jeweiligen
-            Zeit leer. Die Auswertung erfolgt am Monitor (Schritt 9).
+            Playlist + Wochentage + <strong>optional</strong> ein Uhrzeit-Fenster +
+            Priorität. <strong>Ohne Uhrzeit läuft der Eintrag dauerhaft</strong>
+            (ganztags an den gewählten Tagen) und dient als Fallback — Einträge
+            <strong>mit</strong> Uhrzeit überschreiben ihn. Bei mehreren passenden
+            Einträgen gewinnt die <strong>höhere Priorität</strong> (Zahl). Die
+            Auswertung erfolgt am Monitor (Schritt 9).
         </p>
         <div id="zeitplan-liste" class="adm-zeitregeln"></div>
         <button type="button" id="zeitplan-hinzu" class="adm-btn">+ Eintrag hinzufügen</button>

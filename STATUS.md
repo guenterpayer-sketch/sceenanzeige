@@ -259,8 +259,11 @@ Neue/aktualisierte Dateien (alle committet + gepusht):
   Anlegen/Bearbeiten via Formular (`?neu`/`?edit`), Löschrückfrage (warnt bei
   Zeitplan-Einträgen).
 - `admin/monitor.php` — **Zeitplan-Editor je Monitor:** dynamische Zeilen mit
-  Playlist-Dropdown + Wochentag-Toggles/Presets + von/bis + Priorität;
-  Validierung gültige Playlist + ≥1 Tag + `von < bis`.
+  Playlist-Dropdown + Wochentag-Toggles/Presets + **optionaler** Uhrzeit +
+  Priorität. Uhrzeit leer = läuft **dauerhaft** (Fallback); Einträge mit
+  Uhrzeit überschreiben ihn. Validierung: gültige Playlist + ≥1 Tag, Uhrzeit
+  entweder beide leer oder beide mit `von < bis`. **Migration 07** macht
+  `von_uhrzeit`/`bis_uhrzeit` NULL-fähig.
 - `includes/Playlist.php` — Zeitregel-/Säle-Methoden entfernt; `listAll`-Badge
   jetzt `anzahl_monitore` (COUNT DISTINCT `monitor_zeitplan.monitor_id`).
 - `admin/playlist.php` — Zeitregeln-/Säle-Karten entfernt → **Playlist = nur
@@ -274,8 +277,9 @@ Neue/aktualisierte Dateien (alle committet + gepusht):
 - Monitor-zentrisch: Zeitplan je Monitor statt Zeitregeln/Säle an der Playlist.
 - Begriff/DB voll umbenannt (`saele`→`monitore`, `saal_id`→`monitor_id`).
 - Alte Tabellen `playlist_saele` + `playlist_zeitregeln` entfernt + ersetzt.
-- Wochentage Toggle-Buttons + Presets; `von < bis` erzwungen (über Mitternacht
-  später); Subdomains (`saal1` …) bleiben als Frontend-Ordner unverändert.
+- Wochentage Toggle-Buttons + Presets; Uhrzeit **optional** (leer = dauerhaft/
+  Fallback, sonst `von < bis`; über Mitternacht später); Subdomains
+  (`saal1` …) bleiben als Frontend-Ordner unverändert.
 
 **Live-Test 7 (To-do Nutzer):** Migration 06 einspielen, ZIP entpacken, alte
 `saele.php`/`Saal.php` löschen. „Monitore": Monitor(e) anlegen → „Zeitplan" →

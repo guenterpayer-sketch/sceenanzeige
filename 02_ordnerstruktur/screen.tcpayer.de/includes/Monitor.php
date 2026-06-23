@@ -91,8 +91,8 @@ final class Monitor
     // ------------------------------------------------------------------
 
     /**
-     * Zeitplan-Einträge eines Monitors inkl. Playlist-Name/-Aktiv, sortiert
-     * nach Priorität (hoch zuerst), dann Uhrzeit.
+     * Zeitplan-Einträge eines Monitors inkl. Playlist-Name/-Aktiv. Einträge mit
+     * Uhrzeit-Fenster zuerst (nach Priorität), zeitlose („dauerhaft") danach.
      * @return array<int,array>
      */
     public static function ladeZeitplan(int $monitorId): array
@@ -103,7 +103,7 @@ final class Monitor
              FROM monitor_zeitplan z
              JOIN playlists p ON p.id = z.playlist_id
              WHERE z.monitor_id = :id
-             ORDER BY z.prioritaet DESC, z.von_uhrzeit, z.id'
+             ORDER BY (z.von_uhrzeit IS NULL), z.prioritaet DESC, z.von_uhrzeit, z.id'
         );
         $stmt->execute([':id' => $monitorId]);
         return $stmt->fetchAll();
@@ -111,8 +111,10 @@ final class Monitor
 
     /**
      * Ersetzt den kompletten Zeitplan eines Monitors durch die übergebene Liste.
+     * von/bis sind optional: leer = NULL (Eintrag läuft dauerhaft an den
+     * gewählten Wochentagen, gilt als Fallback ggü. Einträgen mit Uhrzeit).
      *
-     * @param array<int,array{playlist_id:int,wochentage:string,von:string,bis:string,prioritaet?:int}> $eintraege
+     * @param array<int,array{playlist_id:int,wochentage:string,von?:string,bis?:string,prioritaet?:int}> $eintraege
      */
     public static function ersetzeZeitplan(int $monitorId, array $eintraege): void
     {
@@ -132,15 +134,15 @@ final class Monitor
                 $tage = trim((string)($e['wochentage'] ?? ''));
                 $von  = trim((string)($e['von'] ?? ''));
                 $bis  = trim((string)($e['bis'] ?? ''));
-                if ($pid <= 0 || $tage === '' || $von === '' || $bis === '') {
+                if ($pid <= 0 || $tage === '') {
                     continue;
                 }
                 $stmt->execute([
                     ':mid'  => $monitorId,
                     ':pid'  => $pid,
                     ':tage' => $tage,
-                    ':von'  => $von,
-                    ':bis'  => $bis,
+                    ':von'  => $von !== '' ? $von : null,
+                    ':bis'  => $bis !== '' ? $bis : null,
                     ':prio' => (int)($e['prioritaet'] ?? 0),
                 ]);
             }
