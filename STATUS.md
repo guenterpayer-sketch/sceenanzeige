@@ -348,6 +348,15 @@ als Kachel funktioniert und beide Pläne erhalten bleiben.
   Tipp-Flächen (Wochentage/Presets/Zeit), ab ~980 px zweispaltig, darunter
   gestapelt. Reines CSS/Markup in `admin/monitor.php` + `assets/css/admin.css`.
 
+**UI-Nachbesserung (8b) — Editor-Dateien umbenannt (Lesbarkeit):** Die
+Einzel-Editoren heißen jetzt eindeutig anders als ihre Übersichten (analog
+`ticker.php` / `ticker-edit.php`):
+- `admin/monitor.php` → **`admin/monitor-zeitplan.php`** (Übersicht bleibt `monitore.php`).
+- `admin/playlist.php` → **`admin/playlist-editor.php`** (Übersicht bleibt `playlists.php`).
+Alle internen Links/Header nachgezogen. **Beim Deploy die ALTEN Dateien
+`admin/monitor.php` + `admin/playlist.php` auf dem Server löschen** (das ZIP
+legt nur die neuen an, entfernt die alten nicht).
+
 **Noch offen / Schritt 9:** das tatsächliche Footer-Rendering am Monitor
 (Mischen mehrerer aktiver Ticker, Lauftext) gehört zur Anzeige-Logik (Schritt 9).
 

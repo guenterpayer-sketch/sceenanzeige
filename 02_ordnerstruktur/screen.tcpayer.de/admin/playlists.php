@@ -67,7 +67,7 @@ admin_header('Playlists', 'playlists');
 </p>
 
 <div class="adm-neuzeile">
-    <a class="adm-btn-primary" href="playlist.php">+ Neue Playlist</a>
+    <a class="adm-btn-primary" href="playlist-editor.php">+ Neue Playlist</a>
 </div>
 
 <?php if (empty($playlists)): ?>
@@ -92,7 +92,7 @@ admin_header('Playlists', 'playlists');
                     <?php if (!$p['aktiv']): ?><span class="adm-badge-pause">pausiert</span><?php endif; ?>
                 </div>
                 <div class="adm-kachel-aktionen">
-                    <a class="adm-btn" href="playlist.php?id=<?= (int)$p['id'] ?>">Bearbeiten</a>
+                    <a class="adm-btn" href="playlist-editor.php?id=<?= (int)$p['id'] ?>">Bearbeiten</a>
                     <form method="post" class="adm-inline">
                         <input type="hidden" name="aktion" value="toggle">
                         <input type="hidden" name="id" value="<?= (int)$p['id'] ?>">

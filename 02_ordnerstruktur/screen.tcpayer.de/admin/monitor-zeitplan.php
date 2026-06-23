@@ -1,9 +1,11 @@
 <?php
 /**
- * admin/monitor.php
+ * admin/monitor-zeitplan.php
  *
  * Zeitplan-Editor für EINEN Monitor (monitor-zentrisches Modell):
- *   monitor.php?id=<monitor_id>
+ *   monitor-zeitplan.php?id=<monitor_id>
+ *
+ * (Übersicht/Verwaltung der Monitore liegt in admin/monitore.php.)
  *
  * Zwei Zeitpläne auf einer Seite:
  *   1. Playlist-Zeitplan: welche Playlist wann läuft (Wochentage + optionale

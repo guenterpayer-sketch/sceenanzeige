@@ -1,10 +1,12 @@
 <?php
 /**
- * admin/playlist.php
+ * admin/playlist-editor.php
  *
  * Editor zum Anlegen/Bearbeiten einer Playlist (Schritt 6, Playlist-Editor).
- *   - Aufruf neu:        playlist.php
- *   - Aufruf bearbeiten: playlist.php?id=<playlist_id>
+ *   - Aufruf neu:        playlist-editor.php
+ *   - Aufruf bearbeiten: playlist-editor.php?id=<playlist_id>
+ *
+ * (Übersicht/Verwaltung der Playlists liegt in admin/playlists.php.)
  *
  * Umfang (CLAUDE.md Abschnitt 6): Name, Aktiv, Layout-Auswahl (Spaltenanzahl),
  * Spaltenbreiten (2-spaltig: gekoppelter Regler; 3-spaltig: fest gleich),

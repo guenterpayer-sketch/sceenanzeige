@@ -5,7 +5,7 @@
  * Monitor-Verwaltung (monitor-zentrisches Modell), Kachel-Design analog zur
  * Playlist-Übersicht:
  *   - Standardansicht: Button „+ Neuer Monitor" + Monitore als Kacheln.
- *     Klick auf eine Kachel führt in den Zeitplan-Editor (monitor.php).
+ *     Klick auf eine Kachel führt in den Zeitplan-Editor (monitor-zeitplan.php).
  *   - Anlegen/Bearbeiten: Formular (Name + Subdomain) via ?neu bzw. ?edit=<id>.
  */
 
@@ -128,7 +128,7 @@ admin_header('Monitore', 'monitore');
 <div class="adm-kachelgrid">
     <?php foreach ($monitore as $m): ?>
         <div class="adm-kachel">
-            <a class="adm-kachel-vorschau info adm-kachel-link" href="monitor.php?id=<?= (int)$m['id'] ?>"
+            <a class="adm-kachel-vorschau info adm-kachel-link" href="monitor-zeitplan.php?id=<?= (int)$m['id'] ?>"
                title="Zeitplan von <?= htmlspecialchars($m['name']) ?> bearbeiten">
                 <span class="adm-kachel-icon">🖥️</span>
                 <span class="adm-kachel-info">
@@ -140,7 +140,7 @@ admin_header('Monitore', 'monitore');
             <div class="adm-kachel-body">
                 <div class="adm-kachel-name"><?= htmlspecialchars($m['name']) ?></div>
                 <div class="adm-kachel-aktionen">
-                    <a class="adm-btn adm-btn-primary" href="monitor.php?id=<?= (int)$m['id'] ?>">Zeitplan</a>
+                    <a class="adm-btn adm-btn-primary" href="monitor-zeitplan.php?id=<?= (int)$m['id'] ?>">Zeitplan</a>
                     <a class="adm-btn" href="monitore.php?edit=<?= (int)$m['id'] ?>">Bearbeiten</a>
                     <form method="post" class="adm-inline adm-del-form"
                           data-name="<?= htmlspecialchars($m['name']) ?>"
