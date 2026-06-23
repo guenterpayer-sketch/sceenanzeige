@@ -7,9 +7,11 @@
 > **Branch:** `claude/nifty-johnson-3q6u7g` (gesamter Stand liegt hier,
 > **nicht** auf `main`).
 
-_Letzte Aktualisierung: Schritt 7 abgeschlossen — monitor-zentrische
-Zeitplanung live getestet (Monitor-Verwaltung als Kacheln, Zeitplan je Monitor,
-Uhrzeit optional/Fallback, Priorität). Migrationen 06 + 07 live eingespielt._
+_Letzte Aktualisierung: Schritt 8 (Ticker) gebaut — eigener Ticker-Bereich
+(Kachel-Übersicht + Editor mit Textzeilen/Drag&Drop) und monitor-zentrischer
+Ticker-Zeitplan (ohne Priorität, Uhrzeit optional). Auswahl von Playlist/Ticker
+im Monitor-Zeitplan jetzt als Kachel-Picker statt Dropdown. Migration 08 zu
+**spielen** (Live-Test offen)._
 
 ---
 
@@ -24,14 +26,19 @@ Uhrzeit optional/Fallback, Priorität). Migrationen 06 + 07 live eingespielt._
 | 5 | Backend-Bibliothek + Mediathek | ✅ live getestet (Mediathek + Ordner/Tags, Bibliothek/Instanz-Editor, FRET-Geräte-Whitelist) |
 | 6 | Playlist-Editor (Layout-Konfigurator) | ✅ live getestet (inkl. Drag & Drop der Spalten-Inhalte) |
 | 7 | Zeitplanung (monitor-zentrisch: Monitore + Zeitplan je Monitor) | ✅ live getestet (Kachel-Übersicht, Zeitplan, Uhrzeit optional/Fallback, Priorität) |
-| 8 | Ticker-Verwaltung | ▶️ als Nächstes |
+| 8 | Ticker-Verwaltung (monitor-zentrisch) | 🛠️ gebaut · Migration 08 + Live-Test offen |
 | 9 | Monitor-Frontend (Anzeige-/Zeitlogik) | offen · Vormerk-Notiz: `Notiz_Schritt9_Monitor-Frontend.md` |
 | 10 | Live-Vorschau (iFrame) | offen |
 | 11 | Deployment-Guide | offen |
 
 ---
 
-## Aktueller Fokus: Schritt 7 ✅ abgeschlossen → Schritt 8 (Ticker) als Nächstes
+## Aktueller Fokus: Schritt 8 (Ticker) 🛠️ gebaut → Migration 08 + Live-Test offen
+
+Schritt 8 (Ticker) ist **gebaut** (Code committet + gepusht), aber noch **nicht
+live getestet**. Details im Abschnitt „Schritt 8 — Stand" weiter unten. To-do
+Nutzer: Migration `08_migration_ticker_zeitplan.sql` einspielen, neue/geänderte
+Dateien hochladen, dann Ticker anlegen + im Monitor-Zeitplan einplanen.
 
 Schritt 7 (monitor-zentrische Zeitplanung) ist **live getestet und bestätigt**.
 Die Zeitplanung läuft **pro Monitor**: Bereich „Monitore" (Kachel-Übersicht) →
@@ -288,6 +295,52 @@ geprüft; Übersicht zeigt Einträge nach Priorität sortiert.
 **Deployment-ZIPs (Historie):** `Schritt7_monitor-zentrisch.zip` (Umbau +
 Kachel-Übersicht), `Schritt7c_zeitplan-zeit-optional.zip` (optionale Uhrzeit).
 Migrationen separat: `06_…`, `07_…`.
+
+## Schritt 8 — Stand (Ticker, 🛠️ gebaut / Migration + Live-Test offen)
+
+Der Ticker ist ein eigenständiges Footer-System (kein Modul, keine Playlist;
+CLAUDE.md Abschnitt 7). Entscheidung zu Schritt 8 (vom Nutzer bestätigt):
+- **Pro-Monitor Ticker-Zeitplan** (analog Schritt 7), aber **ohne Priorität** —
+  mehrere gleichzeitig aktive Ticker werden am Monitor **gemischt**.
+- **Uhrzeit optional** (leer = läuft dauerhaft an den gewählten Tagen).
+- Im Monitor-Zeitplan ist die Auswahl von **Playlist UND Ticker** jetzt ein
+  **Kachel-Picker** (anklickbare Kachel + Auswahldialog) statt Dropdown.
+
+**Migration `08_migration_ticker_zeitplan.sql`** (einmalig live einspielen,
+NICHT idempotent): neue Tabelle **`ticker_zeitplan`** (`monitor_id`,
+`ticker_playlist_id`, `wochentage`, `von_uhrzeit`/`bis_uhrzeit` NULL-fähig,
+**kein** Prioritätsfeld); **DROP** der alten `ticker_zeitregeln` +
+`ticker_playlist_saele`. `01_schema.sql` entsprechend aktualisiert.
+
+Neue/aktualisierte Dateien (alle committet + gepusht):
+- `includes/TickerPlaylist.php` (neu) — CRUD auf `ticker_playlists`
+  (`create/update/find/listAll/delete/setAktiv/nameExistiert`,
+  `listAll`-Badges `anzahl_eintraege` + `anzahl_monitore`) + Texteinträge
+  (`listEintraege`, `ersetzeEintraege` als Bulk in Transaktion).
+- `includes/Monitor.php` (erweitert) — `ladeTickerZeitplan` +
+  `ersetzeTickerZeitplan` (Tabelle `ticker_zeitplan`, ohne Priorität).
+- `admin/ticker.php` (neu) — Kachel-Übersicht aller Ticker (Anzahl Textzeilen +
+  „auf N Monitoren"), Aktiv-Toggle, Bearbeiten/Löschen (Rückfrage), „+ Neuer
+  Ticker".
+- `admin/ticker-edit.php` (neu) — Editor: Name, Aktiv, Textzeilen (Text +
+  Anzeigedauer, ↑/↓ + Drag&Drop, Entfernen-Rückfrage).
+- `admin/monitor.php` (erweitert) — zweiter Abschnitt **„Ticker-Zeitplan"**
+  unter dem Playlist-Zeitplan; beide Auswahl-Felder als **Kachel-Picker**
+  (gemeinsamer Picker-Dialog), Validierung wie Schritt 7, beide Pläne werden in
+  einem Submit gespeichert.
+- `admin/includes/bootstrap.php` — lädt `TickerPlaylist`.
+- `admin/includes/layout.php` — Nav „Ticker" aktiviert (`ticker.php`).
+- `assets/css/admin.css` — Auswahl-Kachel im Zeitplan + Ticker-Editor-Styles.
+
+**Live-Test 8 (To-do Nutzer):** Migration 08 einspielen, neue/geänderte Dateien
+hochladen; unter „Ticker" einen Ticker mit mehreren Textzeilen anlegen
+(Reihenfolge/Drag&Drop, Dauer), pausieren/löschen; unter „Monitore" → Monitor →
+„Zeitplan" im Abschnitt „Ticker-Zeitplan" einen Ticker per Kachel-Picker wählen
++ Tage/optionale Uhrzeit, speichern; prüfen, dass die Playlist-Auswahl ebenfalls
+als Kachel funktioniert und beide Pläne erhalten bleiben.
+
+**Noch offen / Schritt 9:** das tatsächliche Footer-Rendering am Monitor
+(Mischen mehrerer aktiver Ticker, Lauftext) gehört zur Anzeige-Logik (Schritt 9).
 
 ## Zugriffsschutz / Benutzerkonten
 

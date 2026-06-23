@@ -174,35 +174,26 @@ CREATE TABLE IF NOT EXISTS ticker_eintraege (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------------------------------------------------------
--- 12. Ticker-Zeitregeln (KEIN Prioritätsfeld, da bei Überschneidung gemischt wird)
+-- 12. Ticker-Zeitplan (monitor-zentrisch, Schritt 8): welcher Ticker läuft wann
+--     auf welchem Monitor. Ersetzt die früheren ticker_zeitregeln +
+--     ticker_playlist_saele. KEIN Prioritätsfeld — mehrere gleichzeitig aktive
+--     Ticker werden am Monitor GEMISCHT (siehe Abschnitt 7).
 -- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS ticker_zeitregeln (
-    id                  INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    ticker_playlist_id  INT UNSIGNED NOT NULL,
-    wochentage          VARCHAR(20) NOT NULL,
-    von_uhrzeit         TIME NOT NULL,
-    bis_uhrzeit         TIME NOT NULL,
-    PRIMARY KEY (id),
-    KEY idx_ticker_playlist (ticker_playlist_id),
-    CONSTRAINT fk_ticker_zeitregeln_playlist
-        FOREIGN KEY (ticker_playlist_id) REFERENCES ticker_playlists (id)
-        ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- ----------------------------------------------------------------------------
--- 13. Ticker-Playlist <-> Monitore (n:m)
---     (Ticker-Bereich wird erst in Schritt 8 gebaut; hier nur fürs Schema
---      konsistent auf monitor_id umgestellt.)
--- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS ticker_playlist_saele (
-    ticker_playlist_id INT UNSIGNED NOT NULL,
+CREATE TABLE IF NOT EXISTS ticker_zeitplan (
+    id                 INT UNSIGNED NOT NULL AUTO_INCREMENT,
     monitor_id         INT UNSIGNED NOT NULL,
-    PRIMARY KEY (ticker_playlist_id, monitor_id),
-    CONSTRAINT fk_ticker_saele_playlist
-        FOREIGN KEY (ticker_playlist_id) REFERENCES ticker_playlists (id)
-        ON DELETE CASCADE,
-    CONSTRAINT fk_ticker_saele_monitor
+    ticker_playlist_id INT UNSIGNED NOT NULL,
+    wochentage         VARCHAR(20) NOT NULL,   -- z.B. "1,2,3,4,5" (Mo-Fr), 1=Montag
+    von_uhrzeit        TIME DEFAULT NULL,       -- NULL = keine Uhrzeitgrenze (dauerhaft)
+    bis_uhrzeit        TIME DEFAULT NULL,       -- NULL = keine Uhrzeitgrenze (dauerhaft)
+    PRIMARY KEY (id),
+    KEY idx_monitor (monitor_id),
+    KEY idx_ticker (ticker_playlist_id),
+    CONSTRAINT fk_ticker_zeitplan_monitor
         FOREIGN KEY (monitor_id) REFERENCES monitore (id)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_ticker_zeitplan_ticker
+        FOREIGN KEY (ticker_playlist_id) REFERENCES ticker_playlists (id)
         ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

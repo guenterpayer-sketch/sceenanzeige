@@ -562,3 +562,35 @@ body {
 /* Anklickbare Kachel-Vorschau (Monitore → Zeitplan) */
 a.adm-kachel-link { text-decoration: none; color: inherit; cursor: pointer; transition: background .12s; }
 a.adm-kachel-link:hover { background: #fbeaea; }
+
+/* ============================================================================
+   Ticker (Schritt 8)
+   ============================================================================ */
+
+/* Auswahl-Kachel im Zeitplan (Playlist bzw. Ticker statt Dropdown) */
+.adm-zr-auswahl { min-width: 220px; }
+.adm-auswahl-kachel {
+    display: flex; align-items: center; gap: 10px; width: 100%; min-width: 200px;
+    text-align: left; cursor: pointer;
+    border: 1px solid #dde3ea; border-radius: 8px; background: #fff; padding: 10px 12px;
+}
+.adm-auswahl-kachel:hover { border-color: #ad2121; box-shadow: 0 0 0 2px rgba(173,33,33,.15); }
+.adm-auswahl-kachel.gewaehlt { border-color: #ad2121; background: #fbeaea; }
+.adm-auswahl-leer { color: #8a97a6; font-size: 14px; }
+.adm-picker-instanz.gewaehlt { border-color: #ad2121; background: #fbeaea; }
+
+/* Ticker-Editor: Textzeilen */
+.adm-tickerliste { display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; }
+.adm-ticker-zeile {
+    display: flex; align-items: flex-start; gap: 12px;
+    background: #f8fafc; border: 1px solid #dde3ea; border-radius: 8px; padding: 12px;
+}
+.adm-ticker-zeile.wird-gezogen { opacity: .4; outline: 2px dashed #ad2121; }
+.adm-ticker-zeile .adm-eintrag-griff { padding-top: 26px; }
+.adm-ticker-text { flex: 1; min-width: 220px; display: flex; flex-direction: column; font-size: 13px; color: #33424f; gap: 4px; }
+.adm-ticker-text textarea {
+    width: 100%; min-height: 56px; padding: 8px 10px; border: 1px solid #dde3ea; border-radius: 6px; font-size: 14px;
+}
+.adm-ticker-dauer { display: flex; flex-direction: column; font-size: 13px; color: #33424f; gap: 4px; }
+.adm-ticker-dauer input { width: 90px; padding: 7px 9px; border: 1px solid #dde3ea; border-radius: 6px; font-size: 14px; }
+.adm-ticker-zeile .adm-eintrag-steuer { padding-top: 22px; }

@@ -648,7 +648,7 @@ und kann bei Bedarf erneut bereitgestellt werden.
 | 5 | Backend: Bibliothek (Modul-Instanzen verwalten, inkl. `aktiv`/`gueltig_bis` + Mediathek mit Duplikat-Erkennung) | ✅ abgeschlossen, live getestet |
 | 6 | Backend: Playlist-Editor (Layout-Konfigurator + Spalten-Zuweisung, inkl. Drag & Drop) | ✅ abgeschlossen, live getestet |
 | 7 | Backend: Zeitplanung **monitor-zentrisch** (Monitore-Verwaltung + Zeitplan je Monitor, Uhrzeit optional/Fallback, Priorität) — siehe Abschnitt 16c | ✅ abgeschlossen, live getestet |
-| 8 | Backend: Ticker-Verwaltung (eigener Bereich, monitor-zentrisch) | ▶️ als Nächstes |
+| 8 | Backend: Ticker-Verwaltung (eigener Bereich + Pro-Monitor-Ticker-Zeitplan ohne Priorität, Uhrzeit optional; Kachel-Picker im Zeitplan) — siehe Abschnitt 16c Nr. 27 | 🛠️ gebaut · Migration 08 + Live-Test offen |
 | 9 | Monitor-Frontend (HTML/JS, Anzeige- und Zeitlogik gemäß Abschnitt 10 + 16c; siehe `Notiz_Schritt9_Monitor-Frontend.md`) | offen |
 | 10 | Live-Vorschau im Backend (iFrame-Simulation) | offen |
 | 11 | Deployment-Guide für all-inkl | offen |
@@ -840,9 +840,19 @@ Abschnitt 6 (Zeitregeln/Saal-Zuweisung), 8, 10, 11 und 12.
     künftig aus `monitor_zeitplan` (Wochentag/Uhrzeit + höchste Priorität).
     Empfehlung zur Monitor-Identifikation per Subdomain siehe
     `Notiz_Schritt9_Monitor-Frontend.md`.
-27. **Ticker (Schritt 8)** soll denselben monitor-zentrischen Ansatz bekommen;
-    `ticker_playlist_saele.saal_id` ist bereits auf `monitor_id` umgestellt,
-    die endgültige Ticker-Zeit-/Monitor-Logik wird in Schritt 8 gebaut.
+27. **Ticker (Schritt 8) — umgesetzt, monitor-zentrisch.** Der Ticker bekommt
+    denselben Pro-Monitor-Ansatz wie die Playlists, **aber ohne Prioritätsfeld**
+    (mehrere gleichzeitig passende Ticker werden weiterhin **gemischt**, siehe
+    Abschnitt 7). Neue Tabelle **`ticker_zeitplan`** (`monitor_id`,
+    `ticker_playlist_id`, `wochentage`, `von_uhrzeit`/`bis_uhrzeit` **optional/
+    NULL-fähig**) **ersetzt** die alten `ticker_zeitregeln` **und**
+    `ticker_playlist_saele` (Migration `08_migration_ticker_zeitplan.sql`,
+    `01_schema.sql` aktualisiert). Bedienung: eigener Bereich **„Ticker"**
+    (Kachel-Übersicht + Editor mit Textzeilen) für die Inhalte; **wann/wo** ein
+    Ticker läuft, steckt unter **Monitore → „Zeitplan"** (Abschnitt
+    „Ticker-Zeitplan"). Dort ist die Auswahl von **Playlist und Ticker** je
+    Eintrag ein **Kachel-Picker** (anklickbare Kachel + Dialog) statt Dropdown.
+    Das eigentliche Footer-Rendering (Lauftext, Mischen) gehört zu Schritt 9.
 
 ---
 

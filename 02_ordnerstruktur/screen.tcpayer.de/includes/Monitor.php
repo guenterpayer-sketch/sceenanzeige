@@ -67,7 +67,7 @@ final class Monitor
     public static function delete(int $id): void
     {
         // ON DELETE CASCADE räumt monitor_zeitplan, einstellungen und
-        // ticker_playlist_saele dieses Monitors automatisch mit ab.
+        // ticker_zeitplan dieses Monitors automatisch mit ab.
         get_pdo()->prepare('DELETE FROM monitore WHERE id = :id')->execute([':id' => $id]);
     }
 
@@ -144,6 +144,74 @@ final class Monitor
                     ':von'  => $von !== '' ? $von : null,
                     ':bis'  => $bis !== '' ? $bis : null,
                     ':prio' => (int)($e['prioritaet'] ?? 0),
+                ]);
+            }
+            $pdo->commit();
+        } catch (Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Ticker-Zeitplan (ticker_zeitplan) — monitor-zentrisch, OHNE Priorität.
+    // Mehrere gleichzeitig passende Ticker werden am Monitor gemischt
+    // (siehe CLAUDE.md Abschnitt 7), daher kein Prioritätsfeld.
+    // ------------------------------------------------------------------
+
+    /**
+     * Ticker-Zeitplan-Einträge eines Monitors inkl. Ticker-Name/-Aktiv.
+     * Einträge mit Uhrzeit-Fenster zuerst, zeitlose („dauerhaft") danach.
+     * @return array<int,array>
+     */
+    public static function ladeTickerZeitplan(int $monitorId): array
+    {
+        $stmt = get_pdo()->prepare(
+            'SELECT z.id, z.ticker_playlist_id, z.wochentage, z.von_uhrzeit, z.bis_uhrzeit,
+                    t.name AS ticker_name, t.aktiv AS ticker_aktiv
+             FROM ticker_zeitplan z
+             JOIN ticker_playlists t ON t.id = z.ticker_playlist_id
+             WHERE z.monitor_id = :id
+             ORDER BY (z.von_uhrzeit IS NULL), z.von_uhrzeit, z.id'
+        );
+        $stmt->execute([':id' => $monitorId]);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Ersetzt den kompletten Ticker-Zeitplan eines Monitors durch die
+     * übergebene Liste. von/bis sind optional: leer = NULL (Ticker läuft
+     * dauerhaft an den gewählten Wochentagen).
+     *
+     * @param array<int,array{ticker_id:int,wochentage:string,von?:string,bis?:string}> $eintraege
+     */
+    public static function ersetzeTickerZeitplan(int $monitorId, array $eintraege): void
+    {
+        $pdo = get_pdo();
+        $pdo->beginTransaction();
+        try {
+            $pdo->prepare('DELETE FROM ticker_zeitplan WHERE monitor_id = :id')
+                ->execute([':id' => $monitorId]);
+
+            $stmt = $pdo->prepare(
+                'INSERT INTO ticker_zeitplan
+                    (monitor_id, ticker_playlist_id, wochentage, von_uhrzeit, bis_uhrzeit)
+                 VALUES (:mid, :tid, :tage, :von, :bis)'
+            );
+            foreach ($eintraege as $e) {
+                $tid  = (int)($e['ticker_id'] ?? 0);
+                $tage = trim((string)($e['wochentage'] ?? ''));
+                $von  = trim((string)($e['von'] ?? ''));
+                $bis  = trim((string)($e['bis'] ?? ''));
+                if ($tid <= 0 || $tage === '') {
+                    continue;
+                }
+                $stmt->execute([
+                    ':mid'  => $monitorId,
+                    ':tid'  => $tid,
+                    ':tage' => $tage,
+                    ':von'  => $von !== '' ? $von : null,
+                    ':bis'  => $bis !== '' ? $bis : null,
                 ]);
             }
             $pdo->commit();

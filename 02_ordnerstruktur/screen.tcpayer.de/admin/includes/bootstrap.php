@@ -25,6 +25,7 @@ require $WURZEL . '/includes/ModuleRegistry.php';
 require $WURZEL . '/includes/LayoutRegistry.php';
 require $WURZEL . '/includes/ModulInstanz.php';
 require $WURZEL . '/includes/Playlist.php';
+require $WURZEL . '/includes/TickerPlaylist.php';
 require $WURZEL . '/includes/Monitor.php';
 require $WURZEL . '/includes/MediathekOrdner.php';
 require $WURZEL . '/includes/MediathekTag.php';
