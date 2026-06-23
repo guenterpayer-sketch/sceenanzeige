@@ -615,7 +615,11 @@ und kann bei Bedarf erneut bereitgestellt werden.
   (Begründung: Misch-Verhalten bei Überschneidung wäre im Modul-Modell
   unnötig komplex)
 - ✅ Ticker-Inhalt: nur Text (kein Song, kein Community-Feed)
-- ✅ Bei Playlist-Überschneidung: **Priorität** entscheidet
+- ✅ **Monitor-zentrische Zeitplanung** (siehe Abschnitt 16c): nicht die
+  Playlist trägt Zeit/Zuweisung, sondern jeder **Monitor** hat einen Zeitplan
+  (`monitor_zeitplan`). Bei Überschneidung je Monitor entscheidet die
+  **Priorität** (höhere Zahl gewinnt); Einträge **ohne Uhrzeit** laufen
+  dauerhaft als Fallback und werden von Einträgen **mit** Uhrzeit überschrieben
 - ✅ Bei Ticker-Überschneidung: **Mischung**, keine Priorität
 - ✅ Stundenplan über Legacy-API `/timetable/data`, **keine** Kundendaten/
   Kursbuchungen über die API (Direct-DB-Access-Ansatz verworfen, siehe
@@ -640,12 +644,12 @@ und kann bei Bedarf erneut bereitgestellt werden.
 | 1 | SQL-Script — alle Tabellen aus Abschnitt 8 anlegen | ✅ abgeschlossen, live getestet |
 | 2 | Datei- und Ordnerstruktur auf all-inkl + `.htaccess` je Subdomain | ✅ abgeschlossen, live getestet |
 | 3 | Modul-Registry-Grundgerüst + erste Referenz-Module (`uhrzeit`, `bild`) | ✅ abgeschlossen |
-| 4 | Module `stundenplan`, `ankuendigung`, `fret` + NC-Proxy + FRET-Proxy (`community` zurückgestellt, siehe Abschnitt 9) | ▶️ aktuell, **am Anfang** (Grundgerüst der Module/Proxys steht im Repo, noch nicht live getestet) |
-| 5 | Backend: Bibliothek (Modul-Instanzen verwalten, inkl. `aktiv`/`gueltig_bis` + Mediathek mit Duplikat-Erkennung) | offen |
-| 6 | Backend: Playlist-Editor (Layout-Konfigurator + Spalten-Zuweisung) | offen |
-| 7 | Backend: Zeitregeln + Saal-Zuweisung (Playlists) | offen |
-| 8 | Backend: Ticker-Verwaltung (eigener Bereich) | offen |
-| 9 | Monitor-Frontend (HTML/JS, Anzeige- und Zeitlogik gemäß Abschnitt 10) | offen |
+| 4 | Module `stundenplan`, `ankuendigung`, `fret` + NC-Proxy + FRET-Proxy (`community` zurückgestellt, siehe Abschnitt 9) | ✅ abgeschlossen, live getestet |
+| 5 | Backend: Bibliothek (Modul-Instanzen verwalten, inkl. `aktiv`/`gueltig_bis` + Mediathek mit Duplikat-Erkennung) | ✅ abgeschlossen, live getestet |
+| 6 | Backend: Playlist-Editor (Layout-Konfigurator + Spalten-Zuweisung, inkl. Drag & Drop) | ✅ abgeschlossen, live getestet |
+| 7 | Backend: Zeitplanung **monitor-zentrisch** (Monitore-Verwaltung + Zeitplan je Monitor, Uhrzeit optional/Fallback, Priorität) — siehe Abschnitt 16c | ✅ abgeschlossen, live getestet |
+| 8 | Backend: Ticker-Verwaltung (eigener Bereich, monitor-zentrisch) | ▶️ als Nächstes |
+| 9 | Monitor-Frontend (HTML/JS, Anzeige- und Zeitlogik gemäß Abschnitt 10 + 16c; siehe `Notiz_Schritt9_Monitor-Frontend.md`) | offen |
 | 10 | Live-Vorschau im Backend (iFrame-Simulation) | offen |
 | 11 | Deployment-Guide für all-inkl | offen |
 

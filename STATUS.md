@@ -7,9 +7,9 @@
 > **Branch:** `claude/nifty-johnson-3q6u7g` (gesamter Stand liegt hier,
 > **nicht** auf `main`).
 
-_Letzte Aktualisierung: Umbau auf monitor-zentrisches Modell gebaut (Monitor-
-Verwaltung + Zeitplan je Monitor), lokal per `php -l` geprüft. Migration 06
-+ Live-Test stehen noch aus._
+_Letzte Aktualisierung: Schritt 7 abgeschlossen — monitor-zentrische
+Zeitplanung live getestet (Monitor-Verwaltung als Kacheln, Zeitplan je Monitor,
+Uhrzeit optional/Fallback, Priorität). Migrationen 06 + 07 live eingespielt._
 
 ---
 
@@ -23,7 +23,7 @@ Verwaltung + Zeitplan je Monitor), lokal per `php -l` geprüft. Migration 06
 | 4 | `stundenplan`, `ankuendigung`, `fret` + NC-/FRET-Proxy + Testseite | ✅ live getestet (alle 5 Module inkl. `stundenplan`) |
 | 5 | Backend-Bibliothek + Mediathek | ✅ live getestet (Mediathek + Ordner/Tags, Bibliothek/Instanz-Editor, FRET-Geräte-Whitelist) |
 | 6 | Playlist-Editor (Layout-Konfigurator) | ✅ live getestet (inkl. Drag & Drop der Spalten-Inhalte) |
-| 7 | Zeitplanung (monitor-zentrisch: Monitor-Verwaltung + Zeitplan je Monitor) | 🧪 Code fertig, Migration 06 + Live-Test offen |
+| 7 | Zeitplanung (monitor-zentrisch: Monitore + Zeitplan je Monitor) | ✅ live getestet (Kachel-Übersicht, Zeitplan, Uhrzeit optional/Fallback, Priorität) |
 | 8 | Ticker-Verwaltung | ▶️ als Nächstes |
 | 9 | Monitor-Frontend (Anzeige-/Zeitlogik) | offen · Vormerk-Notiz: `Notiz_Schritt9_Monitor-Frontend.md` |
 | 10 | Live-Vorschau (iFrame) | offen |
@@ -31,26 +31,22 @@ Verwaltung + Zeitplan je Monitor), lokal per `php -l` geprüft. Migration 06
 
 ---
 
-## Aktueller Fokus: Schritt 7 (monitor-zentrisch) 🧪 Code fertig → Live-Test, dann Schritt 8
+## Aktueller Fokus: Schritt 7 ✅ abgeschlossen → Schritt 8 (Ticker) als Nächstes
 
-**Umbau auf monitor-zentrisches Modell ist gebaut** (committet/gepusht). Statt
-Zeitregeln/Säle im Playlist-Editor läuft die Zeitplanung jetzt **pro Monitor**:
-Bereich „Monitore" → Monitor wählen → „Zeitplan" (Playlist X läuft wann, mit
-Priorität).
+Schritt 7 (monitor-zentrische Zeitplanung) ist **live getestet und bestätigt**.
+Die Zeitplanung läuft **pro Monitor**: Bereich „Monitore" (Kachel-Übersicht) →
+Monitor wählen → „Zeitplan" (Playlist X läuft wann, mit Priorität; Einträge
+ohne Uhrzeit laufen dauerhaft als Fallback und werden von Einträgen mit Uhrzeit
+überschrieben). Migrationen **06 + 07 live eingespielt**; alte `admin/saele.php`
++ `includes/Saal.php` auf dem Server entfernt.
 
-**⚠️ ZUERST Migration einspielen:** `06_migration_monitor_zeitplan.sql`
-(Rename `saele`→`monitore`/`saal_id`→`monitor_id`, Drop `playlist_saele` +
-`playlist_zeitregeln`, neue Tabelle `monitor_zeitplan`). Danach Deployment-ZIP
-**`Schritt7_monitor-zentrisch.zip`** entpacken. **Alte Dateien löschen:**
-`admin/saele.php`, `includes/Saal.php` (durch `monitore.php`/`monitor.php` +
-`Monitor.php` ersetzt).
+Konzept-Doku: CLAUDE.md Abschnitt **16c** (überschreibt die playlist-zentrischen
+Stellen) + aktualisierter Bauplan (Abschnitt 13). Schritt-9-Auswirkung
+(Monitor-Selbsterkennung per Subdomain) in `Notiz_Schritt9_Monitor-Frontend.md`.
 
-Konzept-Doku dazu: CLAUDE.md Abschnitt **16c** (überschreibt die playlist-
-zentrischen Stellen). Schritt-9-Auswirkung (Monitor-Selbsterkennung per
-Subdomain) in `Notiz_Schritt9_Monitor-Frontend.md`.
-
-Schritt 6 (Playlist-Editor) bleibt **live getestet und bestätigt** (inkl.
-Drag & Drop); der Playlist-Editor ist jetzt auf Inhalt/Layout reduziert.
+Schritt 8 (Ticker) soll denselben monitor-zentrischen Ansatz bekommen
+(`ticker_playlist_saele.monitor_id` ist bereits umgestellt; endgültige Ticker-
+Zeit-/Monitor-Logik in Schritt 8).
 
 Schritt 5 vollständig live getestet: Mediathek (Upload/Dup-Erkennung, Ordner,
 Tags, Anzeigename), Bibliothek + Instanz-Editor (alle Modultypen, Inhalte-
@@ -238,18 +234,21 @@ Backend „Playlists" → „Neue Playlist": Name, Layout wählen (Regler bei
 speichern; danach erneut öffnen (Vorbelegung prüft Layout + Spalten),
 Pausieren/Löschen testen.
 
-## Schritt 7 — Stand (monitor-zentrisch, Code fertig, Migration 06 + Live-Test offen)
+## Schritt 7 — Stand (monitor-zentrisch, ✅ abgeschlossen / live getestet)
 
 Zeitplanung ist von der Playlist auf den **Monitor** verlagert. Konzept-Doku:
 CLAUDE.md Abschnitt **16c** (überschreibt die playlist-zentrischen Stellen).
 
-**⚠️ Migration `06_migration_monitor_zeitplan.sql` ZUERST einspielen:**
-`saele`→`monitore`, `saal_id`→`monitor_id` (in `einstellungen` +
-`ticker_playlist_saele`, FKs neu), `playlist_saele` + `playlist_zeitregeln`
-**entfernt**, neue Tabelle **`monitor_zeitplan`** (`monitor_id`, `playlist_id`,
-`wochentage`, `von_uhrzeit`, `bis_uhrzeit`, `prioritaet`).
+**Migrationen live eingespielt:**
+- `06_migration_monitor_zeitplan.sql` — `saele`→`monitore`,
+  `saal_id`→`monitor_id` (in `einstellungen` + `ticker_playlist_saele`, FKs
+  neu), `playlist_saele` + `playlist_zeitregeln` **entfernt**, neue Tabelle
+  **`monitor_zeitplan`**.
+- `07_migration_zeitplan_zeit_optional.sql` — `von_uhrzeit`/`bis_uhrzeit`
+  NULL-fähig (Uhrzeit optional).
 
-**Auf dem Server löschen** (ersetzt): `admin/saele.php`, `includes/Saal.php`.
+**Auf dem Server bereits entfernt** (ersetzt): `admin/saele.php`,
+`includes/Saal.php`.
 
 Neue/aktualisierte Dateien (alle committet + gepusht):
 - `includes/Monitor.php` (ersetzt `Saal.php`) — CRUD auf `monitore` +
@@ -281,10 +280,14 @@ Neue/aktualisierte Dateien (alle committet + gepusht):
   Fallback, sonst `von < bis`; über Mitternacht später); Subdomains
   (`saal1` …) bleiben als Frontend-Ordner unverändert.
 
-**Live-Test 7 (To-do Nutzer):** Migration 06 einspielen, ZIP entpacken, alte
-`saele.php`/`Saal.php` löschen. „Monitore": Monitor(e) anlegen → „Zeitplan" →
-Playlist + Tage/Presets + von/bis + Priorität, speichern, erneut öffnen
-(Vorbelegung), Validierung prüfen. „Playlists": Badge „auf N Monitoren".
+**Live-Test 7 ✅ erledigt (vom Nutzer bestätigt):** Monitore als Kacheln
+anlegen/auswählen, Zeitplan je Monitor (Playlist + Tage/Presets + optionale
+Uhrzeit + Priorität), Validierung und Fallback-Verhalten (Eintrag ohne Uhrzeit)
+geprüft; Übersicht zeigt Einträge nach Priorität sortiert.
+
+**Deployment-ZIPs (Historie):** `Schritt7_monitor-zentrisch.zip` (Umbau +
+Kachel-Übersicht), `Schritt7c_zeitplan-zeit-optional.zip` (optionale Uhrzeit).
+Migrationen separat: `06_…`, `07_…`.
 
 ## Zugriffsschutz / Benutzerkonten
 
