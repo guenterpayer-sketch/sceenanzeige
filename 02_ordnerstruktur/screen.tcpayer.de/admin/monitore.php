@@ -2,11 +2,11 @@
 /**
  * admin/monitore.php
  *
- * Monitor-Verwaltung (monitor-zentrisches Modell). Anlegen/Bearbeiten/Löschen
- * je Monitor: Name + Subdomain. Pro Monitor führt „Zeitplan" zum Zeitplan-
- * Editor (monitor.php), in dem festgelegt wird, welche Playlist wann läuft.
- *
- * Bearbeiten: ?edit=<id> füllt das Formular vor; Speichern aktualisiert.
+ * Monitor-Verwaltung (monitor-zentrisches Modell), Kachel-Design analog zur
+ * Playlist-Übersicht:
+ *   - Standardansicht: Button „+ Neuer Monitor" + Monitore als Kacheln.
+ *     Klick auf eine Kachel führt in den Zeitplan-Editor (monitor.php).
+ *   - Anlegen/Bearbeiten: Formular (Name + Subdomain) via ?neu bzw. ?edit=<id>.
  */
 
 declare(strict_types=1);
@@ -58,6 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Bearbeiten: Formular aus DB vorbelegen (nur ohne vorherigen POST-Fehler)
 if (empty($fehler) && $_SERVER['REQUEST_METHOD'] !== 'POST' && isset($_GET['edit'])) {
     $monitor = Monitor::find((int)$_GET['edit']);
     if ($monitor) {
@@ -72,6 +73,7 @@ if (isset($_GET['gespeichert'])) { $flash = 'Monitor gespeichert.'; }
 
 $monitore     = Monitor::listAll();
 $istEditieren = ($formId > 0);
+$zeigeForm    = $istEditieren || isset($_GET['neu']) || !empty($fehler);
 
 admin_header('Monitore', 'monitore');
 ?>
@@ -86,10 +88,13 @@ admin_header('Monitore', 'monitore');
 
 <p class="adm-hilfe">
     Jeder Monitor läuft unter einer eigenen Subdomain (z.&nbsp;B.
-    <code>saal1.tcpayer.de</code> → Subdomain <code>saal1</code>). Über „Zeitplan"
-    legst du je Monitor fest, welche Playlist wann läuft.
+    <code>saal1.tcpayer.de</code> → Subdomain <code>saal1</code>). Klicke eine
+    Kachel an, um den <strong>Zeitplan</strong> dieses Monitors zu pflegen
+    (welche Playlist wann läuft).
 </p>
 
+<?php if ($zeigeForm): ?>
+<!-- ===== Anlegen / Bearbeiten ===== -->
 <div class="adm-card">
     <h2><?= $istEditieren ? 'Monitor bearbeiten' : 'Neuen Monitor anlegen' ?></h2>
     <form method="post">
@@ -107,32 +112,33 @@ admin_header('Monitore', 'monitore');
         </div>
         <div class="adm-aktionsleiste">
             <button type="submit" class="adm-btn-primary"><?= $istEditieren ? 'Speichern' : 'Anlegen' ?></button>
-            <?php if ($istEditieren): ?>
-                <a href="monitore.php" class="adm-btn adm-btn-grau">Abbrechen</a>
-            <?php endif; ?>
+            <a href="monitore.php" class="adm-btn adm-btn-grau">Abbrechen</a>
         </div>
     </form>
 </div>
+<?php else: ?>
+<div class="adm-neuzeile">
+    <a class="adm-btn-primary" href="monitore.php?neu=1">+ Neuer Monitor</a>
+</div>
+<?php endif; ?>
 
 <?php if (empty($monitore)): ?>
-    <p class="adm-leer">Noch kein Monitor angelegt. Mit dem Formular oben anlegen.</p>
+    <p class="adm-leer">Noch kein Monitor angelegt. Mit dem Button oben anlegen.</p>
 <?php else: ?>
-<table class="adm-tabelle">
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Subdomain</th>
-            <th class="adm-mitte">Zeitplan-Einträge</th>
-            <th>Aktionen</th>
-        </tr>
-    </thead>
-    <tbody>
-        <?php foreach ($monitore as $m): ?>
-            <tr>
-                <td><?= htmlspecialchars($m['name']) ?></td>
-                <td class="adm-uuid"><?= htmlspecialchars($m['subdomain']) ?></td>
-                <td class="adm-mitte"><?= (int)$m['anzahl_zeitplan'] ?></td>
-                <td>
+<div class="adm-kachelgrid">
+    <?php foreach ($monitore as $m): ?>
+        <div class="adm-kachel">
+            <a class="adm-kachel-vorschau info adm-kachel-link" href="monitor.php?id=<?= (int)$m['id'] ?>"
+               title="Zeitplan von <?= htmlspecialchars($m['name']) ?> bearbeiten">
+                <span class="adm-kachel-icon">🖥️</span>
+                <span class="adm-kachel-info">
+                    <?= htmlspecialchars($m['subdomain']) ?>.tcpayer.de<br>
+                    <?= (int)$m['anzahl_zeitplan'] ?> Zeitplan-Eintrag<?= (int)$m['anzahl_zeitplan'] === 1 ? '' : '-Einträge' ?>
+                </span>
+            </a>
+            <div class="adm-kachel-body">
+                <div class="adm-kachel-name"><?= htmlspecialchars($m['name']) ?></div>
+                <div class="adm-kachel-aktionen">
                     <a class="adm-btn adm-btn-primary" href="monitor.php?id=<?= (int)$m['id'] ?>">Zeitplan</a>
                     <a class="adm-btn" href="monitore.php?edit=<?= (int)$m['id'] ?>">Bearbeiten</a>
                     <form method="post" class="adm-inline adm-del-form"
@@ -142,11 +148,11 @@ admin_header('Monitore', 'monitore');
                         <input type="hidden" name="id" value="<?= (int)$m['id'] ?>">
                         <button type="submit" class="adm-btn adm-btn-rot">Löschen</button>
                     </form>
-                </td>
-            </tr>
-        <?php endforeach; ?>
-    </tbody>
-</table>
+                </div>
+            </div>
+        </div>
+    <?php endforeach; ?>
+</div>
 <?php endif; ?>
 
 <script>

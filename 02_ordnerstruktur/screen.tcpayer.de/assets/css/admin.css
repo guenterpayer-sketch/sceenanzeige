@@ -558,3 +558,7 @@ body {
 .adm-zr-playlist select {
     padding: 7px 9px; border: 1px solid #dde3ea; border-radius: 6px; font-size: 14px; min-width: 200px;
 }
+
+/* Anklickbare Kachel-Vorschau (Monitore → Zeitplan) */
+a.adm-kachel-link { text-decoration: none; color: inherit; cursor: pointer; transition: background .12s; }
+a.adm-kachel-link:hover { background: #fbeaea; }

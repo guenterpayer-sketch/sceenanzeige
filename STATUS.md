@@ -254,8 +254,10 @@ CLAUDE.md Abschnitt **16c** (überschreibt die playlist-zentrischen Stellen).
 Neue/aktualisierte Dateien (alle committet + gepusht):
 - `includes/Monitor.php` (ersetzt `Saal.php`) — CRUD auf `monitore` +
   `ladeZeitplan`/`ersetzeZeitplan` (Tabelle `monitor_zeitplan`, Bulk in Transaktion).
-- `admin/monitore.php` (ersetzt `saele.php`) — Monitor-CRUD (Name+Subdomain),
-  „Zeitplan"-Button je Monitor, Löschrückfrage (warnt bei Zeitplan-Einträgen).
+- `admin/monitore.php` (ersetzt `saele.php`) — **Kachel-Übersicht** (Button
+  „+ Neuer Monitor" oben, Monitore als Kacheln; Klick auf Kachel → Zeitplan),
+  Anlegen/Bearbeiten via Formular (`?neu`/`?edit`), Löschrückfrage (warnt bei
+  Zeitplan-Einträgen).
 - `admin/monitor.php` — **Zeitplan-Editor je Monitor:** dynamische Zeilen mit
   Playlist-Dropdown + Wochentag-Toggles/Presets + von/bis + Priorität;
   Validierung gültige Playlist + ≥1 Tag + `von < bis`.
