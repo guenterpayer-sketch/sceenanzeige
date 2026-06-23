@@ -30,13 +30,15 @@ final class Monitor
     }
 
     /**
-     * Alle Monitore inkl. Anzahl der Zeitplan-Einträge (für die Übersicht).
+     * Alle Monitore inkl. Anzahl der Zeitplan-Einträge (Playlist + Ticker) für
+     * die Übersicht.
      * @return array<int,array>
      */
     public static function listAll(): array
     {
         $sql = 'SELECT m.id, m.name, m.subdomain, m.erstellt_am,
-                       (SELECT COUNT(*) FROM monitor_zeitplan z WHERE z.monitor_id = m.id) AS anzahl_zeitplan
+                       (SELECT COUNT(*) FROM monitor_zeitplan z WHERE z.monitor_id = m.id) AS anzahl_zeitplan,
+                       (SELECT COUNT(*) FROM ticker_zeitplan tz WHERE tz.monitor_id = m.id) AS anzahl_ticker
                 FROM monitore m
                 ORDER BY m.subdomain';
         return get_pdo()->query($sql)->fetchAll();

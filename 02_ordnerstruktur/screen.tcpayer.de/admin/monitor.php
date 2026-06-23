@@ -263,8 +263,8 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
     var TAGE    = [ [1,'Mo'], [2,'Di'], [3,'Mi'], [4,'Do'], [5,'Fr'], [6,'Sa'], [7,'So'] ];
     var PRESETS = { alle:[1,2,3,4,5,6,7], woche:[1,2,3,4,5], we:[6,7] };
     var META = {
-        playlist: { items: PLAYLISTS, icon: '🗂️', titel: 'Playlist wählen', leer: '— Playlist wählen —' },
-        ticker:   { items: TICKERS,   icon: '📰', titel: 'Ticker wählen',   leer: '— Ticker wählen —' }
+        playlist: { items: PLAYLISTS, icon: '🗂️', label: 'Playlist', titel: 'Playlist wählen', leer: 'Playlist wählen …' },
+        ticker:   { items: TICKERS,   icon: '📰', label: 'Ticker',   titel: 'Ticker wählen',   leer: 'Ticker wählen …' }
     };
 
     function escapeHtml(s) {
@@ -308,11 +308,14 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
             : '';
 
         zeile.innerHTML =
-            '<div class="adm-zr-auswahl">' +
+            '<button type="button" class="adm-zr-weg" title="Eintrag entfernen" aria-label="Eintrag entfernen">×</button>' +
+            '<div class="adm-zr-feld adm-zr-auswahl">' +
+                '<span class="adm-zr-label">' + META[art].label + '</span>' +
                 '<input type="hidden" data-feld="' + idFeld + '" value="' + (parseInt(idVal, 10) || '') + '">' +
                 '<button type="button" class="adm-auswahl-kachel' + (gewaehlt ? ' gewaehlt' : '') + '">' + auswahlInner + '</button>' +
             '</div>' +
-            '<div class="adm-zr-tage">' +
+            '<div class="adm-zr-feld adm-zr-tage">' +
+                '<span class="adm-zr-label">Wochentage</span>' +
                 '<div class="adm-tag-btns">' + tageBtns + '</div>' +
                 '<div class="adm-zr-presets">' +
                     '<button type="button" class="adm-mini" data-preset="alle">Alle</button>' +
@@ -320,12 +323,14 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
                     '<button type="button" class="adm-mini" data-preset="we">Wochenende</button>' +
                 '</div>' +
             '</div>' +
-            '<div class="adm-zr-zeit">' +
-                '<label>von <input type="time" data-feld="von" value="' + escapeHtml(data.von || '') + '"></label>' +
-                '<label>bis <input type="time" data-feld="bis" value="' + escapeHtml(data.bis || '') + '"></label>' +
-                prioFeld +
-            '</div>' +
-            '<button type="button" class="adm-mini adm-mini-rot adm-zr-weg" title="Eintrag entfernen">×</button>';
+            '<div class="adm-zr-feld adm-zr-zeit">' +
+                '<span class="adm-zr-label">Uhrzeit <em>(optional)</em></span>' +
+                '<div class="adm-zr-zeit-felder">' +
+                    '<label>von <input type="time" data-feld="von" value="' + escapeHtml(data.von || '') + '"></label>' +
+                    '<label>bis <input type="time" data-feld="bis" value="' + escapeHtml(data.bis || '') + '"></label>' +
+                    prioFeld +
+                '</div>' +
+            '</div>';
         return zeile;
     }
 

@@ -510,28 +510,66 @@ body {
 /* leere Spalten als bequeme Drop-Fläche */
 .adm-spalte-liste { min-height: 44px; }
 
-/* ===== Zeitregeln + Saal-Zuweisung (Schritt 7) ===== */
-.adm-zeitregeln { display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; }
+/* ===== Zeitplan-Einträge als Kacheln (Schritt 7/8, tablettauglich) ===== */
+.adm-zeitregeln { display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px; }
+
+/* Eine Zeitplan-Zeile = Kachel. Mobil/Tablet gestapelt, ab Desktop zweispaltig
+   (Auswahl links, Tage/Uhrzeit rechts). */
 .adm-zeitregel {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 14px;
-    background: #f8fafc; border: 1px solid #dde3ea; border-radius: 8px; padding: 12px;
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-areas: "auswahl" "tage" "zeit";
+    gap: 18px;
+    background: #fff; border: 1px solid #dde3ea; border-radius: 12px;
+    padding: 18px; padding-right: 56px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.05);
 }
-.adm-zr-tage { display: flex; flex-direction: column; gap: 6px; }
-.adm-tag-btns { display: flex; gap: 4px; }
+.adm-zr-feld { min-width: 0; }
+.adm-zr-auswahl { grid-area: auswahl; }
+.adm-zr-tage    { grid-area: tage; }
+.adm-zr-zeit    { grid-area: zeit; }
+.adm-zr-label {
+    display: block; font-size: 13px; font-weight: 600; color: #33424f; margin-bottom: 8px;
+}
+.adm-zr-label em { font-style: normal; font-weight: 400; color: #8a97a6; }
+
+@media (min-width: 980px) {
+    .adm-zeitregel {
+        grid-template-columns: 300px 1fr;
+        grid-template-areas: "auswahl tage" "auswahl zeit";
+        align-items: start; column-gap: 28px;
+    }
+    .adm-zr-auswahl { align-self: center; }
+}
+
+/* Wochentage als gut tippbare Buttons */
+.adm-tag-btns { display: flex; flex-wrap: wrap; gap: 8px; }
 .adm-tag-btn {
-    min-width: 36px; padding: 6px 8px; border: 1px solid #dde3ea; border-radius: 6px;
-    background: #fff; color: #33424f; cursor: pointer; font-size: 13px;
+    min-width: 46px; min-height: 42px; padding: 8px 10px;
+    border: 1px solid #dde3ea; border-radius: 8px;
+    background: #fff; color: #33424f; cursor: pointer; font-size: 15px;
 }
 .adm-tag-btn:hover { border-color: #ad2121; }
 .adm-tag-btn.an { background: #ad2121; border-color: #ad2121; color: #fff; }
-.adm-zr-presets { display: flex; gap: 6px; }
-.adm-zr-presets .adm-mini { width: auto; padding: 2px 8px; font-size: 12px; }
-.adm-zr-zeit { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
-.adm-zr-zeit label { display: flex; flex-direction: column; font-size: 13px; color: #33424f; gap: 3px; }
-.adm-zr-zeit input {
-    padding: 7px 9px; border: 1px solid #dde3ea; border-radius: 6px; font-size: 14px;
+.adm-zr-presets { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.adm-zr-presets .adm-mini { width: auto; min-height: 36px; padding: 4px 12px; font-size: 13px; }
+
+/* Uhrzeit-Felder */
+.adm-zr-zeit-felder { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+.adm-zr-zeit-felder label { display: flex; flex-direction: column; font-size: 13px; color: #33424f; gap: 4px; }
+.adm-zr-zeit-felder input {
+    padding: 10px 12px; border: 1px solid #dde3ea; border-radius: 8px; font-size: 15px; min-height: 44px;
 }
-.adm-zr-weg { margin-left: auto; }
+
+/* Entfernen-Button oben rechts in der Kachel */
+.adm-zr-weg {
+    position: absolute; top: 12px; right: 12px;
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 1px solid #e3c4c0; background: #fff; color: #c0392b;
+    font-size: 20px; line-height: 1; cursor: pointer;
+}
+.adm-zr-weg:hover { background: #c0392b; border-color: #c0392b; color: #fff; }
 
 .adm-saalwahl {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;
@@ -570,10 +608,12 @@ a.adm-kachel-link:hover { background: #fbeaea; }
 /* Auswahl-Kachel im Zeitplan (Playlist bzw. Ticker statt Dropdown) */
 .adm-zr-auswahl { min-width: 220px; }
 .adm-auswahl-kachel {
-    display: flex; align-items: center; gap: 10px; width: 100%; min-width: 200px;
-    text-align: left; cursor: pointer;
-    border: 1px solid #dde3ea; border-radius: 8px; background: #fff; padding: 10px 12px;
+    display: flex; align-items: center; gap: 12px; width: 100%; min-width: 200px;
+    min-height: 60px; text-align: left; cursor: pointer;
+    border: 1px solid #dde3ea; border-radius: 10px; background: #fff; padding: 12px 14px;
 }
+.adm-auswahl-kachel .adm-eintrag-icon { font-size: 26px; }
+.adm-auswahl-kachel .adm-eintrag-name { font-size: 15px; }
 .adm-auswahl-kachel:hover { border-color: #ad2121; box-shadow: 0 0 0 2px rgba(173,33,33,.15); }
 .adm-auswahl-kachel.gewaehlt { border-color: #ad2121; background: #fbeaea; }
 .adm-auswahl-leer { color: #8a97a6; font-size: 14px; }

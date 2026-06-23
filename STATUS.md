@@ -339,6 +339,15 @@ hochladen; unter „Ticker" einen Ticker mit mehreren Textzeilen anlegen
 + Tage/optionale Uhrzeit, speichern; prüfen, dass die Playlist-Auswahl ebenfalls
 als Kachel funktioniert und beide Pläne erhalten bleiben.
 
+**UI-Nachbesserung (8a):**
+- Monitor-Übersichtskachel zeigt jetzt **Playlist- UND Ticker-Anzahl**
+  (`Monitor::listAll` liefert zusätzlich `anzahl_ticker`).
+- Die Zeitplan-Einträge (Playlist + Ticker) im Monitor-Editor sind als
+  **Kacheln** umgesetzt (Labels „Playlist/Ticker", „Wochentage", „Uhrzeit
+  (optional)", Entfernen-Button oben rechts), **tablettauglich**: größere
+  Tipp-Flächen (Wochentage/Presets/Zeit), ab ~980 px zweispaltig, darunter
+  gestapelt. Reines CSS/Markup in `admin/monitor.php` + `assets/css/admin.css`.
+
 **Noch offen / Schritt 9:** das tatsächliche Footer-Rendering am Monitor
 (Mischen mehrerer aktiver Ticker, Lauftext) gehört zur Anzeige-Logik (Schritt 9).
 

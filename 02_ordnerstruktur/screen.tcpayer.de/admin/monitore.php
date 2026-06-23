@@ -90,7 +90,7 @@ admin_header('Monitore', 'monitore');
     Jeder Monitor läuft unter einer eigenen Subdomain (z.&nbsp;B.
     <code>saal1.tcpayer.de</code> → Subdomain <code>saal1</code>). Klicke eine
     Kachel an, um den <strong>Zeitplan</strong> dieses Monitors zu pflegen
-    (welche Playlist wann läuft).
+    (welche Playlist und welcher Ticker wann laufen).
 </p>
 
 <?php if ($zeigeForm): ?>
@@ -133,7 +133,8 @@ admin_header('Monitore', 'monitore');
                 <span class="adm-kachel-icon">🖥️</span>
                 <span class="adm-kachel-info">
                     <?= htmlspecialchars($m['subdomain']) ?>.tcpayer.de<br>
-                    <?= (int)$m['anzahl_zeitplan'] ?> Zeitplan-Eintrag<?= (int)$m['anzahl_zeitplan'] === 1 ? '' : '-Einträge' ?>
+                    🗂️ <?= (int)$m['anzahl_zeitplan'] ?> Playlist<?= (int)$m['anzahl_zeitplan'] === 1 ? '' : 's' ?>
+                    · 📰 <?= (int)$m['anzahl_ticker'] ?> Ticker
                 </span>
             </a>
             <div class="adm-kachel-body">
@@ -143,7 +144,7 @@ admin_header('Monitore', 'monitore');
                     <a class="adm-btn" href="monitore.php?edit=<?= (int)$m['id'] ?>">Bearbeiten</a>
                     <form method="post" class="adm-inline adm-del-form"
                           data-name="<?= htmlspecialchars($m['name']) ?>"
-                          data-anzahl="<?= (int)$m['anzahl_zeitplan'] ?>">
+                          data-anzahl="<?= (int)$m['anzahl_zeitplan'] + (int)$m['anzahl_ticker'] ?>">
                         <input type="hidden" name="aktion" value="loeschen">
                         <input type="hidden" name="id" value="<?= (int)$m['id'] ?>">
                         <button type="submit" class="adm-btn adm-btn-rot">Löschen</button>
@@ -161,8 +162,9 @@ document.querySelectorAll('.adm-del-form').forEach(function (f) {
         var n = parseInt(f.dataset.anzahl || '0', 10);
         var txt = 'Monitor „' + (f.dataset.name || '') + '" wirklich löschen?';
         if (n > 0) {
-            txt += '\n\nAchtung: Der Monitor hat ' + n + ' Zeitplan-Eintrag/-Einträge — '
-                 + 'diese werden mit entfernt (die Playlists selbst bleiben).';
+            txt += '\n\nAchtung: Der Monitor hat ' + n + ' Zeitplan-Eintrag/-Einträge '
+                 + '(Playlist + Ticker) — diese werden mit entfernt '
+                 + '(die Playlists/Ticker selbst bleiben).';
         }
         if (!confirm(txt)) { e.preventDefault(); }
     });
