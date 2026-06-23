@@ -7,8 +7,8 @@
 > **Branch:** `claude/nifty-johnson-3q6u7g` (gesamter Stand liegt hier,
 > **nicht** auf `main`).
 
-_Letzte Aktualisierung: Ende Schritt-6-Arbeit (Playlist-Editor gebaut, lokal
-per `php -l` geprüft, Live-Test steht noch aus)._
+_Letzte Aktualisierung: Schritt 6 abgeschlossen (Playlist-Editor inkl. Drag &
+Drop live getestet, vom Nutzer bestätigt)._
 
 ---
 
@@ -21,7 +21,7 @@ per `php -l` geprüft, Live-Test steht noch aus)._
 | 3 | Modul-Registry + `uhrzeit`, `bild` | ✅ live |
 | 4 | `stundenplan`, `ankuendigung`, `fret` + NC-/FRET-Proxy + Testseite | ✅ live getestet (alle 5 Module inkl. `stundenplan`) |
 | 5 | Backend-Bibliothek + Mediathek | ✅ live getestet (Mediathek + Ordner/Tags, Bibliothek/Instanz-Editor, FRET-Geräte-Whitelist) |
-| 6 | Playlist-Editor (Layout-Konfigurator) | 🧪 Code fertig, Live-Test offen |
+| 6 | Playlist-Editor (Layout-Konfigurator) | ✅ live getestet (inkl. Drag & Drop der Spalten-Inhalte) |
 | 7 | Zeitregeln + Saal-Zuweisung | ▶️ als Nächstes |
 | 8 | Ticker-Verwaltung | offen |
 | 9 | Monitor-Frontend (Anzeige-/Zeitlogik) | offen |
@@ -30,16 +30,18 @@ per `php -l` geprüft, Live-Test steht noch aus)._
 
 ---
 
-## Aktueller Fokus: Schritt 6 🧪 Code fertig (Live-Test offen) → Schritt 7 als Nächstes
+## Aktueller Fokus: Schritt 6 ✅ abgeschlossen → Schritt 7 als Nächstes
 
-Schritt 6 (Playlist-Editor) ist gebaut und committet/gepusht; Live-Test durch
-den Nutzer steht aus. **Keine Migration** (Playlist-Tabellen waren bereits
-live). Deployment-ZIP: **`Schritt6_playlist-editor.zip`** (Struktur unter
-`screen.tcpayer.de/`, einfach in den Subdomain-Ordner entpacken).
+Schritt 6 (Playlist-Editor) ist **live getestet und vom Nutzer bestätigt**
+(inkl. Drag & Drop der Spalten-Inhalte). **Keine Migration** (Playlist-Tabellen
+waren bereits live). Deployment-ZIP: **`Schritt6_playlist-editor.zip`**
+(Struktur unter `screen.tcpayer.de/`, in den Subdomain-Ordner entpacken).
 
 Schritt 7 (Zeitregeln + Saal-Zuweisung) baut darauf auf: Tabellen
 `playlist_zeitregeln` + `playlist_saele` sind live vorhanden und in Schritt 6
-bewusst unberührt geblieben.
+bewusst unberührt geblieben. Briefing für Schritt 7 (Ziel, Abgrenzung,
+vorhandene Bausteine) wird zu Beginn des nächsten Chats erstellt — analog zu
+`Schritt6_Vorbereitung.md`.
 
 Schritt 5 vollständig live getestet: Mediathek (Upload/Dup-Erkennung, Ordner,
 Tags, Anzeigename), Bibliothek + Instanz-Editor (alle Modultypen, Inhalte-
@@ -175,7 +177,7 @@ Gültig-bis testen, pausieren/löschen.
   aktualisieren → Saal benennen + freigeben → im FRET-Modul-Editor erscheint
   das Dropdown.
 
-## Schritt 6 — Stand (Playlist-Editor, Code fertig, Live-Test offen)
+## Schritt 6 — Stand (Playlist-Editor, ✅ abgeschlossen / live getestet)
 
 **Keine Migration** — `playlists`, `playlist_layout`, `playlist_spalten_inhalte`
 waren bereits live. Deployment-ZIP: `Schritt6_playlist-editor.zip`.
