@@ -5,6 +5,7 @@
   "has_proxy": true,
   "has_inhalte": false,
   "settings": [
+    { "key": "anzeige_dauer_sek", "type": "number", "label": "Anzeigedauer in Sek. (bei Spalten-Rotation mit anderen Modulen)", "default": 30 },
     {
       "key": "computer_id",
       "type": "select",

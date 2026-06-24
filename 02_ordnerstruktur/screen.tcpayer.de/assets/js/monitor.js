@@ -217,13 +217,36 @@
             ? mod.einstellungen.anzeige_dauer_sek : 30;
     }
 
-    function rotateModule(spalteEl, module) {
+    /**
+     * Gibt eine skalierte Kopie eines Moduls zurück.
+     * Skaliert werden: jedes inhalte[].dauer_sek sowie einstellungen.anzeige_dauer_sek.
+     * Die Originaldaten werden nicht verändert.
+     */
+    function skaliereMod(mod, factor) {
+        if (factor === 1) { return mod; }
+        var result = { modul_typ: mod.modul_typ, einstellungen: mod.einstellungen, inhalte: mod.inhalte };
+        if (mod.inhalte && mod.inhalte.length > 0) {
+            result.inhalte = mod.inhalte.map(function (item) {
+                var d = item.dauer_sek > 0 ? item.dauer_sek : 10;
+                return Object.assign({}, item, { dauer_sek: d * factor });
+            });
+        }
+        if (mod.einstellungen && mod.einstellungen.anzeige_dauer_sek > 0) {
+            result.einstellungen = Object.assign({}, mod.einstellungen, {
+                anzeige_dauer_sek: mod.einstellungen.anzeige_dauer_sek * factor
+            });
+        }
+        return result;
+    }
+
+    function rotateModule(spalteEl, module, scaleFactor) {
+        scaleFactor = scaleFactor || 1;
         var index = 0;
 
         function zeigeNaechstes() {
             if (!spalteEl.isConnected) { return; } // spalteEl wurde entfernt → stoppen
             var mod      = module[index];
-            var dauerSek = modulAnzeigeDauer(mod);
+            var dauerSek = modulAnzeigeDauer(mod) * scaleFactor;
             index = (index + 1) % module.length;
 
             // Alten Container aufräumen
@@ -234,7 +257,7 @@
             var container = document.createElement('div');
             container.className = 'tm-modul-container';
             spalteEl.appendChild(container);
-            renderModulInContainer(container, mod);
+            renderModulInContainer(container, skaliereMod(mod, scaleFactor));
 
             var t = setTimeout(zeigeNaechstes, dauerSek * 1000);
             _rotationTimeouts.push(t);
@@ -243,26 +266,49 @@
         zeigeNaechstes();
     }
 
+    /**
+     * Rendert alle Spalten einer Playlist mit proportionaler Skalierung:
+     * Die längste Spalte bestimmt den Zyklus; kürzere Spalten werden so
+     * gestreckt, dass alle gleichzeitig enden.
+     * Gibt die maximale Zyklusdauer in ms zurück (für den Playlist-Timer).
+     */
     function renderSpalten(layoutEl, playlist) {
         var spalten = playlist.spalten || {};
         var anzahl  = playlist.spalten_anzahl || 1;
+        var i, mods;
 
-        for (var s = 1; s <= anzahl; s++) {
-            var spalteEl = layoutEl.querySelector('[data-spalte="' + s + '"]');
+        // 1. Spalten-Zyklusdauern berechnen
+        var zyklenMs  = {};
+        var maxCycleMs = 0;
+        for (i = 1; i <= anzahl; i++) {
+            mods = spalten[i] || spalten[String(i)] || [];
+            var zyklusMs = 0;
+            mods.forEach(function (m) { zyklusMs += modulAnzeigeDauer(m) * 1000; });
+            zyklenMs[i] = zyklusMs;
+            if (zyklusMs > maxCycleMs) { maxCycleMs = zyklusMs; }
+        }
+
+        // 2. Spalten mit Skalierungsfaktor rendern
+        for (i = 1; i <= anzahl; i++) {
+            var spalteEl = layoutEl.querySelector('[data-spalte="' + i + '"]');
             if (!spalteEl) { continue; }
 
-            var module = spalten[s] || spalten[String(s)] || [];
-            if (module.length === 0) { continue; }
+            mods = spalten[i] || spalten[String(i)] || [];
+            if (mods.length === 0) { continue; }
 
-            if (module.length === 1) {
+            var factor = (zyklenMs[i] > 0) ? maxCycleMs / zyklenMs[i] : 1;
+
+            if (mods.length === 1) {
                 var container = document.createElement('div');
                 container.className = 'tm-modul-container';
                 spalteEl.appendChild(container);
-                renderModulInContainer(container, module[0]);
+                renderModulInContainer(container, skaliereMod(mods[0], factor));
             } else {
-                rotateModule(spalteEl, module);
+                rotateModule(spalteEl, mods, factor);
             }
         }
+
+        return maxCycleMs;
     }
 
     // ── Playlist-Rotation ─────────────────────────────────────────────────────
@@ -316,7 +362,7 @@
 
             _rotationTimeouts = [];
             mainEl.appendChild(newLayout);
-            renderSpalten(newLayout, pl);
+            var maxCycleMs = renderSpalten(newLayout, pl);
 
             if (newFooter) { startTicker(ticker, footerEl); }
 
@@ -386,12 +432,15 @@
                 });
             });
 
-            // Nächste Playlist einplanen (nur bei echter Rotation)
+            // Nächste Playlist einplanen (nur bei echter Rotation).
+            // Basis: berechnete Zyklusdauer; dauer_sek dient als Mindestgarantie.
             if (playlists.length > 1) {
+                var timerMs = Math.max(maxCycleMs, (pl.dauer_sek || 0) * 1000);
+                if (timerMs <= 0) { timerMs = 300000; } // Fallback 5 Min
                 _playlistRotTimer = setTimeout(function () {
                     _playlistIndex = (_playlistIndex + 1) % playlists.length;
                     doRender(playlists[_playlistIndex]);
-                }, (pl.dauer_sek || 300) * 1000);
+                }, timerMs);
             }
         }
 
