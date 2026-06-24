@@ -25,7 +25,7 @@ declare(strict_types=1);
 require __DIR__ . '/../config.php';
 require __DIR__ . '/_cors.php';
 
-header('Access-Control-Allow-Origin: *');
+// CORS wird zentral per .htaccess gesetzt.
 header('Content-Type: application/json; charset=utf-8');
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'OPTIONS') {
     http_response_code(204);

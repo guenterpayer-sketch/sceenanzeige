@@ -33,9 +33,7 @@ declare(strict_types=1);
 require __DIR__ . '/../config.php';
 require __DIR__ . '/_cors.php';
 
-// Öffentlicher Lese-Endpunkt: kein Schlüssel/sensible Daten in der Antwort,
-// daher Access-Control-Allow-Origin: * statt der engen Subdomain-Prüfung.
-header('Access-Control-Allow-Origin: *');
+// CORS wird zentral per .htaccess gesetzt (Header set Access-Control-Allow-Origin "*").
 header('Content-Type: application/json; charset=utf-8');
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'OPTIONS') {
     http_response_code(204);
