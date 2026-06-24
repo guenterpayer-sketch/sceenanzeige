@@ -31,13 +31,9 @@ Options -Indexes
 # deaktiviert (siehe uploads/.htaccess) — Schutz gegen Upload-Exploits.
 
 # ----------------------------------------------------------------------------
-# CORS: nur die Saal-Subdomains dürfen Bilder/Proxies von hier laden.
-# Neue Säle (Abschnitt 2: "beliebig erweiterbar") müssen hier ergänzt werden.
+# CORS: alle Subdomains dürfen Bilder/Proxies von hier laden.
+# Neue Säle funktionieren automatisch ohne Anpassung.
 # ----------------------------------------------------------------------------
-<IfModule mod_setenvif.c>
-    SetEnvIf Origin "^https://(saal1|saal2|saal3)\.tcpayer\.de$" CORS_ALLOWED=$0
-</IfModule>
 <IfModule mod_headers.c>
-    Header set Access-Control-Allow-Origin "%{CORS_ALLOWED}e" env=CORS_ALLOWED
-    Header merge Vary Origin
+    Header set Access-Control-Allow-Origin "*"
 </IfModule>
