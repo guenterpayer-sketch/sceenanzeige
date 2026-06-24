@@ -40,7 +40,9 @@
 
     // ── Modul-Cleanup ────────────────────────────────────────────────────────
 
-    var _rotationTimeouts = [];
+    var _rotationTimeouts  = [];
+    var _playlistIndex     = 0;
+    var _playlistRotTimer  = null;
 
     function cleanupModulContainer(container) {
         if (container._tmTimeout)  { clearTimeout(container._tmTimeout);   container._tmTimeout  = null; }
@@ -53,6 +55,7 @@
         document.querySelectorAll('.tm-modul-container').forEach(cleanupModulContainer);
         _rotationTimeouts.forEach(clearTimeout);
         _rotationTimeouts = [];
+        if (_playlistRotTimer) { clearTimeout(_playlistRotTimer); _playlistRotTimer = null; }
     }
 
     // ── Header-Uhrzeit ───────────────────────────────────────────────────────
@@ -250,10 +253,49 @@
         }
     }
 
+    // ── Playlist-Rotation ─────────────────────────────────────────────────────
+
+    function startPlaylistRotation(playlists, ticker) {
+        var footerEl = document.getElementById('tm-footer');
+
+        function zeigePlaylist() {
+            var pl = playlists[_playlistIndex];
+
+            // Modul-Timer + Layout neu aufbauen
+            document.querySelectorAll('.tm-modul-container').forEach(cleanupModulContainer);
+            _rotationTimeouts.forEach(clearTimeout);
+            _rotationTimeouts = [];
+
+            var mainEl = document.getElementById('tm-main');
+            mainEl.innerHTML = '';
+            var layoutEl = buildLayout(pl);
+            mainEl.appendChild(layoutEl);
+            renderSpalten(pl);
+
+            // Ticker je nach footer_ticker-Einstellung dieser Playlist
+            stopTicker();
+            if (ticker && ticker.length > 0 && pl.footer_ticker !== false) {
+                startTicker(ticker, footerEl);
+            } else {
+                footerEl.classList.add('tm-hidden');
+            }
+
+            // Nächste Playlist einplanen (nur bei echter Rotation)
+            if (playlists.length > 1) {
+                _playlistRotTimer = setTimeout(function () {
+                    _playlistIndex = (_playlistIndex + 1) % playlists.length;
+                    zeigePlaylist();
+                }, (pl.dauer_sek || 300) * 1000);
+            }
+        }
+
+        zeigePlaylist();
+    }
+
     // ── Haupt-Render ──────────────────────────────────────────────────────────
 
     function render(data) {
-        cleanupAlles();
+        cleanupAlles(); // räumt auch _playlistRotTimer auf
         stopTicker();
 
         // Header-Text
@@ -262,30 +304,23 @@
             headerTextEl.textContent = data.header_text || '';
         }
 
-        // Hauptfläche
-        var mainEl = document.getElementById('tm-main');
-        mainEl.innerHTML = '';
+        var playlists = data.playlists || [];
+        var mainEl    = document.getElementById('tm-main');
+        var footerEl  = document.getElementById('tm-footer');
 
-        if (data.playlist) {
-            var layoutEl = buildLayout(data.playlist);
-            mainEl.appendChild(layoutEl);
-            renderSpalten(data.playlist);
-        } else {
+        if (playlists.length === 0) {
+            mainEl.innerHTML = '';
             var fallbackEl = document.createElement('div');
             fallbackEl.className = 'tm-main-leer';
             fallbackEl.textContent = 'Kein Programm';
             mainEl.appendChild(fallbackEl);
+            footerEl.classList.add('tm-hidden');
+            return;
         }
 
-        // Ticker
-        var footerEl = document.getElementById('tm-footer');
-        var tickerAktiv = data.ticker && data.ticker.length > 0
-            && (!data.playlist || data.playlist.footer_ticker !== false);
-        if (tickerAktiv) {
-            startTicker(data.ticker, footerEl);
-        } else {
-            footerEl.classList.add('tm-hidden');
-        }
+        // Index beibehalten wenn noch gültig (nach Server-Refresh weiterlaufen)
+        if (_playlistIndex >= playlists.length) { _playlistIndex = 0; }
+        startPlaylistRotation(playlists, data.ticker || []);
     }
 
     // ── Fetch & Refresh-Schleife ──────────────────────────────────────────────

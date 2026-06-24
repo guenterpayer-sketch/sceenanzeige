@@ -11,17 +11,17 @@
  *   monitor_id    int|null
  *   monitor_name  string
  *   header_text   string         konfigurierbarer Begrüßungstext
- *   playlist      object|null    aktive Playlist inkl. Layout + Spalten-Inhalte
+ *   playlists     array          alle aktiven Playlists der höchsten Priorität,
+ *                                inkl. dauer_sek; das Frontend rotiert durch sie
  *   ticker        array          gemischte Textzeilen aller aktiven Ticker
  *
  * Zeitplan-Logik:
  *   - Wochentag: ISO-Format 1=Mo … 7=So (FIND_IN_SET, Spalte wochentage = "1,2,5")
  *   - Uhrzeit: NULL/NULL = dauerhaft (Fallback); sonst aktuell im Fenster
- *   - Playlist: höchste prioritaet gewinnt
+ *   - Playlist: alle passenden mit höchster prioritaet; bei Gleichstand rotieren sie
  *   - Ticker: ALLE passenden gemischt (kein Prioritätsfeld)
  *
- * CORS: saal1–3 erlaubt (analog zu fret.php/nc.php); bei neuen Saalen
- *   _cors.php + .htaccess erweitern.
+ * CORS: Access-Control-Allow-Origin: * (kein sensibler Inhalt in der Antwort)
  *
  * Hinweis MariaDB EMULATE_PREPARES=false: jeder benannte Platzhalter
  * darf im selben Statement nur einmal vorkommen (deshalb :zeit_von/:zeit_bis
@@ -57,17 +57,17 @@ $monitor = $stmt->fetch();
 
 if (!$monitor) {
     proxy_json_exit(['monitor_id' => null, 'monitor_name' => '', 'header_text' => '',
-                     'playlist' => null, 'ticker' => []]);
+                     'playlists' => [], 'ticker' => []]);
 }
 
 $monitorId  = (int)$monitor['id'];
 $isoTag     = (string)(int)date('N'); // 1=Mo … 7=So
 $jetztZeit  = date('H:i:s');
 
-// ── 2. Aktive Playlist (höchste Priorität) ────────────────────────────────
+// ── 2. Alle passenden Zeitplan-Einträge holen, höchste Priorität filtern ──
 
 $stmt = $pdo->prepare(
-    'SELECT z.playlist_id
+    'SELECT z.playlist_id, z.prioritaet, z.dauer_sek
      FROM monitor_zeitplan z
      JOIN playlists p ON p.id = z.playlist_id AND p.aktiv = 1
      WHERE z.monitor_id = :mid
@@ -76,8 +76,7 @@ $stmt = $pdo->prepare(
              (z.von_uhrzeit IS NULL AND z.bis_uhrzeit IS NULL)
           OR (:zeit_von >= z.von_uhrzeit AND :zeit_bis <= z.bis_uhrzeit)
        )
-     ORDER BY z.prioritaet DESC
-     LIMIT 1'
+     ORDER BY z.prioritaet DESC'
 );
 $stmt->execute([
     ':mid'      => $monitorId,
@@ -85,45 +84,54 @@ $stmt->execute([
     ':zeit_von' => $jetztZeit,
     ':zeit_bis' => $jetztZeit,
 ]);
-$zeitplanRow = $stmt->fetch();
+$zeitplanRows = $stmt->fetchAll();
 
-$playlistData = null;
+// Nur Einträge mit höchster Priorität behalten
+$maxPrio = null;
+foreach ($zeitplanRows as $row) {
+    $p = (int)$row['prioritaet'];
+    if ($maxPrio === null || $p > $maxPrio) { $maxPrio = $p; }
+}
+$aktivZeitplan = ($maxPrio !== null)
+    ? array_values(array_filter($zeitplanRows, static fn($r) => (int)$r['prioritaet'] === $maxPrio))
+    : [];
 
-if ($zeitplanRow) {
+// ── 3. Playlist-Daten für jeden aktiven Eintrag laden ────────────────────
+
+$stmtName = $pdo->prepare('SELECT name FROM playlists WHERE id = :id');
+$stmtLayout = $pdo->prepare('SELECT * FROM playlist_layout WHERE playlist_id = :id');
+$stmtSpalten = $pdo->prepare(
+    'SELECT s.spalte, s.reihenfolge, m.id AS instanz_id, m.modul_typ, m.einstellungen
+     FROM playlist_spalten_inhalte s
+     JOIN modul_instanzen m ON m.id = s.modul_instanz_id AND m.aktiv = 1
+     WHERE s.playlist_id = :id
+     ORDER BY s.spalte, s.reihenfolge, s.id'
+);
+$stmtInhalte = $pdo->prepare(
+    'SELECT i.id, COALESCE(med.dateiname, i.dateiname) AS dateiname,
+            i.text_inhalt, i.gueltig_bis, i.reihenfolge, i.dauer_sek, i.aktiv
+     FROM modul_instanz_inhalte i
+     LEFT JOIN mediathek med ON med.id = i.mediathek_id
+     WHERE i.modul_instanz_id = :mid
+       AND i.aktiv = 1
+       AND (i.gueltig_bis IS NULL OR i.gueltig_bis >= CURDATE())
+     ORDER BY i.reihenfolge, i.id'
+);
+
+$playlistsData = [];
+
+foreach ($aktivZeitplan as $zeitplanRow) {
     $playlistId = (int)$zeitplanRow['playlist_id'];
+    $dauerSek   = max(10, (int)$zeitplanRow['dauer_sek']);
 
-    // Playlist-Name
-    $stmt = $pdo->prepare('SELECT name FROM playlists WHERE id = :id');
-    $stmt->execute([':id' => $playlistId]);
-    $playlist = $stmt->fetch();
+    $stmtName->execute([':id' => $playlistId]);
+    $playlist = $stmtName->fetch();
 
-    // Layout
-    $stmt = $pdo->prepare('SELECT * FROM playlist_layout WHERE playlist_id = :id');
-    $stmt->execute([':id' => $playlistId]);
-    $layout = $stmt->fetch();
+    $stmtLayout->execute([':id' => $playlistId]);
+    $layout = $stmtLayout->fetch();
 
-    // Spalten-Inhalte (nur aktive Instanzen)
-    $stmt = $pdo->prepare(
-        'SELECT s.spalte, s.reihenfolge, m.id AS instanz_id, m.modul_typ, m.einstellungen
-         FROM playlist_spalten_inhalte s
-         JOIN modul_instanzen m ON m.id = s.modul_instanz_id AND m.aktiv = 1
-         WHERE s.playlist_id = :id
-         ORDER BY s.spalte, s.reihenfolge, s.id'
-    );
-    $stmt->execute([':id' => $playlistId]);
-    $spaltenZeilen = $stmt->fetchAll();
-
-    // Pro Instanz die Inhalte laden (aktiv=1, nicht abgelaufen)
-    $stmtInhalte = $pdo->prepare(
-        'SELECT i.id, COALESCE(med.dateiname, i.dateiname) AS dateiname,
-                i.text_inhalt, i.gueltig_bis, i.reihenfolge, i.dauer_sek, i.aktiv
-         FROM modul_instanz_inhalte i
-         LEFT JOIN mediathek med ON med.id = i.mediathek_id
-         WHERE i.modul_instanz_id = :mid
-           AND i.aktiv = 1
-           AND (i.gueltig_bis IS NULL OR i.gueltig_bis >= CURDATE())
-         ORDER BY i.reihenfolge, i.id'
-    );
+    $stmtSpalten->execute([':id' => $playlistId]);
+    $spaltenZeilen = $stmtSpalten->fetchAll();
 
     $spalten = [];
     foreach ($spaltenZeilen as $zeile) {
@@ -138,9 +146,10 @@ if ($zeitplanRow) {
         ];
     }
 
-    $playlistData = [
+    $playlistsData[] = [
         'id'             => $playlistId,
         'name'           => $playlist['name'] ?? '',
+        'dauer_sek'      => $dauerSek,
         'spalten_anzahl' => (int)($layout['spalten_anzahl'] ?? 1),
         'spalte1_breite' => isset($layout['spalte1_breite']) ? (int)$layout['spalte1_breite'] : null,
         'spalte2_breite' => isset($layout['spalte2_breite']) ? (int)$layout['spalte2_breite'] : null,
@@ -151,7 +160,7 @@ if ($zeitplanRow) {
     ];
 }
 
-// ── 3. Aktive Ticker (ALLE passenden, dann mischen) ───────────────────────
+// ── 4. Aktive Ticker (ALLE passenden, dann mischen) ──────────────────────
 
 $stmt = $pdo->prepare(
     'SELECT te.text, te.dauer_sek
@@ -176,12 +185,12 @@ $tickerEintraege = $stmt->fetchAll();
 
 shuffle($tickerEintraege);
 
-// ── 4. Antwort ────────────────────────────────────────────────────────────
+// ── 5. Antwort ────────────────────────────────────────────────────────────
 
 proxy_json_exit([
     'monitor_id'   => $monitorId,
     'monitor_name' => $monitor['name'],
     'header_text'  => $monitor['header_text'] ?? '',
-    'playlist'     => $playlistData,
+    'playlists'    => $playlistsData,
     'ticker'       => $tickerEintraege,
 ]);

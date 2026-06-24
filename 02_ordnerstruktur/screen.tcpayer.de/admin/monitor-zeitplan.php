@@ -91,6 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'speic
             'von'         => $von,
             'bis'         => $bis,
             'prioritaet'  => (int)($z['prio'] ?? 0),
+            'dauer_sek'   => max(10, (int)($z['dauer_sek'] ?? 300)),
         ];
     }
 
@@ -137,6 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'von'         => substr((string)($z['von'] ?? ''), 0, 5),
             'bis'         => substr((string)($z['bis'] ?? ''), 0, 5),
             'prio'        => (int)($z['prio'] ?? 0),
+            'dauer_sek'   => max(10, (int)($z['dauer_sek'] ?? 300)),
         ];
     }
     foreach (($_POST['tickerplan'] ?? []) as $z) {
@@ -159,6 +161,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'von'         => substr((string)$z['von_uhrzeit'], 0, 5),
             'bis'         => substr((string)$z['bis_uhrzeit'], 0, 5),
             'prio'        => (int)$z['prioritaet'],
+            'dauer_sek'   => (int)$z['dauer_sek'],
         ];
     }
     foreach (Monitor::ladeTickerZeitplan($id) as $z) {
@@ -308,6 +311,9 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
         var prioFeld = prio
             ? '<label>Priorität <input type="number" data-feld="prio" value="' + (data.prio || 0) + '" step="1" style="width:5em"></label>'
             : '';
+        var dauerFeld = (art === 'playlist')
+            ? '<label>Dauer&nbsp;(s) <input type="number" data-feld="dauer_sek" value="' + (data.dauer_sek || 300) + '" min="10" step="10" style="width:5.5em" title="Wie lange diese Playlist läuft bevor zur nächsten rotiert wird"></label>'
+            : '';
 
         zeile.innerHTML =
             '<button type="button" class="adm-zr-weg" title="Eintrag entfernen" aria-label="Eintrag entfernen">×</button>' +
@@ -331,6 +337,7 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
                     '<label>von <input type="time" data-feld="von" value="' + escapeHtml(data.von || '') + '"></label>' +
                     '<label>bis <input type="time" data-feld="bis" value="' + escapeHtml(data.bis || '') + '"></label>' +
                     prioFeld +
+                    dauerFeld +
                 '</div>' +
             '</div>';
         return zeile;

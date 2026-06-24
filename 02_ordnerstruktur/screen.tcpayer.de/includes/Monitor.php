@@ -112,7 +112,7 @@ final class Monitor
     public static function ladeZeitplan(int $monitorId): array
     {
         $stmt = get_pdo()->prepare(
-            'SELECT z.id, z.playlist_id, z.wochentage, z.von_uhrzeit, z.bis_uhrzeit, z.prioritaet,
+            'SELECT z.id, z.playlist_id, z.wochentage, z.von_uhrzeit, z.bis_uhrzeit, z.prioritaet, z.dauer_sek,
                     p.name AS playlist_name, p.aktiv AS playlist_aktiv
              FROM monitor_zeitplan z
              JOIN playlists p ON p.id = z.playlist_id
@@ -140,8 +140,8 @@ final class Monitor
 
             $stmt = $pdo->prepare(
                 'INSERT INTO monitor_zeitplan
-                    (monitor_id, playlist_id, wochentage, von_uhrzeit, bis_uhrzeit, prioritaet)
-                 VALUES (:mid, :pid, :tage, :von, :bis, :prio)'
+                    (monitor_id, playlist_id, wochentage, von_uhrzeit, bis_uhrzeit, prioritaet, dauer_sek)
+                 VALUES (:mid, :pid, :tage, :von, :bis, :prio, :dauer)'
             );
             foreach ($eintraege as $e) {
                 $pid  = (int)($e['playlist_id'] ?? 0);
@@ -152,12 +152,13 @@ final class Monitor
                     continue;
                 }
                 $stmt->execute([
-                    ':mid'  => $monitorId,
-                    ':pid'  => $pid,
-                    ':tage' => $tage,
-                    ':von'  => $von !== '' ? $von : null,
-                    ':bis'  => $bis !== '' ? $bis : null,
-                    ':prio' => (int)($e['prioritaet'] ?? 0),
+                    ':mid'   => $monitorId,
+                    ':pid'   => $pid,
+                    ':tage'  => $tage,
+                    ':von'   => $von !== '' ? $von : null,
+                    ':bis'   => $bis !== '' ? $bis : null,
+                    ':prio'  => (int)($e['prioritaet'] ?? 0),
+                    ':dauer' => max(10, (int)($e['dauer_sek'] ?? 300)),
                 ]);
             }
             $pdo->commit();
