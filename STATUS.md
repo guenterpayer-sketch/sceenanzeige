@@ -3,7 +3,7 @@
 > **Branch:** `claude/nifty-johnson-3q6u7g`  
 > Eine neue Session liest `CLAUDE.md` (Konzept) + diese Datei (Stand) und kann sofort weiterarbeiten.
 
-_Letzte Aktualisierung: Schritt 9b — Layout-Anpassungen Stundenplan & Song umgesetzt._
+_Letzte Aktualisierung: Schritt 9b Stundenplan live getestet + finalisiert — nächster Fokus: Song/FRET-Layout._
 
 ---
 
@@ -20,23 +20,34 @@ _Letzte Aktualisierung: Schritt 9b — Layout-Anpassungen Stundenplan & Song umg
 | 7 | Backend: Monitore + Zeitplan | ✅ live getestet |
 | 8 | Backend: Ticker + Ticker-Zeitplan | ✅ live getestet |
 | 9 | Monitor-Frontend (Kern-Logik) | ✅ live getestet |
-| 9b | Monitor-Frontend: Layout `stundenplan` + `fret` | **✅ umgesetzt** |
+| 9b-sp | Monitor-Frontend: Layout `stundenplan` | **✅ live getestet** |
+| 9b-fret | Monitor-Frontend: Layout `fret` | **offen → nächster Schritt** |
 | 10 | Live-Vorschau (iFrame) | offen |
 | 11 | Deployment-Guide | offen |
 
 ---
 
-## Schritt 9b — Layout-Anpassungen (✅ umgesetzt)
+## Schritt 9b — Layout-Anpassungen
 
-### Stundenplan-Modul
-Card-Layout: 4-Spalten-Grid (Uhrzeit · Saal · Kurs · Lehrer), `height: 56px`, `gap: 7px`.
-`formatZeit()` extrahiert HH:MM via Regex aus `start_date`. Kurs erlaubt 2 Zeilen (`-webkit-line-clamp: 2`).
+### Stundenplan-Modul (✅ live getestet, finalisiert)
 
-### Song/FRET-Modul
-Layout aus `display.txt`. Überschrift (`settings.titel || 'FRET'`, rot, uppercase, 32px).
-Song-Titel 40px, Künstler 36px, Badges aktueller Song 40px, Badges Playlist 28px.
-Fortschrittsbalken 10px Höhe. Playlist-Items als Cards (dark bg, border-radius 8px).
-Künstler auch in kommenden Songs. Neues `titel`-Setting in `module.json`.
+**Finale CSS-Werte (live getestet):**
+- `grid-template-columns: 80px 100px 1fr 160px`
+- `.tm-sp-cards`: `display: flex; flex-direction: column; gap: 7px; height: 100%`
+- `.tm-sp-card`: `flex: 1; font-size: 32px; padding: 8px 20px; background: rgba(255,255,255,0.1); border-radius: 6px`
+- `.tm-sp-zeit`: `color: #ad2121` (Tanzschul-Rot)
+- `.tm-sp-lehrer`: `font-size: 22px` (bewusst kleiner als Basis)
+- Kurs erlaubt 2 Zeilen (`-webkit-line-clamp: 2`)
+- `formatZeit()` extrahiert HH:MM via Regex aus `start_date` (timezone-safe)
+- Kacheln verteilen sich gleichmäßig auf die volle Höhe (`flex: 1`)
+- Offener Punkt: Spaltenbreiten ggf. anpassen wenn längere NC-Kursbeschreibungen kommen
+
+### Song/FRET-Modul (offen → nächster Schritt)
+Code bereits vorbereitet (Commit Schritt 9b), noch nicht live getestet:
+- Überschrift (`settings.titel || 'FRET'`, rot, uppercase, 32px)
+- Song-Titel 40px, Künstler 36px, Badges aktueller Song 40px, Playlist-Badges 28px
+- Fortschrittsbalken 10px, Playlist-Items als Cards
+- Neues `titel`-Setting in `module.json`
 
 ---
 

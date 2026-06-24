@@ -237,7 +237,7 @@ FRET-Polling 5–10 Sek., Ticker unabhängig.
 | 7 | Backend: Monitore + Zeitplan (monitor-zentrisch) | ✅ live getestet |
 | 8 | Backend: Ticker + Ticker-Zeitplan | ✅ live getestet |
 | 9 | Monitor-Frontend (Anzeige- + Zeitlogik) | ✅ live getestet |
-| 9b | Monitor-Frontend: Layout `stundenplan` + `fret` | offen |
+| 9b | Monitor-Frontend: Layout `stundenplan` (✅ live) + `fret` (offen) | teilweise |
 | 10 | Live-Vorschau (iFrame) | offen |
 | 11 | Deployment-Guide | offen |
 
