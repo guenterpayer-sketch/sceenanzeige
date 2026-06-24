@@ -43,6 +43,7 @@
     var _rotationTimeouts  = [];
     var _playlistIndex     = 0;
     var _playlistRotTimer  = null;
+    var _activePlaylistIds = '';
 
     function cleanupModulContainer(container) {
         if (container._tmTimeout)  { clearTimeout(container._tmTimeout);   container._tmTimeout  = null; }
@@ -56,6 +57,12 @@
         _rotationTimeouts.forEach(clearTimeout);
         _rotationTimeouts = [];
         if (_playlistRotTimer) { clearTimeout(_playlistRotTimer); _playlistRotTimer = null; }
+        var mainEl = document.getElementById('tm-main');
+        if (mainEl) {
+            mainEl.innerHTML = '';
+            mainEl.style.opacity = '';
+            mainEl.style.transition = '';
+        }
     }
 
     // ── Header-Uhrzeit ───────────────────────────────────────────────────────
@@ -229,10 +236,7 @@
         zeigeNaechstes();
     }
 
-    function renderSpalten(playlist) {
-        var layoutEl = document.querySelector('.tm-layout');
-        if (!layoutEl) { return; }
-
+    function renderSpalten(layoutEl, playlist) {
         var spalten = playlist.spalten || {};
         var anzahl  = playlist.spalten_anzahl || 1;
 
@@ -259,50 +263,68 @@
     function startPlaylistRotation(playlists, ticker) {
         var mainEl   = document.getElementById('tm-main');
         var footerEl = document.getElementById('tm-footer');
+        var CROSSFADE_MS = 600;
+
+        mainEl.style.position = 'relative';
+        mainEl.style.overflow = 'hidden';
 
         function doRender(pl) {
-            // Header ein-/ausblenden (gesteuert per playlist_layout.header_uhrzeit)
             var headerEl = document.getElementById('tm-header');
             if (headerEl) { headerEl.style.display = pl.header_uhrzeit ? '' : 'none'; }
 
-            // Modul-Timer säubern BEVOR innerHTML geleert wird;
-            // _rotationTimeouts werden NICHT gecancelt — sie terminieren via
-            // isConnected-Check selbst, sobald spalteEl aus dem DOM entfernt wird.
-            document.querySelectorAll('.tm-modul-container').forEach(cleanupModulContainer);
-
-            mainEl.innerHTML = '';
-            mainEl.style.transition = 'none';
-            mainEl.style.opacity = '0';
-
-            var layoutEl = buildLayout(pl);
-            mainEl.appendChild(layoutEl);
-            renderSpalten(pl);
-
             stopTicker();
+
+            var oldLayout = mainEl.querySelector('.tm-layout');
+
+            // Altes Layout für Crossfade absolut positionieren (falls noch nicht)
+            if (oldLayout) {
+                oldLayout.style.position = 'absolute';
+                oldLayout.style.top = '0'; oldLayout.style.left = '0';
+                oldLayout.style.right = '0'; oldLayout.style.bottom = '0';
+            }
+
+            // Neues Layout aufbauen, unsichtbar einsetzen
+            var newLayout = buildLayout(pl);
+            newLayout.style.position = 'absolute';
+            newLayout.style.top = '0'; newLayout.style.left = '0';
+            newLayout.style.right = '0'; newLayout.style.bottom = '0';
+            newLayout.style.opacity = '0';
+
+            _rotationTimeouts = [];
+            mainEl.appendChild(newLayout);
+            renderSpalten(newLayout, pl);
+
             if (ticker && ticker.length > 0 && pl.footer_ticker !== false) {
                 startTicker(ticker, footerEl);
             } else {
                 footerEl.classList.add('tm-hidden');
             }
 
-            // Einblenden
+            // Echtes Crossfade: neues Layout einblenden, altes ausblenden
             requestAnimationFrame(function () {
                 requestAnimationFrame(function () {
-                    mainEl.style.transition = 'opacity 600ms ease';
-                    mainEl.style.opacity = '1';
+                    newLayout.style.transition = 'opacity ' + CROSSFADE_MS + 'ms ease';
+                    newLayout.style.opacity = '1';
+
+                    if (oldLayout) {
+                        oldLayout.style.transition = 'opacity ' + CROSSFADE_MS + 'ms ease';
+                        oldLayout.style.opacity = '0';
+                        setTimeout(function () {
+                            if (oldLayout.parentNode) {
+                                oldLayout.querySelectorAll('.tm-modul-container')
+                                    .forEach(cleanupModulContainer);
+                                oldLayout.parentNode.removeChild(oldLayout);
+                            }
+                        }, CROSSFADE_MS + 50);
+                    }
                 });
             });
 
             // Nächste Playlist einplanen (nur bei echter Rotation)
             if (playlists.length > 1) {
                 _playlistRotTimer = setTimeout(function () {
-                    // Ausblenden, dann weiterschalten
-                    mainEl.style.transition = 'opacity 500ms ease';
-                    mainEl.style.opacity = '0';
-                    _playlistRotTimer = setTimeout(function () {
-                        _playlistIndex = (_playlistIndex + 1) % playlists.length;
-                        doRender(playlists[_playlistIndex]);
-                    }, 520);
+                    _playlistIndex = (_playlistIndex + 1) % playlists.length;
+                    doRender(playlists[_playlistIndex]);
                 }, (pl.dauer_sek || 300) * 1000);
             }
         }
@@ -313,23 +335,25 @@
     // ── Haupt-Render ──────────────────────────────────────────────────────────
 
     function render(data) {
-        cleanupAlles(); // räumt auch _playlistRotTimer auf
+        var playlists = data.playlists || [];
+        var newIds    = playlists.map(function (p) { return String(p.id); }).join(',');
+
+        // Gleiche Playlists laufen bereits → kein Re-Render, Rotation läuft weiter
+        if (newIds !== '' && newIds === _activePlaylistIds) { return; }
+
+        _activePlaylistIds = newIds;
+        cleanupAlles();
         stopTicker();
 
-        // Header-Text
         var headerTextEl = document.getElementById('tm-header-text');
-        if (headerTextEl) {
-            headerTextEl.textContent = data.header_text || '';
-        }
+        if (headerTextEl) { headerTextEl.textContent = data.header_text || ''; }
 
-        var playlists = data.playlists || [];
-        var mainEl    = document.getElementById('tm-main');
-        var footerEl  = document.getElementById('tm-footer');
+        var mainEl   = document.getElementById('tm-main');
+        var footerEl = document.getElementById('tm-footer');
 
         if (playlists.length === 0) {
             var headerEl = document.getElementById('tm-header');
             if (headerEl) { headerEl.style.display = ''; }
-            mainEl.innerHTML = '';
             var fallbackEl = document.createElement('div');
             fallbackEl.className = 'tm-main-leer';
             fallbackEl.textContent = 'Kein Programm';
@@ -338,7 +362,6 @@
             return;
         }
 
-        // Index beibehalten wenn noch gültig (nach Server-Refresh weiterlaufen)
         if (_playlistIndex >= playlists.length) { _playlistIndex = 0; }
         startPlaylistRotation(playlists, data.ticker || []);
     }

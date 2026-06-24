@@ -57,7 +57,7 @@
             img.onerror = function () {
                 console.error('[bild-modul] Bild konnte nicht geladen werden:', img.src);
             };
-            if (useFade) {
+            if (useFade && inhalte.length > 1) {
                 img.style.transition = 'opacity ' + fadeDauerMs + 'ms ease';
             }
         });
