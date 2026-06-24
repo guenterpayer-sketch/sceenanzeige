@@ -287,16 +287,16 @@ html, body {
     grid-template-columns: 80px 100px 1fr 160px;
     gap: 12px;
     align-items: center;
-    height: 56px;
-    padding: 0 14px;
-    background: rgba(255, 255, 255, 0.05);
+    min-height: 70px;
+    padding: 8px 20px;
+    background: rgba(255, 255, 255, 0.1);
     border-radius: 6px;
-    font-size: 20px;
+    font-size: 32px;
     overflow: hidden;
 }
 
 .tm-sp-zeit {
-    color: #ff9d9d;
+    color: #ad2121;
     font-variant-numeric: tabular-nums;
     font-weight: 600;
     white-space: nowrap;
@@ -320,6 +320,7 @@ html, body {
 
 .tm-sp-lehrer {
     opacity: 0.65;
+    font-size: 22px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
