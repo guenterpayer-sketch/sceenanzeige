@@ -29,13 +29,20 @@ html, body {
 /* ── Header ──────────────────────────────────────────────────────────────── */
 
 #tm-header {
-    flex: 0 0 80px;
+    flex: 0 0 auto;
+    height: 80px;
+    overflow: hidden;
     display: flex;
     align-items: center;
     padding: 0 28px;
     gap: 20px;
     background: #111;
     border-bottom: 3px solid #ad2121;
+}
+
+#tm-header.tm-hidden {
+    height: 0;
+    opacity: 0;
 }
 
 #tm-header-logo {
@@ -123,17 +130,18 @@ html, body {
 /* ── Footer / Ticker ─────────────────────────────────────────────────────── */
 
 #tm-footer {
-    flex: 0 0 58px;
+    flex: 0 0 auto;
+    height: 58px;
+    overflow: hidden;
     display: flex;
     align-items: center;
     padding: 0 28px;
     background: #ad2121;
-    overflow: hidden;
     position: relative;
 }
 
 #tm-footer.tm-hidden {
-    display: none;
+    height: 0;
 }
 
 .tm-ticker-text {

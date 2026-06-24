@@ -64,6 +64,11 @@
             mainEl.style.opacity = '';
             mainEl.style.transition = '';
         }
+        // In-flight header/footer inline-Styles zurücksetzen
+        var headerEl = document.getElementById('tm-header');
+        if (headerEl) { headerEl.style.height = ''; headerEl.style.opacity = ''; headerEl.style.transition = ''; }
+        var footerEl2 = document.getElementById('tm-footer');
+        if (footerEl2) { footerEl2.style.height = ''; footerEl2.style.opacity = ''; footerEl2.style.transition = ''; }
         _currentPl = null;
     }
 
@@ -275,7 +280,7 @@
 
             // Alte Zustände für synchronisierten Übergang
             var oldHeader = _currentPl ? !!_currentPl.header_sichtbar
-                                       : (headerEl ? headerEl.style.display !== 'none' : true);
+                                       : (headerEl ? !headerEl.classList.contains('tm-hidden') : true);
             var oldFooter = _currentPl ? (_currentPl.footer_ticker !== false && !!(ticker && ticker.length))
                                        : !footerEl.classList.contains('tm-hidden');
             var newHeader = !!pl.header_sichtbar;
@@ -284,13 +289,15 @@
 
             stopTicker();
 
-            // Header/Footer vorab einsetzen wenn neu sichtbar (unsichtbar, für Fade-In)
+            // Header/Footer vorab auf Startposition bringen (height:0 für Fade-In)
             if (!oldHeader && newHeader && headerEl) {
-                headerEl.style.display = '';
+                headerEl.classList.remove('tm-hidden');
+                headerEl.style.height = '0';
                 headerEl.style.opacity = '0';
             }
             if (!oldFooter && newFooter) {
                 footerEl.classList.remove('tm-hidden');
+                footerEl.style.height = '0';
                 footerEl.style.opacity = '0';
             }
 
@@ -331,39 +338,47 @@
                         }, CROSSFADE_MS + 50);
                     }
 
-                    // Header
+                    // Header (height + opacity synchron mit Layout)
                     if (headerEl) {
                         if (oldHeader && !newHeader) {
-                            headerEl.style.transition = 'opacity ' + CROSSFADE_MS + 'ms ease';
+                            headerEl.style.transition = 'height ' + CROSSFADE_MS + 'ms ease, opacity ' + CROSSFADE_MS + 'ms ease';
+                            headerEl.style.height = '0';
                             headerEl.style.opacity = '0';
                             setTimeout(function () {
-                                headerEl.style.display = 'none';
+                                headerEl.classList.add('tm-hidden');
+                                headerEl.style.height = '';
                                 headerEl.style.opacity = '';
                                 headerEl.style.transition = '';
                             }, CROSSFADE_MS + 50);
                         } else if (!oldHeader && newHeader) {
-                            headerEl.style.transition = 'opacity ' + CROSSFADE_MS + 'ms ease';
+                            headerEl.style.transition = 'height ' + CROSSFADE_MS + 'ms ease, opacity ' + CROSSFADE_MS + 'ms ease';
+                            headerEl.style.height = '80px';
                             headerEl.style.opacity = '1';
                             setTimeout(function () {
+                                headerEl.style.height = '';
                                 headerEl.style.opacity = '';
                                 headerEl.style.transition = '';
                             }, CROSSFADE_MS + 50);
                         }
                     }
 
-                    // Footer
+                    // Footer (height + opacity synchron mit Layout)
                     if (oldFooter && !newFooter) {
-                        footerEl.style.transition = 'opacity ' + CROSSFADE_MS + 'ms ease';
+                        footerEl.style.transition = 'height ' + CROSSFADE_MS + 'ms ease, opacity ' + CROSSFADE_MS + 'ms ease';
+                        footerEl.style.height = '0';
                         footerEl.style.opacity = '0';
                         setTimeout(function () {
                             footerEl.classList.add('tm-hidden');
+                            footerEl.style.height = '';
                             footerEl.style.opacity = '';
                             footerEl.style.transition = '';
                         }, CROSSFADE_MS + 50);
                     } else if (!oldFooter && newFooter) {
-                        footerEl.style.transition = 'opacity ' + CROSSFADE_MS + 'ms ease';
+                        footerEl.style.transition = 'height ' + CROSSFADE_MS + 'ms ease, opacity ' + CROSSFADE_MS + 'ms ease';
+                        footerEl.style.height = '58px';
                         footerEl.style.opacity = '1';
                         setTimeout(function () {
+                            footerEl.style.height = '';
                             footerEl.style.opacity = '';
                             footerEl.style.transition = '';
                         }, CROSSFADE_MS + 50);
@@ -404,7 +419,7 @@
 
         if (playlists.length === 0) {
             var headerEl = document.getElementById('tm-header');
-            if (headerEl) { headerEl.style.display = ''; }
+            if (headerEl) { headerEl.classList.remove('tm-hidden'); headerEl.style.height = ''; headerEl.style.opacity = ''; }
             var fallbackEl = document.createElement('div');
             fallbackEl.className = 'tm-main-leer';
             fallbackEl.textContent = 'Kein Programm';
