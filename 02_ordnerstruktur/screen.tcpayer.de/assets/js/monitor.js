@@ -46,6 +46,7 @@
     var _activePlaylistIds = '';
     var _currentPl         = null;
     var _lastReloadAt      = null;
+    var _tickerJson        = null; // Serialisierte Ticker-Einträge für Änderungserkennung
 
     function cleanupModulContainer(container) {
         if (container._tmTimeout)  { clearTimeout(container._tmTimeout);   container._tmTimeout  = null; }
@@ -112,10 +113,8 @@
         stopTicker();
         var textEl = footerEl.querySelector('.tm-ticker-text');
         if (!textEl || !eintraege || eintraege.length === 0) {
-            footerEl.classList.add('tm-hidden');
-            return;
+            return; // Sichtbarkeit des Footers steuert doRender/render, nicht startTicker
         }
-        footerEl.classList.remove('tm-hidden');
 
         var einziger = eintraege.length === 1;
         var index    = 0;
@@ -343,8 +342,6 @@
             var newFooter = pl.footer_ticker !== false && !!(ticker && ticker.length);
             _currentPl = pl;
 
-            stopTicker();
-
             // Header/Footer vorab auf Startposition bringen (height:0 für Fade-In)
             if (!oldHeader && newHeader && headerEl) {
                 headerEl.classList.remove('tm-hidden');
@@ -373,8 +370,6 @@
             _rotationTimeouts = [];
             mainEl.appendChild(newLayout);
             var maxCycleMs = renderSpalten(newLayout, pl);
-
-            if (newFooter) { startTicker(ticker, footerEl); }
 
             // Alle Übergänge synchron im selben rAF-Block starten
             requestAnimationFrame(function () {
@@ -460,21 +455,32 @@
     // ── Haupt-Render ──────────────────────────────────────────────────────────
 
     function render(data) {
-        var playlists = data.playlists || [];
-        var newIds    = playlists.map(function (p) { return String(p.id); }).join(',');
+        var playlists     = data.playlists || [];
+        var newIds        = playlists.map(function (p) { return String(p.id); }).join(',');
+        var newTickerJson = JSON.stringify(data.ticker || []);
+        var footerEl      = document.getElementById('tm-footer');
 
-        // Gleiche Playlists laufen bereits → kein Re-Render, Rotation läuft weiter
-        if (newIds !== '' && newIds === _activePlaylistIds) { return; }
+        // Gleiche Playlists laufen bereits — nur Ticker neu starten wenn Einträge geändert
+        if (newIds !== '' && newIds === _activePlaylistIds) {
+            if (newTickerJson !== _tickerJson) {
+                _tickerJson = newTickerJson;
+                startTicker(data.ticker || [], footerEl);
+            }
+            return;
+        }
 
         _activePlaylistIds = newIds;
+        _tickerJson        = newTickerJson;
         cleanupAlles();
-        stopTicker();
 
         var headerTextEl = document.getElementById('tm-header-text');
         if (headerTextEl) { headerTextEl.textContent = data.header_text || ''; }
 
-        var mainEl   = document.getElementById('tm-main');
-        var footerEl = document.getElementById('tm-footer');
+        var mainEl = document.getElementById('tm-main');
+
+        // Ticker global starten — läuft unabhängig von Playlist-Rotation weiter.
+        // Sichtbarkeit des Footers steuert doRender über tm-hidden.
+        startTicker(data.ticker || [], footerEl);
 
         if (playlists.length === 0) {
             var headerEl = document.getElementById('tm-header');
@@ -483,7 +489,11 @@
             fallbackEl.className = 'tm-main-leer';
             fallbackEl.textContent = 'Kein Programm';
             mainEl.appendChild(fallbackEl);
-            footerEl.classList.add('tm-hidden');
+            if (data.ticker && data.ticker.length > 0) {
+                footerEl.classList.remove('tm-hidden');
+            } else {
+                footerEl.classList.add('tm-hidden');
+            }
             return;
         }
 
