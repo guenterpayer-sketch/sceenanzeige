@@ -6,6 +6,7 @@
   "has_inhalte": false,
   "settings": [
     { "key": "anzeige_dauer_sek", "type": "number", "label": "Anzeigedauer in Sek. (bei Spalten-Rotation mit anderen Modulen)", "default": 30 },
+    { "key": "titel", "type": "text", "label": "Überschrift (z.B. Saal-Name; leer = \"FRET\")", "default": "" },
     {
       "key": "computer_id",
       "type": "select",

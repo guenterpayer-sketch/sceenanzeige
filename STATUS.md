@@ -3,7 +3,7 @@
 > **Branch:** `claude/nifty-johnson-3q6u7g`  
 > Eine neue Session liest `CLAUDE.md` (Konzept) + diese Datei (Stand) und kann sofort weiterarbeiten.
 
-_Letzte Aktualisierung: Schritt 9 live getestet + diverse Fixes/Erweiterungen — nächster Fokus: Layout-Anpassungen Stundenplan & Song._
+_Letzte Aktualisierung: Schritt 9b — Layout-Anpassungen Stundenplan & Song umgesetzt._
 
 ---
 
@@ -20,29 +20,23 @@ _Letzte Aktualisierung: Schritt 9 live getestet + diverse Fixes/Erweiterungen �
 | 7 | Backend: Monitore + Zeitplan | ✅ live getestet |
 | 8 | Backend: Ticker + Ticker-Zeitplan | ✅ live getestet |
 | 9 | Monitor-Frontend (Kern-Logik) | ✅ live getestet |
-| 9b | Monitor-Frontend: Layout `stundenplan` + `fret` | **offen → nächster Chat** |
+| 9b | Monitor-Frontend: Layout `stundenplan` + `fret` | **✅ umgesetzt** |
 | 10 | Live-Vorschau (iFrame) | offen |
 | 11 | Deployment-Guide | offen |
 
 ---
 
-## Aktueller Fokus: Schritt 9b — Layout-Anpassungen
+## Schritt 9b — Layout-Anpassungen (✅ umgesetzt)
 
 ### Stundenplan-Modul
-Datei: `modules/stundenplan/frontend.js` + CSS-Klassen `.tm-modul-stundenplan`, `.tm-sp-*`
-
-Ziel: Card-Layout mit 4 fixen Spalten: **Uhrzeit · Saal · Kurs · Lehrer**
-- Feste Box-Höhe, 6–8 px Gap zwischen Boxen
-- Alle Felder vertikal zentriert; Kurs darf zweizeilig werden
-- Felder aus Proxy: `start_date` (→ "HH:MM"), `room`, `displayName`, `teacher`
+Card-Layout: 4-Spalten-Grid (Uhrzeit · Saal · Kurs · Lehrer), `height: 56px`, `gap: 7px`.
+`formatZeit()` extrahiert HH:MM via Regex aus `start_date`. Kurs erlaubt 2 Zeilen (`-webkit-line-clamp: 2`).
 
 ### Song/FRET-Modul
-Datei: `modules/fret/frontend.js` + CSS-Klassen `.tm-modul-fret`, `.tm-song-*`
-
-Ziel: Layout aus `display.txt` (Standalone-Referenz im Repo-Root) übernehmen
-- **Modulname als Überschrift** (rot, uppercase, 32px)
-- Schriftgrößen gemäß `Projektzusammenfassung_Song_Anzeige.md` Abschnitt 6
-- Playlist-Items als Cards; Badge-Farben: Haupttanz = `#ad2121` gefüllt, Nebentanz = Rand + Schrift `#ad2121`
+Layout aus `display.txt`. Überschrift (`settings.titel || 'FRET'`, rot, uppercase, 32px).
+Song-Titel 40px, Künstler 36px, Badges aktueller Song 40px, Badges Playlist 28px.
+Fortschrittsbalken 10px Höhe. Playlist-Items als Cards (dark bg, border-radius 8px).
+Künstler auch in kommenden Songs. Neues `titel`-Setting in `module.json`.
 
 ---
 

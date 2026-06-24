@@ -42,20 +42,25 @@
         if (container._tmTick) { clearInterval(container._tmTick); }
 
         var basis = window.BACKEND_BASE || '';
+        var titel = settings.titel || 'FRET';
         var computerId = settings.computer_id || '';
         var zeigePlaylist = settings.zeige_playlist !== false;
         var anzahlKommende = (settings.anzahl_kommende != null) ? settings.anzahl_kommende : 3;
         var pollSek = (settings.poll_sek && settings.poll_sek >= 3) ? settings.poll_sek : 7;
 
         if (!computerId) {
-            container.innerHTML = '<div class="tm-song-status">Kein Saal (FRET-Computer) ausgewählt.</div>';
+            container.innerHTML = '<div class="tm-song-heading">' + escapeHtml(titel) + '</div>'
+                + '<div class="tm-song-status">Kein Saal (FRET-Computer) ausgewählt.</div>';
             return;
         }
 
         container.innerHTML =
-            '<div class="tm-song-aktuell"></div>'
+            '<div class="tm-song-heading">' + escapeHtml(titel) + '</div>'
+            + '<div class="tm-song-aktuell"></div>'
             + '<div class="tm-song-progress"><div class="tm-song-progress-bar"></div></div>'
-            + (zeigePlaylist ? '<div class="tm-song-kommende"></div>' : '');
+            + (zeigePlaylist
+                ? '<div class="tm-song-label">Nächste Titel</div><div class="tm-song-kommende"></div>'
+                : '');
 
         var aktuellEl = container.querySelector('.tm-song-aktuell');
         var barEl = container.querySelector('.tm-song-progress-bar');
@@ -106,8 +111,11 @@
             var html = '<ul class="tm-song-kommende-liste">';
             liste.forEach(function (s) {
                 html += '<li class="tm-song-kommende-eintrag">'
-                    + '<span class="tm-song-k-titel">' + escapeHtml(s.title) + '</span>'
-                    + '<span class="tm-song-k-badges">' + badges(s.taenze) + '</span>'
+                    + '<div class="tm-song-k-info">'
+                    + '<div class="tm-song-k-titel">' + escapeHtml(s.title) + '</div>'
+                    + (s.artist ? '<div class="tm-song-k-artist">' + escapeHtml(s.artist) + '</div>' : '')
+                    + '<div class="tm-song-k-badges">' + badges(s.taenze) + '</div>'
+                    + '</div>'
                     + '</li>';
             });
             html += '</ul>';

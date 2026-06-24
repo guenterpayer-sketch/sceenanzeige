@@ -26,6 +26,12 @@
         });
     }
 
+    function formatZeit(start_date) {
+        if (!start_date) { return ''; }
+        var m = String(start_date).match(/(\d{2}):(\d{2})/);
+        return m ? m[1] + ':' + m[2] : String(start_date);
+    }
+
     window.TanzschuleModule.stundenplan = function (container, settings) {
         settings = settings || {};
         container.classList.add('tm-modul-stundenplan');
@@ -52,16 +58,16 @@
                     container.innerHTML = '<div class="tm-sp-status">Keine Kurse</div>';
                     return;
                 }
-                var html = '<ul class="tm-sp-liste">';
+                var html = '<div class="tm-sp-cards">';
                 kurse.forEach(function (k) {
-                    html += '<li class="tm-sp-eintrag">'
-                        + '<span class="tm-sp-zeit">' + escapeHtml(k.start_date) + '</span>'
-                        + '<span class="tm-sp-name">' + escapeHtml(k.displayName || k.course_key) + '</span>'
-                        + (k.room ? '<span class="tm-sp-raum">' + escapeHtml(k.room) + '</span>' : '')
-                        + (k.teacher ? '<span class="tm-sp-lehrer">' + escapeHtml(k.teacher) + '</span>' : '')
-                        + '</li>';
+                    html += '<div class="tm-sp-card">'
+                        + '<div class="tm-sp-zeit">' + escapeHtml(formatZeit(k.start_date)) + '</div>'
+                        + '<div class="tm-sp-saal">' + escapeHtml(k.room || '') + '</div>'
+                        + '<div class="tm-sp-kurs">' + escapeHtml(k.displayName || k.course_key) + '</div>'
+                        + '<div class="tm-sp-lehrer">' + escapeHtml(k.teacher || '') + '</div>'
+                        + '</div>';
                 });
-                html += '</ul>';
+                html += '</div>';
                 container.innerHTML = html;
             })
             .catch(function () {
