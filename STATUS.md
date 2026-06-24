@@ -75,12 +75,6 @@ Ziel: Layout aus `display.txt` (Standalone-Referenz im Repo-Root) übernehmen
 | `modules/stundenplan/module.json` | `anzeige_dauer_sek` hinzugefügt |
 | `modules/fret/module.json` | `anzeige_dauer_sek` hinzugefügt |
 
-### Offene DB-Migration (auf Server noch ausführen)
-```sql
--- sql/migration_reload_at.sql
-ALTER TABLE monitore ADD COLUMN reload_at DATETIME NULL DEFAULT NULL;
-```
-
 ---
 
 ## Wichtige Architektur-Entscheidungen (Kurzfassung)
