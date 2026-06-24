@@ -207,6 +207,7 @@
         var index = 0;
 
         function zeigeNaechstes() {
+            if (!spalteEl.isConnected) { return; } // spalteEl wurde entfernt → stoppen
             var mod      = module[index];
             var dauerSek = modulAnzeigeDauer(mod);
             index = (index + 1) % module.length;
@@ -256,23 +257,23 @@
     // ── Playlist-Rotation ─────────────────────────────────────────────────────
 
     function startPlaylistRotation(playlists, ticker) {
+        var mainEl   = document.getElementById('tm-main');
         var footerEl = document.getElementById('tm-footer');
 
-        function zeigePlaylist() {
-            var pl = playlists[_playlistIndex];
-
-            // Modul-Timer + Layout neu aufbauen
+        function doRender(pl) {
+            // Modul-Timer säubern BEVOR innerHTML geleert wird;
+            // _rotationTimeouts werden NICHT gecancelt — sie terminieren via
+            // isConnected-Check selbst, sobald spalteEl aus dem DOM entfernt wird.
             document.querySelectorAll('.tm-modul-container').forEach(cleanupModulContainer);
-            _rotationTimeouts.forEach(clearTimeout);
-            _rotationTimeouts = [];
 
-            var mainEl = document.getElementById('tm-main');
             mainEl.innerHTML = '';
+            mainEl.style.transition = 'none';
+            mainEl.style.opacity = '0';
+
             var layoutEl = buildLayout(pl);
             mainEl.appendChild(layoutEl);
             renderSpalten(pl);
 
-            // Ticker je nach footer_ticker-Einstellung dieser Playlist
             stopTicker();
             if (ticker && ticker.length > 0 && pl.footer_ticker !== false) {
                 startTicker(ticker, footerEl);
@@ -280,16 +281,29 @@
                 footerEl.classList.add('tm-hidden');
             }
 
+            // Einblenden
+            requestAnimationFrame(function () {
+                requestAnimationFrame(function () {
+                    mainEl.style.transition = 'opacity 600ms ease';
+                    mainEl.style.opacity = '1';
+                });
+            });
+
             // Nächste Playlist einplanen (nur bei echter Rotation)
             if (playlists.length > 1) {
                 _playlistRotTimer = setTimeout(function () {
-                    _playlistIndex = (_playlistIndex + 1) % playlists.length;
-                    zeigePlaylist();
+                    // Ausblenden, dann weiterschalten
+                    mainEl.style.transition = 'opacity 500ms ease';
+                    mainEl.style.opacity = '0';
+                    _playlistRotTimer = setTimeout(function () {
+                        _playlistIndex = (_playlistIndex + 1) % playlists.length;
+                        doRender(playlists[_playlistIndex]);
+                    }, 520);
                 }, (pl.dauer_sek || 300) * 1000);
             }
         }
 
-        zeigePlaylist();
+        doRender(playlists[_playlistIndex]);
     }
 
     // ── Haupt-Render ──────────────────────────────────────────────────────────
