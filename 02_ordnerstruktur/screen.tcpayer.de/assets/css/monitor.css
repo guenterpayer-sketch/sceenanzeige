@@ -380,7 +380,7 @@ html, body {
     font-size: 40px;
     font-weight: 500;
     border-radius: 8px;
-    padding: 8px 18px;
+    padding: 6px 18px;
 }
 
 .tm-song-badge-main {
@@ -392,6 +392,7 @@ html, body {
     background: #f0f0f0;
     color: #ad2121;
     border: 2px solid #ad2121;
+    font-size: 34px;
 }
 
 .tm-song-progress {
@@ -454,11 +455,20 @@ html, body {
 }
 
 .tm-song-kommende .tm-song-badge {
-    font-size: 28px;
+    font-size: 26px;
     padding: 4px 10px;
     border-radius: 5px;
 }
 
 .tm-song-kommende .tm-song-badge-sub {
     border-width: 1.5px;
+}
+
+.tm-song-k-countdown {
+    font-size: 16px;
+    color: #888;
+    min-width: 150px;
+    text-align: right;
+    white-space: nowrap;
+    flex-shrink: 0;
 }

@@ -33,6 +33,13 @@
         }).join('');
     }
 
+    function formatCountdown(sek) {
+        if (sek <= 0) { return 'Jetzt'; }
+        if (sek < 60) { return 'in weniger als einer Minute'; }
+        var m = Math.floor(sek / 60);
+        return 'in ' + m + ' Minute' + (m !== 1 ? 'n' : '');
+    }
+
     window.TanzschuleModule.fret = function (container, settings) {
         settings = settings || {};
         container.classList.add('tm-modul-fret');
@@ -40,6 +47,10 @@
         // Alte Timer dieses Containers zwingend aufräumen (Leak-Schutz).
         if (container._tmPoll) { clearInterval(container._tmPoll); }
         if (container._tmTick) { clearInterval(container._tmTick); }
+        if (container._tmCountdowns) {
+            container._tmCountdowns.forEach(function (id) { clearInterval(id); });
+        }
+        container._tmCountdowns = [];
 
         var basis = window.BACKEND_BASE || '';
         var titel = settings.titel || 'FRET';
@@ -103,23 +114,65 @@
 
         function renderKommende(data) {
             if (!zeigePlaylist || !kommendeEl) { return; }
+
+            // Alte Countdown-Timer aufräumen
+            container._tmCountdowns.forEach(function (id) { clearInterval(id); });
+            container._tmCountdowns = [];
+
             var liste = (data.kommende || []).slice(0, anzahlKommende);
-            if (liste.length === 0) {
-                kommendeEl.innerHTML = '';
-                return;
-            }
-            var html = '<ul class="tm-song-kommende-liste">';
+            kommendeEl.innerHTML = '';
+            if (liste.length === 0) { return; }
+
+            var ul = document.createElement('ul');
+            ul.className = 'tm-song-kommende-liste';
+
             liste.forEach(function (s) {
-                html += '<li class="tm-song-kommende-eintrag">'
-                    + '<div class="tm-song-k-info">'
-                    + '<div class="tm-song-k-titel">' + escapeHtml(s.title) + '</div>'
-                    + (s.artist ? '<div class="tm-song-k-artist">' + escapeHtml(s.artist) + '</div>' : '')
-                    + '<div class="tm-song-k-badges">' + badges(s.taenze) + '</div>'
-                    + '</div>'
-                    + '</li>';
+                var li = document.createElement('li');
+                li.className = 'tm-song-kommende-eintrag';
+
+                var info = document.createElement('div');
+                info.className = 'tm-song-k-info';
+
+                var titelEl = document.createElement('div');
+                titelEl.className = 'tm-song-k-titel';
+                titelEl.textContent = s.title || '';
+                info.appendChild(titelEl);
+
+                if (s.artist) {
+                    var artistEl = document.createElement('div');
+                    artistEl.className = 'tm-song-k-artist';
+                    artistEl.textContent = s.artist;
+                    info.appendChild(artistEl);
+                }
+
+                var badgesEl = document.createElement('div');
+                badgesEl.className = 'tm-song-k-badges';
+                badgesEl.innerHTML = badges(s.taenze);
+                info.appendChild(badgesEl);
+
+                li.appendChild(info);
+
+                if (s.estimatedSecondsUntilStart != null) {
+                    var countdown = document.createElement('div');
+                    countdown.className = 'tm-song-k-countdown';
+                    var sek = s.estimatedSecondsUntilStart;
+                    countdown.textContent = formatCountdown(sek);
+                    li.appendChild(countdown);
+
+                    if (data.isPlaying) {
+                        var id = setInterval(function () {
+                            sek--;
+                            countdown.textContent = formatCountdown(sek);
+                            if (sek <= 0) { clearInterval(id); }
+                        }, 1000);
+                        container._tmCountdowns.push(id);
+                    }
+                }
+
+                ul.appendChild(li);
             });
-            html += '</ul>';
-            kommendeEl.innerHTML = html;
+
+            kommendeEl.appendChild(ul);
         }
 
         function holeDaten() {
