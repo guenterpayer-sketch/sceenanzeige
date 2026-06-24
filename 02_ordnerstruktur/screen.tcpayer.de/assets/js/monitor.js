@@ -261,6 +261,10 @@
         var footerEl = document.getElementById('tm-footer');
 
         function doRender(pl) {
+            // Header ein-/ausblenden (gesteuert per playlist_layout.header_uhrzeit)
+            var headerEl = document.getElementById('tm-header');
+            if (headerEl) { headerEl.style.display = pl.header_uhrzeit ? '' : 'none'; }
+
             // Modul-Timer säubern BEVOR innerHTML geleert wird;
             // _rotationTimeouts werden NICHT gecancelt — sie terminieren via
             // isConnected-Check selbst, sobald spalteEl aus dem DOM entfernt wird.
@@ -323,6 +327,8 @@
         var footerEl  = document.getElementById('tm-footer');
 
         if (playlists.length === 0) {
+            var headerEl = document.getElementById('tm-header');
+            if (headerEl) { headerEl.style.display = ''; }
             mainEl.innerHTML = '';
             var fallbackEl = document.createElement('div');
             fallbackEl.className = 'tm-main-leer';

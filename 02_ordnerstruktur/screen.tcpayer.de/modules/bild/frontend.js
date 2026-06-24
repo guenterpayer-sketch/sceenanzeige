@@ -91,7 +91,9 @@
             }
 
             index = (index + 1) % inhalte.length;
-            container._tmTimeout = setTimeout(zeigeNaechstesBild, dauerSek * 1000);
+            if (inhalte.length > 1) {
+                container._tmTimeout = setTimeout(zeigeNaechstesBild, dauerSek * 1000);
+            }
         }
 
         zeigeNaechstesBild();
