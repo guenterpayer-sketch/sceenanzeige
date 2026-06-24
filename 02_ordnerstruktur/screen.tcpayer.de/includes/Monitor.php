@@ -85,6 +85,12 @@ final class Monitor
         get_pdo()->prepare('DELETE FROM monitore WHERE id = :id')->execute([':id' => $id]);
     }
 
+    /** Setzt reload_at = NOW() für alle Monitore → Frontend lädt beim nächsten Poll neu. */
+    public static function triggerReloadAlle(): void
+    {
+        get_pdo()->exec('UPDATE monitore SET reload_at = NOW()');
+    }
+
     /** Prüft, ob die (normalisierte) Subdomain bereits vergeben ist. */
     public static function subdomainExistiert(string $subdomain, ?int $exceptId = null): bool
     {

@@ -51,6 +51,14 @@ function admin_header(string $titel, string $aktiv = ''): void
         <?php foreach ($kommtNoch as $label): ?>
             <span class="adm-nav-disabled" title="kommt in einem späteren Schritt"><?= htmlspecialchars($label) ?></span>
         <?php endforeach; ?>
+        <?php
+        $reloadOk = isset($_GET['reload_ok']);
+        ?>
+        <form method="post" action="reload_trigger.php" style="margin:0">
+            <button type="submit" class="adm-nav-reload<?= $reloadOk ? ' adm-nav-reload--ok' : '' ?>">
+                ↺ Monitore neu laden<?= $reloadOk ? ' ✓' : '' ?>
+            </button>
+        </form>
     </nav>
 </header>
 <main class="adm-main">

@@ -45,6 +45,7 @@
     var _playlistRotTimer  = null;
     var _activePlaylistIds = '';
     var _currentPl         = null;
+    var _lastReloadAt      = null;
 
     function cleanupModulContainer(container) {
         if (container._tmTimeout)  { clearTimeout(container._tmTimeout);   container._tmTimeout  = null; }
@@ -116,7 +117,8 @@
         }
         footerEl.classList.remove('tm-hidden');
 
-        var index = 0;
+        var einziger = eintraege.length === 1;
+        var index    = 0;
 
         function zeigeNaechsten() {
             var eintrag  = eintraege[index];
@@ -128,6 +130,7 @@
             textEl.style.transform   = 'none';
             textEl.style.opacity     = '0';
             textEl.textContent       = eintrag.text;
+            footerEl.classList.remove('tm-ticker-zentriert');
 
             var containerWidth = footerEl.clientWidth - 56; // abzgl. padding
             var textWidth      = textEl.scrollWidth;
@@ -154,16 +157,23 @@
                 }, durationMs + 300);
 
             } else {
-                // Statisch: einblenden, warten, ausblenden
-                requestAnimationFrame(function () {
-                    textEl.style.transition = 'opacity 600ms ease';
-                    textEl.style.opacity    = '1';
-                });
+                // Statisch: Text passt in den Footer → zentrieren
+                footerEl.classList.add('tm-ticker-zentriert');
 
-                _tickerTimeout = setTimeout(function () {
-                    textEl.style.opacity = '0';
-                    _tickerTimeout = setTimeout(zeigeNaechsten, 700);
-                }, dauerMs);
+                if (einziger) {
+                    // Nur ein Eintrag → direkt sichtbar, kein Überblenden, kein Loop
+                    textEl.style.opacity = '1';
+                } else {
+                    // Mehrere Einträge → einblenden, warten, ausblenden
+                    requestAnimationFrame(function () {
+                        textEl.style.transition = 'opacity 600ms ease';
+                        textEl.style.opacity    = '1';
+                    });
+                    _tickerTimeout = setTimeout(function () {
+                        textEl.style.opacity = '0';
+                        _tickerTimeout = setTimeout(zeigeNaechsten, 700);
+                    }, dauerMs);
+                }
             }
         }
 
@@ -491,6 +501,12 @@
         fetch(url, { cache: 'no-store' })
             .then(function (r) { return r.json(); })
             .then(function (data) {
+                var newReloadAt = data.reload_at || null;
+                if (_lastReloadAt !== null && newReloadAt !== null && newReloadAt !== _lastReloadAt) {
+                    location.reload();
+                    return;
+                }
+                _lastReloadAt = newReloadAt;
                 render(data);
             })
             .catch(function (err) {

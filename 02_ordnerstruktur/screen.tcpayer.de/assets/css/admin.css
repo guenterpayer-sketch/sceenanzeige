@@ -36,6 +36,18 @@ body {
 .adm-nav a:hover { background: #2b3a4c; color: #fff; }
 .adm-nav a.aktiv { background: #ad2121; color: #fff; }
 .adm-nav .adm-nav-disabled { color: #6b7a8d; cursor: default; }
+.adm-nav-reload {
+    padding: 7px 14px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: transparent;
+    color: #c6d2e0;
+    font-size: 15px;
+    cursor: pointer;
+    margin-left: 8px;
+}
+.adm-nav-reload:hover { background: #2b3a4c; color: #fff; border-color: transparent; }
+.adm-nav-reload--ok { color: #6ee76e; border-color: #6ee76e; }
 
 /* --- Hauptbereich --- */
 .adm-main { max-width: 1100px; margin: 0 auto; padding: 24px; }

@@ -49,7 +49,7 @@ $pdo = get_pdo();
 
 // ── 1. Monitor per Subdomain ──────────────────────────────────────────────
 
-$stmt = $pdo->prepare('SELECT id, name, header_text FROM monitore WHERE subdomain = :sub');
+$stmt = $pdo->prepare('SELECT id, name, header_text, reload_at FROM monitore WHERE subdomain = :sub');
 $stmt->execute([':sub' => $subdomain]);
 $monitor = $stmt->fetch();
 
@@ -189,6 +189,7 @@ proxy_json_exit([
     'monitor_id'   => $monitorId,
     'monitor_name' => $monitor['name'],
     'header_text'  => $monitor['header_text'] ?? '',
+    'reload_at'    => $monitor['reload_at'] ?? null,
     'playlists'    => $playlistsData,
     'ticker'       => $tickerEintraege,
 ]);

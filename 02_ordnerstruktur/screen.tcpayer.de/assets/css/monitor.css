@@ -153,6 +153,10 @@ html, body {
     will-change: transform, opacity;
 }
 
+#tm-footer.tm-ticker-zentriert {
+    justify-content: center;
+}
+
 /* ── Module: uhrzeit ─────────────────────────────────────────────────────── */
 
 .tm-modul-uhrzeit {
