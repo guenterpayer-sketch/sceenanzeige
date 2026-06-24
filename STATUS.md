@@ -3,7 +3,7 @@
 > **Branch:** `claude/nifty-johnson-3q6u7g`  
 > Eine neue Session liest `CLAUDE.md` (Konzept) + diese Datei (Stand) und kann sofort weiterarbeiten.
 
-_Letzte Aktualisierung: Schritt 9 (Monitor-Frontend) implementiert — bereit zum Deployment + Live-Test._
+_Letzte Aktualisierung: Schritt 9 live getestet + diverse Fixes/Erweiterungen — nächster Fokus: Layout-Anpassungen Stundenplan & Song._
 
 ---
 
@@ -15,88 +15,91 @@ _Letzte Aktualisierung: Schritt 9 (Monitor-Frontend) implementiert — bereit zu
 | 2 | Ordnerstruktur + .htaccess | ✅ live |
 | 3 | Modul-Registry + `uhrzeit`, `bild` | ✅ live |
 | 4 | `stundenplan`, `ankuendigung`, `fret` + NC-/FRET-Proxy | ✅ live getestet |
-| 5 | Backend-Bibliothek + Mediathek | ✅ live getestet |
-| 6 | Playlist-Editor | ✅ live getestet |
-| 7 | Zeitplanung monitor-zentrisch | ✅ live getestet |
-| 8 | Ticker-Verwaltung (monitor-zentrisch) | ✅ live getestet |
-| 9 | Monitor-Frontend | ✅ implementiert |
+| 5 | Backend: Bibliothek + Mediathek | ✅ live getestet |
+| 6 | Backend: Playlist-Editor | ✅ live getestet |
+| 7 | Backend: Monitore + Zeitplan | ✅ live getestet |
+| 8 | Backend: Ticker + Ticker-Zeitplan | ✅ live getestet |
+| 9 | Monitor-Frontend (Kern-Logik) | ✅ live getestet |
+| 9b | Monitor-Frontend: Layout `stundenplan` + `fret` | **offen → nächster Chat** |
 | 10 | Live-Vorschau (iFrame) | offen |
 | 11 | Deployment-Guide | offen |
 
 ---
 
-## Aktueller Fokus: Schritt 10 — Live-Vorschau (iFrame)
+## Aktueller Fokus: Schritt 9b — Layout-Anpassungen
 
-Schritt 9 ist implementiert, bereit für Deployment + Live-Test.
+### Stundenplan-Modul
+Datei: `modules/stundenplan/frontend.js` + CSS-Klassen `.tm-modul-stundenplan`, `.tm-sp-*`
 
-**Schritt 9 — Neue Dateien (auf Server hochladen):**
-- `09_migration_monitor_header_text.sql` — zuerst einspielen
-- `proxies/monitor.php` — öffentlicher API-Endpunkt
-- `assets/css/monitor.css` — Vollbild-Kiosk-CSS
-- `assets/js/monitor.js` — Kern-Frontend-Logik
-- `saalN.tcpayer.de/index.html` — identisch für alle Säle (aktualisieren)
+Ziel: Card-Layout mit 4 fixen Spalten: **Uhrzeit · Saal · Kurs · Lehrer**
+- Feste Box-Höhe, 6–8 px Gap zwischen Boxen
+- Alle Felder vertikal zentriert; Kurs darf zweizeilig werden
+- Felder aus Proxy: `start_date` (→ "HH:MM"), `room`, `displayName`, `teacher`
 
-**Schritt 9 — Geänderte Dateien:**
-- `includes/Monitor.php` — `create()`/`update()` um `header_text` erweitert
-- `admin/monitore.php` — Formular um Header-Text-Feld erweitert
+### Song/FRET-Modul
+Datei: `modules/fret/frontend.js` + CSS-Klassen `.tm-modul-fret`, `.tm-song-*`
 
----
-
-## Wichtige Architektur-Entscheidungen
-
-- **Monitor-zentrische Zeitplanung:** `monitor_zeitplan` (Playlist, mit Priorität) + `ticker_zeitplan` (Ticker, ohne Priorität → Mischung)
-- Uhrzeit optional: leer = dauerhaft/Fallback, wird von Einträgen mit Uhrzeit überschrieben
-- **FRET vs. NC = getrennte Systeme:** `FRET_SCHOOL_ID`/`FRET_API_BASE` + `NC_API_KEY`/`NC_API_BASE` — alles in `config.php`, niemals in Modul-Instanz-Einstellungen
-- Stundenplan über NC Legacy-API `/timetable/data` (POST-Parameter `apikey`)
-- Bilder: zentral in `mediathek` (SHA-256-Dup-Erkennung), `mediathek_id` in Inhalten
-- Modul `song` → `fret`; `community` zurückgestellt
+Ziel: Layout aus `display.txt` (Standalone-Referenz im Repo-Root) übernehmen
+- **Modulname als Überschrift** (rot, uppercase, 32px)
+- Schriftgrößen gemäß `Projektzusammenfassung_Song_Anzeige.md` Abschnitt 6
+- Playlist-Items als Cards; Badge-Farben: Haupttanz = `#ad2121` gefüllt, Nebentanz = Rand + Schrift `#ad2121`
 
 ---
 
-## Code-Stand je Schritt (Kurzfassung)
+## Was in der letzten Session erledigt wurde
 
-**Schritt 5 (Bibliothek + Mediathek) ✅**  
-Mediathek mit SHA-256-Dup-Erkennung, Ordner, Tags. Bibliothek: Kachel-Übersicht
-nach Typ, Instanz-Editor (generisch aus `module.json`), Inhalte-Editor mit
-Mediathek-Bild-Picker. FRET-Geräte-Whitelist (`fret_geraete`-Tabelle, Dropdown im
-FRET-Editor). Migrationen 03/04/05 live.
+### Fixes & Erweiterungen Monitor-Frontend
+- **CORS-Bug (saal3 + neue Monitore):** `.htaccess` auf `Header set Access-Control-Allow-Origin "*"` vereinfacht; PHP-seitige CORS-Header aus allen Proxys entfernt → neue Monitore funktionieren automatisch
+- **Header/Footer Layout-Sprung:** `flex-basis` → `height`-Animation, synchron mit Crossfade
+- **Proportionale Spalten-Synchronisation:** längste Spalte = Master; alle anderen + deren Inhalte skalieren via `skaliereMod()` proportional
+- **`anzeige_dauer_sek`-Setting:** zu `uhrzeit`, `stundenplan`, `fret` in `module.json` hinzugefügt
+- **Ticker: Einzelner Eintrag** → kein Überblenden, dauerhaft sichtbar
+- **Ticker: Kurzer Text** → zentriert (`tm-ticker-zentriert`-Klasse, `justify-content: center`)
+- **Ticker: Unabhängig von Playlist-Rotation** → läuft global weiter; `doRender()` steuert nur noch Sichtbarkeit; Neustart nur bei geänderten Einträgen
+- **"Refresh Monitore"-Button:** im Admin-Menü; setzt `reload_at = NOW()` in `monitore`; Monitor erkennt Änderung beim nächsten Poll und lädt neu
 
-**Schritt 6 (Playlist-Editor) ✅**  
-Layout-Konfigurator (1–3 Spalten, Breitenregler), schematische Vorschau,
-Spalten-Editor mit Instanz-Picker, Drag & Drop zwischen Spalten. Dateien:
-`admin/playlists.php`, `admin/playlist-editor.php`, `includes/Playlist.php`,
-`includes/LayoutRegistry.php`, Layouts in `layouts/`.
+### Neue/geänderte Dateien
+| Datei | Was |
+|---|---|
+| `.htaccess` | CORS vereinfacht |
+| `proxies/monitor.php` | CORS-Header entfernt; `reload_at` in Response |
+| `proxies/nc.php` | CORS-Header entfernt |
+| `proxies/fret.php` | CORS-Header entfernt |
+| `assets/js/monitor.js` | Ticker-Unabhängigkeit, prop. Skalierung, Refresh-Erkennung, Ticker-Fixes |
+| `assets/css/monitor.css` | Header/Footer height-Animation, `.tm-ticker-zentriert` |
+| `includes/Monitor.php` | `triggerReloadAlle()` |
+| `admin/includes/layout.php` | "Refresh Monitore"-Button in Nav |
+| `admin/reload_trigger.php` | NEU — POST-Endpoint für Reload-Trigger |
+| `sql/migration_reload_at.sql` | NEU — `ALTER TABLE monitore ADD COLUMN reload_at ...` |
+| `modules/uhrzeit/module.json` | `anzeige_dauer_sek` hinzugefügt |
+| `modules/stundenplan/module.json` | `anzeige_dauer_sek` hinzugefügt |
+| `modules/fret/module.json` | `anzeige_dauer_sek` hinzugefügt |
 
-**Schritt 7 (Monitore + Zeitplan) ✅**  
-Monitor-Kachel-Übersicht (`admin/monitore.php`), Zeitplan-Editor
-(`admin/monitor-zeitplan.php`): Kachel-Picker, Wochentag-Toggles, optionale
-Uhrzeit, Priorität. Migrationen 06+07 live. `admin/saele.php` + `includes/Saal.php`
-auf Server entfernt.
+### Offene DB-Migration (auf Server noch ausführen)
+```sql
+-- sql/migration_reload_at.sql
+ALTER TABLE monitore ADD COLUMN reload_at DATETIME NULL DEFAULT NULL;
+```
 
-**Schritt 9 (Monitor-Frontend) ✅**
-`proxies/monitor.php` (API-Endpunkt: Subdomain → aktive Playlist + Ticker).
-`assets/css/monitor.css` + `assets/js/monitor.js` (Vollbild-Kiosk-Logik).
-`saalN.tcpayer.de/index.html` identisch für alle Säle; Subdomain-Selbsterkennung.
-Header: Logo links, `header_text` mittig (pro Monitor konfigurierbar), Uhrzeit rechts.
-Ticker: Laufschrift wenn zu lang, statisch+überblenden wenn kürzer.
-Migration `09_migration_monitor_header_text.sql` (neues Feld `header_text` in `monitore`).
-`includes/Monitor.php` + `admin/monitore.php` aktualisiert.
+---
 
-**Schritt 8 (Ticker) ✅**  
-Ticker-Kachel-Übersicht (`admin/ticker.php`), Ticker-Editor (`admin/ticker-edit.php`:
-Textzeilen, Drag & Drop). Kachel-Picker für Playlist + Ticker in
-`admin/monitor-zeitplan.php` (zweiter Abschnitt „Ticker-Zeitplan", ohne Priorität).
-Monitor-Übersichtskachel zeigt Playlist- UND Ticker-Anzahl. Migration 08 live.  
-⚠️ **Auf Server löschen:** `admin/monitor.php` + `admin/playlist.php`
-(umbenannt zu `monitor-zeitplan.php` / `playlist-editor.php`).
+## Wichtige Architektur-Entscheidungen (Kurzfassung)
+
+Vollständige Liste in `CLAUDE.md` Abschnitt 12. Highlights:
+
+- **CORS:** nur `.htaccess`, keine PHP-Header
+- **Ticker:** läuft global; `startTicker()` nur in `render()`, nie in `doRender()`
+- **Spalten-Sync:** `skaliereMod(mod, factor)` skaliert `inhalte[].dauer_sek` + `einstellungen.anzeige_dauer_sek`
+- **FRET:** `FRET_SCHOOL_ID` niemals im Frontend — nur in `config.php` + `proxies/fret.php`
+- **Modul-Funktion:** `TanzschuleLoader.register('typ', function(container, einstellungen, inhalte) { … })`
 
 ---
 
 ## Zugriffsschutz
 
-- `admin/` via all-inkl Verzeichnisschutz (Basic-Auth, KAS → Tools → Verzeichnisschutz)
+- `admin/` via all-inkl Basic-Auth (KAS → Tools → Verzeichnisschutz)
+- `config.php` via `.htaccess` `Require all denied`
 - `proxies/`, `uploads/`, `modules/` offen (Monitore brauchen Zugriff)
-- Geplanter Schritt „Benutzerkonten": PHP-Login + `benutzer`-Tabelle, Guard in `admin/includes/bootstrap.php`
 
 ---
 
@@ -104,4 +107,3 @@ Monitor-Übersichtskachel zeigt Playlist- UND Ticker-Anzahl. Migration 08 live.
 
 - **Kein Schreiben/Code ohne explizites „GO".** Lesen/Prüfen jederzeit ok.
 - Branch `claude/nifty-johnson-3q6u7g`; nach jedem Abschnitt committen + pushen + `STATUS.md` aktualisieren.
-- `Live-Abgleich/` = nur Server-Referenz (nicht bearbeiten).

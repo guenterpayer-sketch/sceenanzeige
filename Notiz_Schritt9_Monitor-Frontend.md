@@ -1,8 +1,7 @@
 # Notiz für Schritt 9 — Monitor-Frontend (Kiosk-Client)
 
-> Vormerk-Notiz, **noch nichts umgesetzt.** Beim Start von Schritt 9 zusammen
-> mit `CLAUDE.md` (Abschnitt 10) und `STATUS.md` lesen. Branch:
-> `claude/nifty-johnson-3q6u7g`.
+> ✅ **Umgesetzt und live getestet.** Diese Notiz dient nur noch als historische
+> Referenz. Aktuellen Stand: `STATUS.md`. Branch: `claude/nifty-johnson-3q6u7g`.
 
 ## Worum es geht
 Der schlanke Vollbild-/Kiosk-Client, der je Monitor in einer eigenen Subdomain

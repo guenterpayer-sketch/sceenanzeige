@@ -217,6 +217,10 @@ FRET-Polling 5–10 Sek., Ticker unabhängig.
 - `aktiv` auf Instanz- UND Eintrags-Ebene; `gueltig_bis` auf Eintrags-Ebene
 - Layout an Playlist gebunden, nicht am Monitor/Saal
 - Zielauflösung: Full-HD 1920×1080
+- **CORS:** zentral per `.htaccess` (`Header set Access-Control-Allow-Origin "*"`); keine PHP-seitigen CORS-Header in Proxys
+- **Ticker:** läuft global unabhängig von Playlist-Rotation; `doRender()` steuert nur Sichtbarkeit (show/hide); Neustart nur bei geänderten Einträgen
+- **Proportionale Spalten-Synchronisation:** längste Spalte = Master-Zyklus; kürzere Spalten + deren Inhalte werden proportional skaliert (`skaliereMod()`)
+- **"Refresh Monitore"-Button:** Feld `reload_at DATETIME` in `monitore`; `Monitor::triggerReloadAlle()` setzt `NOW()`; `monitor.js` erkennt Änderung beim nächsten Poll → `location.reload()`; Migration: `sql/migration_reload_at.sql`
 
 ---
 
@@ -232,7 +236,8 @@ FRET-Polling 5–10 Sek., Ticker unabhängig.
 | 6 | Backend: Playlist-Editor | ✅ live getestet |
 | 7 | Backend: Monitore + Zeitplan (monitor-zentrisch) | ✅ live getestet |
 | 8 | Backend: Ticker + Ticker-Zeitplan | ✅ live getestet |
-| 9 | Monitor-Frontend (Anzeige- + Zeitlogik) | offen |
+| 9 | Monitor-Frontend (Anzeige- + Zeitlogik) | ✅ live getestet |
+| 9b | Monitor-Frontend: Layout `stundenplan` + `fret` | offen |
 | 10 | Live-Vorschau (iFrame) | offen |
 | 11 | Deployment-Guide | offen |
 
