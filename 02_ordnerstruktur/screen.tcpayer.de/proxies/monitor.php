@@ -154,7 +154,7 @@ foreach ($aktivZeitplan as $zeitplanRow) {
         'spalte1_breite' => isset($layout['spalte1_breite']) ? (int)$layout['spalte1_breite'] : null,
         'spalte2_breite' => isset($layout['spalte2_breite']) ? (int)$layout['spalte2_breite'] : null,
         'spalte3_breite' => isset($layout['spalte3_breite']) ? (int)$layout['spalte3_breite'] : null,
-        'header_uhrzeit' => (bool)($layout['header_uhrzeit'] ?? false),
+        'header_sichtbar' => (bool)($layout['header_sichtbar'] ?? false),
         'footer_ticker'  => (bool)($layout['footer_ticker'] ?? true),
         'spalten'        => $spalten,
     ];

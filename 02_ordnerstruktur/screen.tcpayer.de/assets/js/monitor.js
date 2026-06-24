@@ -44,6 +44,7 @@
     var _playlistIndex     = 0;
     var _playlistRotTimer  = null;
     var _activePlaylistIds = '';
+    var _currentPl         = null;
 
     function cleanupModulContainer(container) {
         if (container._tmTimeout)  { clearTimeout(container._tmTimeout);   container._tmTimeout  = null; }
@@ -63,6 +64,7 @@
             mainEl.style.opacity = '';
             mainEl.style.transition = '';
         }
+        _currentPl = null;
     }
 
     // ── Header-Uhrzeit ───────────────────────────────────────────────────────
@@ -270,20 +272,35 @@
 
         function doRender(pl) {
             var headerEl = document.getElementById('tm-header');
-            if (headerEl) { headerEl.style.display = pl.header_uhrzeit ? '' : 'none'; }
+
+            // Alte Zustände für synchronisierten Übergang
+            var oldHeader = _currentPl ? !!_currentPl.header_sichtbar
+                                       : (headerEl ? headerEl.style.display !== 'none' : true);
+            var oldFooter = _currentPl ? (_currentPl.footer_ticker !== false && !!(ticker && ticker.length))
+                                       : !footerEl.classList.contains('tm-hidden');
+            var newHeader = !!pl.header_sichtbar;
+            var newFooter = pl.footer_ticker !== false && !!(ticker && ticker.length);
+            _currentPl = pl;
 
             stopTicker();
 
-            var oldLayout = mainEl.querySelector('.tm-layout');
+            // Header/Footer vorab einsetzen wenn neu sichtbar (unsichtbar, für Fade-In)
+            if (!oldHeader && newHeader && headerEl) {
+                headerEl.style.display = '';
+                headerEl.style.opacity = '0';
+            }
+            if (!oldFooter && newFooter) {
+                footerEl.classList.remove('tm-hidden');
+                footerEl.style.opacity = '0';
+            }
 
-            // Altes Layout für Crossfade absolut positionieren (falls noch nicht)
+            var oldLayout = mainEl.querySelector('.tm-layout');
             if (oldLayout) {
                 oldLayout.style.position = 'absolute';
                 oldLayout.style.top = '0'; oldLayout.style.left = '0';
                 oldLayout.style.right = '0'; oldLayout.style.bottom = '0';
             }
 
-            // Neues Layout aufbauen, unsichtbar einsetzen
             var newLayout = buildLayout(pl);
             newLayout.style.position = 'absolute';
             newLayout.style.top = '0'; newLayout.style.left = '0';
@@ -294,18 +311,14 @@
             mainEl.appendChild(newLayout);
             renderSpalten(newLayout, pl);
 
-            if (ticker && ticker.length > 0 && pl.footer_ticker !== false) {
-                startTicker(ticker, footerEl);
-            } else {
-                footerEl.classList.add('tm-hidden');
-            }
+            if (newFooter) { startTicker(ticker, footerEl); }
 
-            // Echtes Crossfade: neues Layout einblenden, altes ausblenden
+            // Alle Übergänge synchron im selben rAF-Block starten
             requestAnimationFrame(function () {
                 requestAnimationFrame(function () {
+                    // Layout
                     newLayout.style.transition = 'opacity ' + CROSSFADE_MS + 'ms ease';
                     newLayout.style.opacity = '1';
-
                     if (oldLayout) {
                         oldLayout.style.transition = 'opacity ' + CROSSFADE_MS + 'ms ease';
                         oldLayout.style.opacity = '0';
@@ -315,6 +328,44 @@
                                     .forEach(cleanupModulContainer);
                                 oldLayout.parentNode.removeChild(oldLayout);
                             }
+                        }, CROSSFADE_MS + 50);
+                    }
+
+                    // Header
+                    if (headerEl) {
+                        if (oldHeader && !newHeader) {
+                            headerEl.style.transition = 'opacity ' + CROSSFADE_MS + 'ms ease';
+                            headerEl.style.opacity = '0';
+                            setTimeout(function () {
+                                headerEl.style.display = 'none';
+                                headerEl.style.opacity = '';
+                                headerEl.style.transition = '';
+                            }, CROSSFADE_MS + 50);
+                        } else if (!oldHeader && newHeader) {
+                            headerEl.style.transition = 'opacity ' + CROSSFADE_MS + 'ms ease';
+                            headerEl.style.opacity = '1';
+                            setTimeout(function () {
+                                headerEl.style.opacity = '';
+                                headerEl.style.transition = '';
+                            }, CROSSFADE_MS + 50);
+                        }
+                    }
+
+                    // Footer
+                    if (oldFooter && !newFooter) {
+                        footerEl.style.transition = 'opacity ' + CROSSFADE_MS + 'ms ease';
+                        footerEl.style.opacity = '0';
+                        setTimeout(function () {
+                            footerEl.classList.add('tm-hidden');
+                            footerEl.style.opacity = '';
+                            footerEl.style.transition = '';
+                        }, CROSSFADE_MS + 50);
+                    } else if (!oldFooter && newFooter) {
+                        footerEl.style.transition = 'opacity ' + CROSSFADE_MS + 'ms ease';
+                        footerEl.style.opacity = '1';
+                        setTimeout(function () {
+                            footerEl.style.opacity = '';
+                            footerEl.style.transition = '';
                         }, CROSSFADE_MS + 50);
                     }
                 });

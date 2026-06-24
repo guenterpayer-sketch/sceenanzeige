@@ -92,7 +92,7 @@ final class Playlist
     {
         $sql = 'SELECT p.id, p.name, p.aktiv, p.erstellt_am,
                        l.spalten_anzahl, l.spalte1_breite, l.spalte2_breite, l.spalte3_breite,
-                       l.header_uhrzeit, l.footer_ticker,
+                       l.header_sichtbar, l.footer_ticker,
                        (SELECT COUNT(*) FROM playlist_spalten_inhalte s WHERE s.playlist_id = p.id) AS anzahl_module,
                        (SELECT COUNT(DISTINCT z.monitor_id) FROM monitor_zeitplan z WHERE z.playlist_id = p.id) AS anzahl_monitore
                 FROM playlists p
@@ -124,7 +124,7 @@ final class Playlist
         int $playlistId,
         int $spaltenAnzahl,
         array $breiten,
-        bool $headerUhrzeit,
+        bool $headerSichtbar,
         bool $footerTicker
     ): void {
         $spaltenAnzahl = max(1, min(3, $spaltenAnzahl));
@@ -133,22 +133,22 @@ final class Playlist
         $b3 = ($spaltenAnzahl >= 3 && isset($breiten[2])) ? (int)$breiten[2] : null;
 
         $sql = 'INSERT INTO playlist_layout
-                    (playlist_id, spalten_anzahl, spalte1_breite, spalte2_breite, spalte3_breite, header_uhrzeit, footer_ticker)
-                VALUES (:pid, :sa, :b1, :b2, :b3, :hu, :ft)
+                    (playlist_id, spalten_anzahl, spalte1_breite, spalte2_breite, spalte3_breite, header_sichtbar, footer_ticker)
+                VALUES (:pid, :sa, :b1, :b2, :b3, :hs, :ft)
                 ON DUPLICATE KEY UPDATE
-                    spalten_anzahl = VALUES(spalten_anzahl),
-                    spalte1_breite = VALUES(spalte1_breite),
-                    spalte2_breite = VALUES(spalte2_breite),
-                    spalte3_breite = VALUES(spalte3_breite),
-                    header_uhrzeit = VALUES(header_uhrzeit),
-                    footer_ticker  = VALUES(footer_ticker)';
+                    spalten_anzahl  = VALUES(spalten_anzahl),
+                    spalte1_breite  = VALUES(spalte1_breite),
+                    spalte2_breite  = VALUES(spalte2_breite),
+                    spalte3_breite  = VALUES(spalte3_breite),
+                    header_sichtbar = VALUES(header_sichtbar),
+                    footer_ticker   = VALUES(footer_ticker)';
         get_pdo()->prepare($sql)->execute([
             ':pid' => $playlistId,
             ':sa'  => $spaltenAnzahl,
             ':b1'  => $b1,
             ':b2'  => $b2,
             ':b3'  => $b3,
-            ':hu'  => $headerUhrzeit ? 1 : 0,
+            ':hs'  => $headerSichtbar ? 1 : 0,
             ':ft'  => $footerTicker ? 1 : 0,
         ]);
     }

@@ -49,7 +49,7 @@ $werteAktiv  = $istNeu ? true : (bool)$playlist['aktiv'];
 $layoutRow   = $istNeu ? null : Playlist::ladeLayout($id);
 $werteLayout = Playlist::layoutIdAus($layoutRow) ?? '1-spaltig';
 $werteB1     = (int)($layoutRow['spalte1_breite'] ?? $layouts[$werteLayout]['default_breiten'][0] ?? 100);
-$werteHeader = $istNeu ? true : (bool)($layoutRow['header_uhrzeit'] ?? 1);
+$werteHeader = $istNeu ? true : (bool)($layoutRow['header_sichtbar'] ?? 1);
 $werteFooter = $istNeu ? true : (bool)($layoutRow['footer_ticker'] ?? 1);
 
 // Bereits zugewiesene Spalten-Inhalte (für das JS)
@@ -90,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'speichern') {
     $werteName   = trim((string)($_POST['name'] ?? ''));
     $werteAktiv  = !empty($_POST['aktiv']);
-    $werteHeader = !empty($_POST['header_uhrzeit']);
+    $werteHeader = !empty($_POST['header_sichtbar']);
     $werteFooter = !empty($_POST['footer_ticker']);
 
     $werteLayout = (string)($_POST['layout_id'] ?? '1-spaltig');
@@ -206,9 +206,9 @@ function pl_modul_icon(string $icon): string
         </div>
 
         <div class="field field-bool">
-            <label for="header_uhrzeit">
-                <input type="checkbox" id="header_uhrzeit" name="header_uhrzeit" value="1" <?= $werteHeader ? 'checked' : '' ?>>
-                Header anzeigen (Uhrzeit / Datum oben)
+            <label for="header_sichtbar">
+                <input type="checkbox" id="header_sichtbar" name="header_sichtbar" value="1" <?= $werteHeader ? 'checked' : '' ?>>
+                Header anzeigen
             </label>
         </div>
         <div class="field field-bool">
@@ -322,7 +322,7 @@ function pl_modul_icon(string $icon): string
             sp.textContent = 'Spalte ' + (i + 1) + ' · ' + br + ' %';
             vorschauSp.appendChild(sp);
         });
-        vHeader.style.display = document.getElementById('header_uhrzeit').checked ? '' : 'none';
+        vHeader.style.display = document.getElementById('header_sichtbar').checked ? '' : 'none';
         vFooter.style.display = document.getElementById('footer_ticker').checked ? '' : 'none';
     }
 
@@ -534,7 +534,7 @@ function pl_modul_icon(string $icon): string
         });
     });
     slider.addEventListener('input', function () { aktualisiereBreitenUI(); aktualisiereVorschau(); });
-    document.getElementById('header_uhrzeit').addEventListener('change', aktualisiereVorschau);
+    document.getElementById('header_sichtbar').addEventListener('change', aktualisiereVorschau);
     document.getElementById('footer_ticker').addEventListener('change', aktualisiereVorschau);
 
     // ---- Picker ----
