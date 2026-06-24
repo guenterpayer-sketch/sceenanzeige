@@ -25,7 +25,12 @@ declare(strict_types=1);
 require __DIR__ . '/../config.php';
 require __DIR__ . '/_cors.php';
 
-proxy_cors_und_json();
+header('Access-Control-Allow-Origin: *');
+header('Content-Type: application/json; charset=utf-8');
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
 
 // ----------------------------------------------------------------------------
 // Parameter einlesen (nur nicht-sensible Anzeige-Einstellungen)
