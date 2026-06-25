@@ -2,8 +2,10 @@
 /**
  * proxies/nc-locations.php
  *
- * Liefert die Standortliste aus der Nimbuscloud Legacy-API (POST /data/locations)
- * für den Admin-Instanz-Editor (Stundenplan-Modul, Location-Picker).
+ * Liefert die Standortliste für den Admin-Instanz-Editor (Stundenplan-Modul,
+ * Location-Picker). Extrahiert einzigartige Standorte aus /timetable/data
+ * (7-Tage-Fenster) — zuverlässiger als der unverifizierten /data/locations-
+ * Endpunkt, da /timetable/data definitiv funktioniert.
  *
  * Nur vom Backend (Admin-Editor) aufgerufen — kein CORS nötig.
  * NC_API_KEY bleibt serverseitig, kommt nie ans Frontend.
@@ -26,11 +28,17 @@ if ($apiKey === '') {
     nc_loc_fehler('NC_API_KEY ist nicht konfiguriert (config.php).');
 }
 
-$ch = curl_init(NC_API_BASE . '/data/locations');
+$postFelder = http_build_query([
+    'apikey' => $apiKey,
+    'date'   => strtotime('today midnight'),
+    'days'   => 7,
+]);
+
+$ch = curl_init(NC_API_BASE . '/timetable/data');
 curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_POST           => true,
-    CURLOPT_POSTFIELDS     => http_build_query(['apikey' => $apiKey]),
+    CURLOPT_POSTFIELDS     => $postFelder,
     CURLOPT_TIMEOUT        => 12,
     CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded'],
 ]);
@@ -51,23 +59,20 @@ if (!is_array($json)) {
     nc_loc_fehler('Unerwartete Antwort von der NC-API.');
 }
 
-// Legacy-API verpackt Ergebnisse meist in "content"
 $content = $json['content'] ?? $json;
+$events  = $content['events'] ?? [];
 
+// Einzigartige Standorte aus den Events extrahieren (location_id + location)
 $standorte = [];
-
-// Erwartetes Format: [{id, name, rooms:[...]}, ...]
-if (is_array($content)) {
-    foreach ($content as $item) {
-        if (!is_array($item)) { continue; }
-        if (isset($item['id'], $item['name'])) {
-            // Nur Location-Einträge (nicht Raum-Einträge bei flacher Liste)
-            // Raum-Einträge haben typischerweise location_id oder type='room'
-            if (isset($item['type']) && $item['type'] !== 'location') { continue; }
-            if (isset($item['location_id'])) { continue; } // flache Liste: Raum-Zeile
-            $standorte[] = ['id' => (int)$item['id'], 'name' => (string)$item['name']];
-        }
-    }
+foreach ($events as $ev) {
+    if (empty($ev['isCourseEvent'])) { continue; }
+    $lid  = isset($ev['location_id']) ? (int)$ev['location_id'] : 0;
+    $name = isset($ev['location'])    ? trim((string)$ev['location']) : '';
+    if ($lid === 0 || $name === '') { continue; }
+    $standorte[$lid] = ['id' => $lid, 'name' => $name];
 }
 
-echo json_encode(['ok' => true, 'standorte' => $standorte]);
+// Alphabetisch nach Name sortieren
+usort($standorte, fn($a, $b) => strcmp($a['name'], $b['name']));
+
+echo json_encode(['ok' => true, 'standorte' => array_values($standorte)]);

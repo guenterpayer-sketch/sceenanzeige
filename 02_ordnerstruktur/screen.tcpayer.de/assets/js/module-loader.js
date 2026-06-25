@@ -29,7 +29,7 @@
         }
         geladeneModule[modulId] = 'laedt';
         const script = document.createElement('script');
-        script.src = basisUrl + '/modules/' + encodeURIComponent(modulId) + '/frontend.js';
+        script.src = basisUrl + '/modules/' + encodeURIComponent(modulId) + '/frontend.js?v=' + Date.now();
         script.onload = function () {
             geladeneModule[modulId] = 'fertig';
             callback();
