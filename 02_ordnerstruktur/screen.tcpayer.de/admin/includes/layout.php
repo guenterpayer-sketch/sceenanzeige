@@ -75,6 +75,73 @@ function admin_footer(): void
 {
     ?>
 </main>
+
+<!-- ===== Vorschau-Modal (global, für alle Seiten) ===== -->
+<div id="adm-vm-overlay" class="adm-vm-overlay" hidden>
+    <div class="adm-vm-box">
+        <div class="adm-vm-kopf">
+            <span id="adm-vm-titel" class="adm-vm-name"></span>
+            <a id="adm-vm-newtab" href="#" target="_blank" rel="noopener" class="adm-btn adm-btn-grau">↗ Vollbild</a>
+            <button id="adm-vm-schliessen" class="adm-vm-close" aria-label="Schließen">×</button>
+        </div>
+        <div class="adm-vm-rahmen" id="adm-vm-rahmen">
+            <iframe id="adm-vm-iframe" scrolling="no" title="Monitor-Vorschau"></iframe>
+        </div>
+    </div>
+</div>
+<script>
+(function () {
+    var overlay  = document.getElementById('adm-vm-overlay');
+    var rahmen   = document.getElementById('adm-vm-rahmen');
+    var iframe   = document.getElementById('adm-vm-iframe');
+    var titel    = document.getElementById('adm-vm-titel');
+    var newtab   = document.getElementById('adm-vm-newtab');
+    var schlBtn  = document.getElementById('adm-vm-schliessen');
+
+    function skaliere() {
+        if (overlay.hidden) { return; }
+        var scale = rahmen.clientWidth / 1920;
+        iframe.style.width  = '1920px';
+        iframe.style.height = '1080px';
+        iframe.style.transform = 'scale(' + scale + ')';
+        iframe.style.transformOrigin = 'top left';
+        rahmen.style.height = Math.round(1080 * scale) + 'px';
+    }
+
+    function oeffne(url, name) {
+        titel.textContent = name;
+        newtab.href = url;
+        iframe.src  = url;
+        overlay.hidden = false;
+        document.body.style.overflow = 'hidden';
+        skaliere();
+    }
+
+    function schliesse() {
+        overlay.hidden = true;
+        document.body.style.overflow = '';
+        iframe.src = 'about:blank';
+    }
+
+    schlBtn.addEventListener('click', schliesse);
+    overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) { schliesse(); }
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && !overlay.hidden) { schliesse(); }
+    });
+    window.addEventListener('resize', skaliere);
+
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest('.adm-vorschau-btn');
+        if (btn) {
+            e.preventDefault();
+            oeffne(btn.dataset.url, btn.dataset.name);
+        }
+    });
+})();
+</script>
+
 </body>
 </html>
 <?php

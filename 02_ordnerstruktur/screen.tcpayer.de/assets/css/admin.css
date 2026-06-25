@@ -744,6 +744,35 @@ a.adm-kachel-link:hover { background: #fbeaea; }
     background: rgba(255,255,255,.1);
 }
 
+/* ── Vorschau-Modal ─────────────────────────────────────────────────────── */
+
+.adm-vm-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(10,16,24,.8);
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+}
+.adm-vm-overlay[hidden] { display: none; }
+.adm-vm-box {
+    display: flex; flex-direction: column;
+    width: min(1400px, 96vw);
+    background: #1c2733; border-radius: 10px; overflow: hidden;
+    box-shadow: 0 24px 64px rgba(0,0,0,.6);
+}
+.adm-vm-kopf {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px; background: #1c2733; flex-shrink: 0;
+}
+.adm-vm-name { color: #c6d2e0; font-size: 15px; font-weight: 600; flex: 1; }
+.adm-vm-close {
+    width: 36px; height: 36px; border-radius: 50%; border: none;
+    background: rgba(255,255,255,.12); color: #fff;
+    font-size: 22px; line-height: 1; cursor: pointer; flex-shrink: 0;
+}
+.adm-vm-close:hover { background: #ad2121; }
+.adm-vm-rahmen { overflow: hidden; background: #000; }
+#adm-vm-iframe { display: block; border: none; }
+
 /* ── Live-Vorschau (Schritt 10) ─────────────────────────────────────────── */
 
 .adm-vorschau-bar {

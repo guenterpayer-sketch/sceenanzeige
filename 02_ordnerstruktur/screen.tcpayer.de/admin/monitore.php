@@ -151,7 +151,9 @@ admin_header('Monitore', 'monitore');
                 <div class="adm-kachel-name"><?= htmlspecialchars($m['name']) ?></div>
                 <div class="adm-kachel-aktionen">
                     <a class="adm-btn adm-btn-primary" href="monitor-zeitplan.php?id=<?= (int)$m['id'] ?>">Zeitplan</a>
-                    <a class="adm-btn" href="monitor-vorschau.php?id=<?= (int)$m['id'] ?>">Vorschau</a>
+                    <button class="adm-btn adm-vorschau-btn"
+                            data-url="https://<?= htmlspecialchars($m['subdomain']) ?>.tcpayer.de"
+                            data-name="<?= htmlspecialchars($m['name']) ?>">Vorschau</button>
                     <a class="adm-btn" href="monitore.php?edit=<?= (int)$m['id'] ?>">Bearbeiten</a>
                     <form method="post" class="adm-inline adm-del-form"
                           data-name="<?= htmlspecialchars($m['name']) ?>"
