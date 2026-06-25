@@ -34,6 +34,17 @@
     var MONITOR_SUBDOMAIN = '';
     window.BACKEND_BASE  = 'https://screen.tcpayer.de';
     window.UPLOADS_URL   = 'https://screen.tcpayer.de/uploads';
+
+    (function () {
+        var scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+        if (scale < 0.99) {
+            var w = document.getElementById('tm-wrapper');
+            w.style.width = '1920px';
+            w.style.height = '1080px';
+            w.style.transform = 'scale(' + scale + ')';
+            w.style.transformOrigin = 'top left';
+        }
+    })();
 </script>
 <script src="https://screen.tcpayer.de/assets/js/module-loader.js"></script>
 <script src="https://screen.tcpayer.de/assets/js/monitor.js"></script>
