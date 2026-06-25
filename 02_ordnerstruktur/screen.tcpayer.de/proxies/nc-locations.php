@@ -54,36 +54,20 @@ if (!is_array($json)) {
 
 $content = $json['content'] ?? $json;
 
-// Debug-Modus: rohe API-Antwort ausgeben
-if (($_GET['debug'] ?? '') === '1') {
-    echo json_encode([
-        'debug'        => true,
-        'content_keys' => is_array($content) ? array_keys($content) : null,
-        'raw'          => $content,
-    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-    exit;
-}
+// Verifizierte Struktur: content.locations = [{id, name, shortname, rooms:[...]}, ...]
+$locationListe = $content['locations'] ?? [];
 
 $standorte = [];
-
-// Erwartetes Format: [{id, name, rooms:[...]}, ...]
-// Alternativ flache Liste — beide Varianten abdecken
-if (is_array($content)) {
-    foreach ($content as $item) {
-        if (!is_array($item)) { continue; }
-        // Flache Liste mit type-Feld: nur location-Einträge
-        if (isset($item['type']) && $item['type'] !== 'location') { continue; }
-        // Flache Liste: Raum-Einträge haben location_id oder locationId
-        if (isset($item['location_id']) || isset($item['locationId'])) { continue; }
-        $lid  = isset($item['id'])   ? (int)$item['id']       : 0;
-        $name = isset($item['name']) ? trim((string)$item['name']) : '';
-        if ($lid === 0 || $name === '') { continue; }
-        $standorte[$lid] = ['id' => $lid, 'name' => $name];
-    }
+foreach ($locationListe as $item) {
+    if (!is_array($item)) { continue; }
+    $lid  = isset($item['id'])   ? (int)$item['id']           : 0;
+    $name = isset($item['name']) ? trim((string)$item['name']) : '';
+    if ($lid === 0 || $name === '') { continue; }
+    $standorte[$lid] = ['id' => $lid, 'name' => $name];
 }
 
 if (empty($standorte)) {
-    nc_loc_fehler('Keine Standorte von der NC-API erhalten. ?debug=1 für Rohausgabe.');
+    nc_loc_fehler('Keine Standorte von der NC-API erhalten.');
 }
 
 usort($standorte, fn($a, $b) => strcmp($a['name'], $b['name']));

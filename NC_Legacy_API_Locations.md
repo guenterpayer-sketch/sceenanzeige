@@ -35,29 +35,46 @@ Pro Kursevent liefert die API u.a.:
 | Basis-URL          | `https://tanzcenter-payer.nimbuscloud.at/api/json/v1`     |
 | Beschreibung (Doku)| „Liefert Standorte + Säle (Namen, IDs)"                   |
 
-### Bekannte Rückgabefelder
-
-> ⚠️ **Noch nicht verifiziert** — Rückgabestruktur muss gegen echte API getestet werden.
-> Erwartet wird ein Array von Standorten, je mit Sälen:
+### Rückgabefelder (✅ verifiziert 2026-06-25)
 
 ```json
 {
-  "content": [
-    {
-      "id": 1,
-      "name": "Hauptstandort",
-      "rooms": [
-        { "id": 10, "name": "Saal 1" },
-        { "id": 11, "name": "Saal 2" },
-        { "id": 12, "name": "Büro" }
-      ]
-    }
-  ],
-  "statuscode": 200
+  "content": {
+    "locations": [
+      {
+        "id": "1",
+        "name": "TCPayer",
+        "shortname": "TCP",
+        "address": "Max-Planck-Str.2; 86899 Landsberg",
+        "latitude": "48.063709200",
+        "longitude": "10.860674800",
+        "rooms": [
+          { "id": "1", "name": "Saal 1", "roomLimit": "30" },
+          { "id": "2", "name": "Saal 2", "roomLimit": "70" },
+          { "id": "3", "name": "Saal 3", "roomLimit": "80" }
+        ]
+      },
+      {
+        "id": "2",
+        "name": "Gymnastikraum Fritz-Beck",
+        "rooms": [ { "id": "4", "name": "Gym Raum 1. Stock" } ]
+      }
+    ]
+  }
 }
 ```
 
-> Alternativ werden Standorte und Räume als flache Liste zurückgegeben — muss live geprüft werden.
+**Bekannte Standorte (Stand 2026-06-25):**
+
+| ID | Name |
+|----|------|
+| 1  | TCPayer |
+| 2  | Gymnastikraum Fritz-Beck |
+| 3  | RS Kaufering |
+| 4  | Carl-Orff-MS Dießen |
+| 5  | Quartier am Papierbach |
+
+> IDs sind Strings in der API-Antwort, werden in `proxies/nc-locations.php` als int gespeichert.
 
 ### Minimaler Test-Aufruf (PHP/cURL)
 
@@ -114,8 +131,8 @@ Die Auswahl wird als JSON-Array von `location_id`s in `modul_instanzen.einstellu
 
 | Frage | Status |
 |-------|--------|
-| Exakte Rückgabestruktur von `POST /data/locations` | ⚠️ noch zu testen — Endpunkt wird auf live verwendet |
-| Sind Standorte und Räume verschachtelt oder flach? | ⚠️ noch zu testen |
+| Exakte Rückgabestruktur von `POST /data/locations` | ✅ verifiziert: `content.locations[]` mit `id`, `name`, `rooms[]` |
+| Sind Standorte und Räume verschachtelt oder flach? | ✅ verschachtelt: `locations[].rooms[]` |
 | Gibt es mehrere Standorte bei Tanzcenter Payer? | ✅ ja, mind. 2: „TCPayer" (ID 1), „Gymnastikraum Fritz-Beck" (ID 2), weitere vorhanden |
 | Soll nach Standort ODER Raum gefiltert werden (oder beides)? | ✅ Standort (`locationId`) |
 | Feldname für Standort-ID in timetable/data | ✅ `locationId` (camelCase String), nicht `location_id` |
