@@ -23,7 +23,7 @@ $fehler = '';
 $weiter = $_GET['weiter'] ?? $_POST['weiter'] ?? '/admin/bibliothek.php';
 
 // Nur auf /admin/ beschränken (Sicherheit: kein Open Redirect)
-if (!str_starts_with($weiter, '/admin/')) {
+if (strpos($weiter, '/admin/') !== 0) {
     $weiter = '/admin/bibliothek.php';
 }
 

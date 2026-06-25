@@ -3,7 +3,7 @@
 # ============================================================================
 
 # PHP-Version (all-inkl KAS: ggf. anpassen, falls per .htaccess gesteuert)
-# AddHandler application/x-httpd-php8 .php
+AddHandler application/x-httpd-php8 .php
 
 # UTF-8 als Standard-Zeichensatz
 AddDefaultCharset UTF-8
