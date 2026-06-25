@@ -4,6 +4,14 @@
 > **keine Datei erstellen, ändern oder Code schreiben, bevor der Nutzer
 > explizit „GO" sagt.** Lesen/Prüfen jederzeit ok.
 
+> **📦 Lieferung:** Neu erstellte oder geänderte Dateien immer als ZIP ausgeben,
+> in der korrekten Ordnerstruktur (entpackbar direkt im Stammordner der jeweiligen
+> Domain). Jede ZIP nur die tatsächlich geänderten Dateien enthalten.
+
+> **⚠️ config.php:** Wird `config.php` geändert, den Nutzer explizit warnen —
+> die Datei enthält echte Zugangsdaten (DB, Passwörter, API-Keys) und darf
+> **nie** in eine Liefer-ZIP gepackt werden.
+
 ---
 
 ## 1. Übersicht
@@ -241,7 +249,7 @@ FRET-Polling 5–10 Sek., Ticker unabhängig.
 | 8 | Backend: Ticker + Ticker-Zeitplan | ✅ live getestet |
 | 9 | Monitor-Frontend (Anzeige- + Zeitlogik) | ✅ live getestet |
 | 9b | Monitor-Frontend: Layout `stundenplan` (✅ live) + `fret` (offen) | teilweise |
-| 10 | Live-Vorschau (iFrame) | offen |
+| 10 | Live-Vorschau (iFrame) | ✅ live getestet |
 | 11 | Deployment-Guide | offen |
 
 ---
