@@ -33,9 +33,4 @@ require $WURZEL . '/includes/Mediathek.php';
 require $WURZEL . '/includes/FretApi.php';
 require $WURZEL . '/includes/FretGeraet.php';
 
-// ----------------------------------------------------------------------------
-// PLATZHALTER für späteren Login-Schutz (eigener Schritt):
-//   require __DIR__ . '/auth.php';   // startet Session, prüft Login, leitet
-//                                     // sonst auf admin/login.php um
-// Bis dahin schützt der KAS-Verzeichnisschutz den Ordner admin/.
-// ----------------------------------------------------------------------------
+require __DIR__ . '/auth.php';

@@ -48,6 +48,15 @@ define('FRET_API_BASE', 'https://fret-api.azurewebsites.net/api/v1');
 define('FRET_SCHOOL_ID', '');
 
 // ----------------------------------------------------------------------------
+// Admin-Passwörter (Klartext; config.php ist per .htaccess geschützt)
+//   REDAKTEUR_PASSWORT → Bibliothek, Mediathek, Playlists, Ticker
+//   ADMIN_PASSWORT     → zusätzlich Monitore, FRET-Geräte
+// Beim Deployment eigene sichere Passwörter eintragen.
+// ----------------------------------------------------------------------------
+define('REDAKTEUR_PASSWORT', 'redakteur');
+define('ADMIN_PASSWORT',     'admin');
+
+// ----------------------------------------------------------------------------
 // PDO-Verbindung (wird von allen Backend-Skripten/Proxies eingebunden)
 // ----------------------------------------------------------------------------
 function get_pdo(): PDO

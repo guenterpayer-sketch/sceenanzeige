@@ -19,13 +19,14 @@ function admin_header(string $titel, string $aktiv = ''): void
 {
     // Nav-Punkte: key => [Label, Link, aktiv?]. Noch nicht gebaute Bereiche
     // sind als "kommt später" deaktiviert.
+    $istAdmin = tm_ist_admin();
     $nav = [
-        'bibliothek'   => ['Bibliothek',   'bibliothek.php',   true],
-        'mediathek'    => ['Mediathek',    'mediathek.php',    true],
-        'fret-geraete' => ['FRET-Geräte',  'fret-geraete.php', true],
-        'playlists'    => ['Playlists',    'playlists.php',    true],
-        'ticker'       => ['Ticker',       'ticker.php',       true],
-        'monitore'     => ['Monitore',     'monitore.php',     true],
+        'bibliothek'   => ['Bibliothek',  'bibliothek.php',   true],
+        'mediathek'    => ['Mediathek',   'mediathek.php',    true],
+        'playlists'    => ['Playlists',   'playlists.php',    true],
+        'ticker'       => ['Ticker',      'ticker.php',       true],
+        'monitore'     => ['Monitore',    'monitore.php',     $istAdmin],
+        'fret-geraete' => ['FRET-Geräte', 'fret-geraete.php', $istAdmin],
     ];
     $kommtNoch = [];
     ?>
@@ -54,11 +55,14 @@ function admin_header(string $titel, string $aktiv = ''): void
         <?php
         $reloadOk = isset($_GET['reload_ok']);
         ?>
+        <?php if ($istAdmin): ?>
         <form method="post" action="reload_trigger.php" style="margin:0">
             <button type="submit" class="adm-nav-reload<?= $reloadOk ? ' adm-nav-reload--ok' : '' ?>">
                 ↺ Monitore neu laden<?= $reloadOk ? ' ✓' : '' ?>
             </button>
         </form>
+        <?php endif; ?>
+        <a href="/admin/logout.php" class="adm-nav-logout">Abmelden</a>
     </nav>
 </header>
 <main class="adm-main">

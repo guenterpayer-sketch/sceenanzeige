@@ -646,3 +646,100 @@ a.adm-kachel-link:hover { background: #fbeaea; }
 .adm-ticker-dauer { display: flex; flex-direction: column; font-size: 13px; color: #33424f; gap: 4px; }
 .adm-ticker-dauer input { width: 90px; padding: 7px 9px; border: 1px solid #dde3ea; border-radius: 6px; font-size: 14px; }
 .adm-ticker-zeile .adm-eintrag-steuer { padding-top: 22px; }
+
+/* ── Login-Seite ─────────────────────────────────────────────────────────── */
+
+.adm-login-body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: #f0f4f8;
+}
+
+.adm-login-box {
+    background: #fff;
+    border: 1px solid #dde3ea;
+    border-radius: 12px;
+    padding: 40px 48px;
+    width: 100%;
+    max-width: 380px;
+    box-shadow: 0 4px 24px rgba(0,0,0,.08);
+}
+
+.adm-login-brand {
+    font-size: 18px;
+    font-weight: 700;
+    color: #ad2121;
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.adm-login-box label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #33424f;
+    margin-bottom: 6px;
+}
+
+.adm-login-box input[type="password"] {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #dde3ea;
+    border-radius: 6px;
+    font-size: 15px;
+    margin-bottom: 16px;
+    box-sizing: border-box;
+}
+
+.adm-login-box input[type="password"]:focus {
+    outline: none;
+    border-color: #ad2121;
+    box-shadow: 0 0 0 2px rgba(173,33,33,.15);
+}
+
+.adm-login-box button[type="submit"] {
+    width: 100%;
+    padding: 10px;
+    background: #ad2121;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.adm-login-box button[type="submit"]:hover {
+    background: #8e1a1a;
+}
+
+.adm-login-fehler {
+    background: #fbeaea;
+    border: 1px solid #ad2121;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 14px;
+    color: #ad2121;
+    margin-bottom: 16px;
+}
+
+/* ── Logout-Button in der Nav ────────────────────────────────────────────── */
+
+.adm-nav-logout {
+    margin-left: auto;
+    padding: 4px 14px;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,.4);
+    border-radius: 5px;
+    color: #fff;
+    font-size: 13px;
+    text-decoration: none;
+    opacity: .8;
+}
+
+.adm-nav-logout:hover {
+    opacity: 1;
+    background: rgba(255,255,255,.1);
+}

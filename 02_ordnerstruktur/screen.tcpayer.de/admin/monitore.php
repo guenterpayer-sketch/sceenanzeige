@@ -12,6 +12,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/includes/bootstrap.php';
+tm_nur_admin();
 require __DIR__ . '/includes/layout.php';
 
 $fehler = [];
