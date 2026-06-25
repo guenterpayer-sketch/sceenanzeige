@@ -2,20 +2,8 @@
  * modules/stundenplan/frontend.js
  *
  * Holt die Kursdaten serverseitig über proxies/nc.php (Nimbuscloud Legacy-API)
- * und rendert eine Liste. Der API-Key bleibt im Proxy, das Frontend übergibt
- * nur die nicht-sensiblen Anzeige-Einstellungen (nur_heute, anzahl).
- *
- * Hinweis: Es gibt genau EINEN schulweiten NC-API-Key (config.php → NC_API_KEY),
- * KEINEN Key pro Saal. Der Stundenplan braucht daher KEINE SAAL_ID.
- *
- * Konvention (siehe module-loader.js):
- *   window.TanzschuleModule.stundenplan = function(container, settings, inhalte)
- *
- * Globale Werte (vom Saal-Frontend gesetzt, siehe Abschnitt 10 der Doku):
- *   window.BACKEND_BASE  Basis-URL von screen.tcpayer.de
- *
- * Daten werden bei jedem Neu-Rendern einmal geholt; das Monitor-Frontend
- * rendert die Module beim ~60-Sek-Refresh ohnehin neu (Abschnitt 10).
+ * und rendert eine zeitgesteuerte Liste: vergangene Kurse werden ausgeblendet,
+ * der aktuell laufende Kurs wird hervorgehoben (▶), danach folgen die nächsten.
  */
 (function () {
     window.TanzschuleModule = window.TanzschuleModule || {};
@@ -26,10 +14,26 @@
         });
     }
 
-    function formatZeit(start_date) {
-        if (!start_date) { return ''; }
-        var m = String(start_date).match(/(\d{2}):(\d{2})/);
-        return m ? m[1] + ':' + m[2] : String(start_date);
+    function formatZeit(dateStr) {
+        if (!dateStr) { return ''; }
+        var m = String(dateStr).match(/(\d{2}):(\d{2})/);
+        return m ? m[1] + ':' + m[2] : String(dateStr);
+    }
+
+    // Parst Datum/Zeit-String als Date-Objekt.
+    // Unterstützt "2024-01-15 14:30:00" (vollständig) und "14:30:00" (nur Zeit → heute).
+    function parseTimestamp(dateStr) {
+        if (!dateStr) { return null; }
+        var s = String(dateStr);
+        var d = new Date(s.replace(' ', 'T'));
+        if (!isNaN(d.getTime()) && d.getFullYear() > 2000) { return d; }
+        var m = s.match(/(\d{2}):(\d{2})/);
+        if (m) {
+            var t = new Date();
+            t.setHours(parseInt(m[1], 10), parseInt(m[2], 10), 0, 0);
+            return t;
+        }
+        return null;
     }
 
     window.TanzschuleModule.stundenplan = function (container, settings) {
@@ -37,13 +41,11 @@
         container.classList.add('tm-modul-stundenplan');
         container.innerHTML = '<div class="tm-sp-status">Lade Stundenplan…</div>';
 
-        var basis = window.BACKEND_BASE || '';
+        var basis    = window.BACKEND_BASE || '';
         var nurHeute = settings.nur_heute === false ? '0' : '1';
-        var anzahl = (settings.anzahl_kurse != null) ? settings.anzahl_kurse : 0;
+        var anzahl   = (settings.anzahl_kurse != null) ? parseInt(settings.anzahl_kurse, 10) : 5;
 
-        var url = basis + '/proxies/nc.php'
-            + '?nur_heute=' + nurHeute
-            + '&anzahl=' + encodeURIComponent(anzahl);
+        var url = basis + '/proxies/nc.php?nur_heute=' + nurHeute;
 
         fetch(url, { cache: 'no-store' })
             .then(function (r) { return r.json(); })
@@ -53,14 +55,43 @@
                         + escapeHtml(data.error) + '</div>';
                     return;
                 }
+
                 var kurse = data.kurse || [];
-                if (kurse.length === 0) {
-                    container.innerHTML = '<div class="tm-sp-status">Keine Kurse</div>';
+                var jetzt = new Date();
+
+                // Sortieren nach Startzeit
+                kurse.sort(function (a, b) {
+                    var ta = parseTimestamp(a.start_date);
+                    var tb = parseTimestamp(b.start_date);
+                    return (ta ? ta.getTime() : 0) - (tb ? tb.getTime() : 0);
+                });
+
+                // Zeitfilter: vergangene ausblenden, laufende markieren
+                var sichtbar = [];
+                kurse.forEach(function (k) {
+                    var start = parseTimestamp(k.start_date);
+                    var ende  = parseTimestamp(k.end_date);
+                    if (ende && ende <= jetzt) { return; } // bereits beendet
+                    sichtbar.push({
+                        kurs:    k,
+                        aktuell: !!(start && start <= jetzt)
+                    });
+                });
+
+                // Anzahl-Limit erst nach Zeitfilter anwenden
+                if (anzahl > 0) { sichtbar = sichtbar.slice(0, anzahl); }
+
+                if (sichtbar.length === 0) {
+                    container.innerHTML = '<div class="tm-sp-status">Keine weiteren Kurse heute</div>';
                     return;
                 }
+
                 var html = '<div class="tm-sp-cards">';
-                kurse.forEach(function (k) {
-                    html += '<div class="tm-sp-card">'
+                sichtbar.forEach(function (item) {
+                    var k  = item.kurs;
+                    var ak = item.aktuell;
+                    var style = (ak && k.color) ? ' style="border-left-color:' + escapeHtml(k.color) + '"' : '';
+                    html += '<div class="tm-sp-card' + (ak ? ' tm-sp-card--aktuell' : '') + '"' + style + '>'
                         + '<div class="tm-sp-zeit">' + escapeHtml(formatZeit(k.start_date)) + '</div>'
                         + '<div class="tm-sp-saal">' + escapeHtml(k.room || '') + '</div>'
                         + '<div class="tm-sp-kurs">' + escapeHtml(k.displayName || k.course_key) + '</div>'

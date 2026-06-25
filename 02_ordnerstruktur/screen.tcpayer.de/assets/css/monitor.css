@@ -285,15 +285,33 @@ html, body {
 
 .tm-sp-card {
     display: grid;
-    grid-template-columns: 80px 100px 1fr 160px;
+    grid-template-columns: 110px 100px 1fr 160px;
     gap: 12px;
     align-items: center;
     flex: 1;
     padding: 8px 20px;
     background: rgba(255, 255, 255, 0.1);
     border-radius: 6px;
+    border-left: 5px solid transparent;
     font-size: 32px;
     overflow: hidden;
+}
+
+.tm-sp-card--aktuell {
+    background: rgba(255, 255, 255, 0.22);
+    border-left-color: #ad2121;
+    box-shadow: 0 0 24px rgba(173, 33, 33, 0.25);
+}
+
+.tm-sp-card--aktuell .tm-sp-zeit::before {
+    content: '▶ ';
+    color: #ff5555;
+    animation: tm-sp-puls 1.8s ease-in-out infinite;
+}
+
+@keyframes tm-sp-puls {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.25; }
 }
 
 .tm-sp-zeit {

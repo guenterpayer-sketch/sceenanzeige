@@ -36,7 +36,6 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'OPTIONS') {
 // Parameter einlesen (nur nicht-sensible Anzeige-Einstellungen)
 // ----------------------------------------------------------------------------
 $nurHeute = ($_GET['nur_heute'] ?? '1') !== '0';
-$anzahl   = isset($_GET['anzahl']) ? max(0, (int)$_GET['anzahl']) : 0; // 0 = ohne Begrenzung
 $days     = $nurHeute ? 1 : 7; // Legacy-API: max. 7 Tage
 
 // ----------------------------------------------------------------------------
@@ -114,10 +113,6 @@ foreach ($events as $ev) {
         'color'       => $ev['color'] ?? '',
         'textColor'   => $ev['textColor'] ?? '',
     ];
-}
-
-if ($anzahl > 0) {
-    $kurse = array_slice($kurse, 0, $anzahl);
 }
 
 proxy_json_exit(['kurse' => $kurse]);
