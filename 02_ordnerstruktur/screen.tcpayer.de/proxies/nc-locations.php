@@ -62,6 +62,18 @@ if (!is_array($json)) {
 $content = $json['content'] ?? $json;
 $events  = $content['events'] ?? [];
 
+// Debug-Modus: rohe API-Antwort ausgeben (nur im Admin-Kontext, nie produktiv lassen)
+if (($_GET['debug'] ?? '') === '1') {
+    $sample = array_slice($events, 0, 3);
+    echo json_encode([
+        'debug'          => true,
+        'event_anzahl'   => count($events),
+        'erste_events'   => $sample,
+        'content_keys'   => is_array($content) ? array_keys($content) : null,
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 // Einzigartige Standorte aus den Events extrahieren (location_id + location)
 $standorte = [];
 foreach ($events as $ev) {
