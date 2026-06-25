@@ -306,12 +306,6 @@ html, body {
 .tm-sp-card--aktuell .tm-sp-zeit::before {
     content: '▶ ';
     color: #ff5555;
-    animation: tm-sp-puls 1.8s ease-in-out infinite;
-}
-
-@keyframes tm-sp-puls {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0.25; }
 }
 
 .tm-sp-zeit {
