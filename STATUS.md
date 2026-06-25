@@ -3,7 +3,7 @@
 > **Branch:** `claude/nifty-johnson-3q6u7g`  
 > Eine neue Session liest `CLAUDE.md` (Konzept) + diese Datei (Stand) und kann sofort weiterarbeiten.
 
-_Letzte Aktualisierung: Schritt 9b FRET-Modul live getestet + finalisiert — nächster Fokus: Schritt 10 Live-Vorschau._
+_Letzte Aktualisierung: TV-Skalierung (Google TV 720p) live getestet + finalisiert — nächster Fokus: Schritt 10 Live-Vorschau._
 
 ---
 
@@ -22,6 +22,7 @@ _Letzte Aktualisierung: Schritt 9b FRET-Modul live getestet + finalisiert — n�
 | 9 | Monitor-Frontend (Kern-Logik) | ✅ live getestet |
 | 9b-sp | Monitor-Frontend: Layout `stundenplan` | **✅ live getestet** |
 | 9b-fret | Monitor-Frontend: Layout `fret` | **✅ live getestet** |
+| 9c | TV-Skalierung (Google TV 720p → scale auf 1920px) | **✅ live getestet** |
 | 10 | Live-Vorschau (iFrame) | offen |
 | 11 | Deployment-Guide | offen |
 
@@ -54,7 +55,8 @@ _Letzte Aktualisierung: Schritt 9b FRET-Modul live getestet + finalisiert — n�
 - Neues `titel`-Setting in `module.json`
 
 **Offene Punkte:**
-- Fortschrittsbalken + Countdown: FRET-Server liefert `remainingSeconds` + `estimatedSecondsUntilStart` aktuell nicht → Neustart des FRET-Servers in der Tanzschule ausstehend
+- **Fortschrittsbalken:** FRET-API liefert `remainingSeconds` immer `null` → Balken friert bei Pause korrekt ein, läuft aber auch beim Spielen nicht; serverseitiges FRET-Problem, kein Code-Fehler
+- Countdown funktioniert ✅ (nach FRET-Server-Neustart in der Tanzschule)
 - Browser-Cache-Hinweis: `modules/fret/frontend.js` wird dynamisch geladen → Shift+F5 reicht nicht; vollständigen Browser-Cache leeren (Strg+Shift+Entf)
 
 ---

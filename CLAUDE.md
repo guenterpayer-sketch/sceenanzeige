@@ -221,6 +221,9 @@ FRET-Polling 5–10 Sek., Ticker unabhängig.
 - **Ticker:** läuft global unabhängig von Playlist-Rotation; `doRender()` steuert nur Sichtbarkeit (show/hide); Neustart nur bei geänderten Einträgen
 - **Proportionale Spalten-Synchronisation:** längste Spalte = Master-Zyklus; kürzere Spalten + deren Inhalte werden proportional skaliert (`skaliereMod()`)
 - **"Refresh Monitore"-Button:** Feld `reload_at DATETIME` in `monitore`; `Monitor::triggerReloadAlle()` setzt `NOW()`; `monitor.js` erkennt Änderung beim nächsten Poll → `location.reload()`; Migration: `sql/migration_reload_at.sql`
+- **TV-Skalierung:** Google TV rendert trotz Full-HD-Display mit 1280×720 Viewport und ignoriert `<meta name="viewport" content="width=1920">`. Fix: Inline-Script in `saalN/index.html` — misst `window.innerWidth`, setzt `#tm-wrapper` auf 1920×1080 fix und skaliert via `transform: scale(innerWidth/1920)`. Greift nur wenn Breite < 1920px, skaliert nur nach Breite (nicht Höhe) um Rand-Artefakte zu vermeiden.
+- **FRET Fortschrittsbalken:** API liefert `remainingSeconds` immer `null` (serverseitiges FRET-Problem); Balken friert korrekt ein aber läuft nicht — offen bis FRET-Server-Problem gelöst.
+- **Browser-Cache dynamischer Module:** `modules/<id>/frontend.js` wird per `<script>`-Tag dynamisch geladen → Shift+F5 leert diesen Cache nicht; vollständigen Browser-Cache leeren (Strg+Shift+Entf) nötig.
 
 ---
 
