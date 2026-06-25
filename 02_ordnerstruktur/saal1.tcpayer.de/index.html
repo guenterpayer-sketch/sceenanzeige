@@ -36,7 +36,7 @@
     window.UPLOADS_URL   = 'https://screen.tcpayer.de/uploads';
 
     (function () {
-        var scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+        var scale = window.innerWidth / 1920;
         if (scale < 0.99) {
             var w = document.getElementById('tm-wrapper');
             w.style.width = '1920px';
