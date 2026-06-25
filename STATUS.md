@@ -3,7 +3,7 @@
 > **Branch:** `claude/nifty-johnson-3q6u7g`  
 > Eine neue Session liest `CLAUDE.md` (Konzept) + diese Datei (Stand) und kann sofort weiterarbeiten.
 
-_Letzte Aktualisierung: Schritt 9b Stundenplan live getestet + finalisiert — nächster Fokus: Song/FRET-Layout._
+_Letzte Aktualisierung: Schritt 9b FRET-Modul live getestet + finalisiert — nächster Fokus: Schritt 10 Live-Vorschau._
 
 ---
 
@@ -21,7 +21,7 @@ _Letzte Aktualisierung: Schritt 9b Stundenplan live getestet + finalisiert — n
 | 8 | Backend: Ticker + Ticker-Zeitplan | ✅ live getestet |
 | 9 | Monitor-Frontend (Kern-Logik) | ✅ live getestet |
 | 9b-sp | Monitor-Frontend: Layout `stundenplan` | **✅ live getestet** |
-| 9b-fret | Monitor-Frontend: Layout `fret` | **offen → nächster Schritt** |
+| 9b-fret | Monitor-Frontend: Layout `fret` | **✅ live getestet** |
 | 10 | Live-Vorschau (iFrame) | offen |
 | 11 | Deployment-Guide | offen |
 
@@ -42,12 +42,20 @@ _Letzte Aktualisierung: Schritt 9b Stundenplan live getestet + finalisiert — n
 - Kacheln verteilen sich gleichmäßig auf die volle Höhe (`flex: 1`)
 - Offener Punkt: Spaltenbreiten ggf. anpassen wenn längere NC-Kursbeschreibungen kommen
 
-### Song/FRET-Modul (offen → nächster Schritt)
-Code bereits vorbereitet (Commit Schritt 9b), noch nicht live getestet:
-- Überschrift (`settings.titel || 'FRET'`, rot, uppercase, 32px)
-- Song-Titel 40px, Künstler 36px, Badges aktueller Song 40px, Playlist-Badges 28px
-- Fortschrittsbalken 10px, Playlist-Items als Cards
+### Song/FRET-Modul (✅ live getestet, finalisiert)
+
+**Finale CSS-Werte (live getestet):**
+- Überschrift: `font-size: 32px`, rot, uppercase (`settings.titel || 'FRET'`)
+- Song-Titel: 40px, Künstler: 36px
+- Haupt-Badge aktueller Song: 40px / Sub-Badge: 28px, padding: 4px 12px
+- Badge-Container: `align-items: center` (verhindert Streckung im Flex-Container)
+- Folgeliste Badges: 26px / Sub-Badge: 20px, border-width: 1.5px
+- Fortschrittsbalken: 10px Höhe; läuft wenn FRET `isPlaying: true` + `remainingSeconds != null`
 - Neues `titel`-Setting in `module.json`
+
+**Offene Punkte:**
+- Fortschrittsbalken + Countdown: FRET-Server liefert `remainingSeconds` + `estimatedSecondsUntilStart` aktuell nicht → Neustart des FRET-Servers in der Tanzschule ausstehend
+- Browser-Cache-Hinweis: `modules/fret/frontend.js` wird dynamisch geladen → Shift+F5 reicht nicht; vollständigen Browser-Cache leeren (Strg+Shift+Entf)
 
 ---
 

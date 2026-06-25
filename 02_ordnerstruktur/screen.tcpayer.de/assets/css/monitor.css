@@ -373,6 +373,7 @@ html, body {
     flex-wrap: wrap;
     gap: 8px;
     margin-top: 4px;
+    align-items: center;
 }
 
 .tm-song-badge {
@@ -392,7 +393,8 @@ html, body {
     background: #f0f0f0;
     color: #ad2121;
     border: 2px solid #ad2121;
-    font-size: 34px;
+    font-size: 28px;
+    padding: 4px 12px;
 }
 
 .tm-song-progress {
@@ -462,6 +464,7 @@ html, body {
 
 .tm-song-kommende .tm-song-badge-sub {
     border-width: 1.5px;
+    font-size: 20px;
 }
 
 .tm-song-k-countdown {
