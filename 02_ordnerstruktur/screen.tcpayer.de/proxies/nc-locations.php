@@ -2,11 +2,10 @@
 /**
  * proxies/nc-locations.php
  *
- * Liefert die Standortliste für den Admin-Instanz-Editor (Stundenplan-Modul,
- * Location-Picker). Extrahiert einzigartige Standorte aus /timetable/data
- * (7-Tage-Fenster) — zuverlässiger als der unverifizierten /data/locations-
- * Endpunkt, da /timetable/data definitiv funktioniert.
+ * Liefert alle Standorte aus der Nimbuscloud Stammdaten-API (POST /data/locations)
+ * für den Admin-Instanz-Editor (Stundenplan-Modul, Location-Picker).
  *
+ * Berechtigung: Stammdaten — Lesezugriff (gleicher Key wie Stundenplan).
  * Nur vom Backend (Admin-Editor) aufgerufen — kein CORS nötig.
  * NC_API_KEY bleibt serverseitig, kommt nie ans Frontend.
  */
@@ -28,17 +27,11 @@ if ($apiKey === '') {
     nc_loc_fehler('NC_API_KEY ist nicht konfiguriert (config.php).');
 }
 
-$postFelder = http_build_query([
-    'apikey' => $apiKey,
-    'date'   => strtotime('today midnight'),
-    'days'   => 7,
-]);
-
-$ch = curl_init(NC_API_BASE . '/timetable/data');
+$ch = curl_init(NC_API_BASE . '/data/locations');
 curl_setopt_array($ch, [
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_POST           => true,
-    CURLOPT_POSTFIELDS     => $postFelder,
+    CURLOPT_POSTFIELDS     => http_build_query(['apikey' => $apiKey]),
     CURLOPT_TIMEOUT        => 12,
     CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded'],
 ]);
@@ -60,31 +53,39 @@ if (!is_array($json)) {
 }
 
 $content = $json['content'] ?? $json;
-$events  = $content['events'] ?? [];
 
-// Debug-Modus: rohe API-Antwort ausgeben (nur im Admin-Kontext, nie produktiv lassen)
+// Debug-Modus: rohe API-Antwort ausgeben
 if (($_GET['debug'] ?? '') === '1') {
-    $sample = array_slice($events, 0, 3);
     echo json_encode([
-        'debug'          => true,
-        'event_anzahl'   => count($events),
-        'erste_events'   => $sample,
-        'content_keys'   => is_array($content) ? array_keys($content) : null,
+        'debug'        => true,
+        'content_keys' => is_array($content) ? array_keys($content) : null,
+        'raw'          => $content,
     ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-// Einzigartige Standorte aus den Events extrahieren (location_id + location)
 $standorte = [];
-foreach ($events as $ev) {
-    if (empty($ev['isCourseEvent'])) { continue; }
-    $lid  = isset($ev['locationId']) ? (int)$ev['locationId'] : 0;
-    $name = isset($ev['location'])   ? trim((string)$ev['location']) : '';
-    if ($lid === 0 || $name === '') { continue; }
-    $standorte[$lid] = ['id' => $lid, 'name' => $name];
+
+// Erwartetes Format: [{id, name, rooms:[...]}, ...]
+// Alternativ flache Liste — beide Varianten abdecken
+if (is_array($content)) {
+    foreach ($content as $item) {
+        if (!is_array($item)) { continue; }
+        // Flache Liste mit type-Feld: nur location-Einträge
+        if (isset($item['type']) && $item['type'] !== 'location') { continue; }
+        // Flache Liste: Raum-Einträge haben location_id oder locationId
+        if (isset($item['location_id']) || isset($item['locationId'])) { continue; }
+        $lid  = isset($item['id'])   ? (int)$item['id']       : 0;
+        $name = isset($item['name']) ? trim((string)$item['name']) : '';
+        if ($lid === 0 || $name === '') { continue; }
+        $standorte[$lid] = ['id' => $lid, 'name' => $name];
+    }
 }
 
-// Alphabetisch nach Name sortieren
+if (empty($standorte)) {
+    nc_loc_fehler('Keine Standorte von der NC-API erhalten. ?debug=1 für Rohausgabe.');
+}
+
 usort($standorte, fn($a, $b) => strcmp($a['name'], $b['name']));
 
 echo json_encode(['ok' => true, 'standorte' => array_values($standorte)]);
