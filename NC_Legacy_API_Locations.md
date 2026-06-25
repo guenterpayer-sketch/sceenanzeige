@@ -9,15 +9,17 @@ Zweck: Grundlage für die Standort-/Raum-Filterung im `stundenplan`-Modul (Optio
 
 Pro Kursevent liefert die API u.a.:
 
-| Feld          | Typ    | Beschreibung                        |
-|---------------|--------|--------------------------------------|
-| `location`    | string | Name des Standorts                  |
-| `location_id` | int    | ID des Standorts                    |
-| `room`        | string | Name des Saals/Raums                |
-| `room_id`     | int    | ID des Saals/Raums                  |
+| Feld         | Typ    | Beschreibung                                        |
+|--------------|--------|------------------------------------------------------|
+| `location`   | string | Name des Standorts                                  |
+| `locationId` | string | ID des Standorts (**camelCase**, nicht `location_id`!) |
+| `room`       | string | Name des Saals/Raums                                |
+| `room_id`    | int    | ID des Saals/Raums                                  |
 
-> **Wichtig:** `nc.php` streift diese Felder aktuell raus (werden nicht an das Frontend weitergegeben).
-> Für die Filterung im Proxy müssen sie beim Filtern berücksichtigt, aber NICHT ans Frontend durchgereicht werden.
+> ⚠️ **Verifiziert 2026-06-25:** Das Feld heißt `locationId` (camelCase String), NICHT `location_id` (snake_case int) wie in der Doku ursprünglich angenommen.
+
+> **Wichtig:** `nc.php` streift diese Felder raus (werden nicht an das Frontend weitergegeben).
+> Für den Standort-Filter wird `(int)$ev['locationId']` mit den gespeicherten IDs verglichen.
 
 ---
 
@@ -112,7 +114,9 @@ Die Auswahl wird als JSON-Array von `location_id`s in `modul_instanzen.einstellu
 
 | Frage | Status |
 |-------|--------|
-| Exakte Rückgabestruktur von `POST /data/locations` | ⚠️ unbekannt, muss getestet werden |
-| Sind Standorte und Räume verschachtelt oder flach? | ⚠️ unbekannt |
-| Gibt es mehrere Standorte bei Tanzcenter Payer? | ❓ beim Nutzer zu erfragen |
-| Soll nach Standort ODER Raum gefiltert werden (oder beides)? | ✅ Standort (`location_id`) |
+| Exakte Rückgabestruktur von `POST /data/locations` | ⚠️ noch zu testen — Endpunkt wird auf live verwendet |
+| Sind Standorte und Räume verschachtelt oder flach? | ⚠️ noch zu testen |
+| Gibt es mehrere Standorte bei Tanzcenter Payer? | ✅ ja, mind. 2: „TCPayer" (ID 1), „Gymnastikraum Fritz-Beck" (ID 2), weitere vorhanden |
+| Soll nach Standort ODER Raum gefiltert werden (oder beides)? | ✅ Standort (`locationId`) |
+| Feldname für Standort-ID in timetable/data | ✅ `locationId` (camelCase String), nicht `location_id` |
+| API-Key für `/data/locations` | ✅ universeller Key — gleiche Konstante `NC_API_KEY`, Berechtigung Stammdaten freigegeben |
