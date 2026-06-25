@@ -1,15 +1,8 @@
 <?php
+declare(strict_types=1);
+
 ini_set('display_errors', '1');
 error_reporting(E_ALL);
-/**
- * admin/login.php
- *
- * Login-Seite für das Monitor-Backend.
- * Ein Passwort → Redakteur-Zugang (Bibliothek, Mediathek, Playlists, Ticker)
- * Anderes Passwort → Admin-Zugang (zusätzlich Monitore, FRET-Geräte)
- */
-
-declare(strict_types=1);
 
 require dirname(__DIR__) . '/config.php';
 
