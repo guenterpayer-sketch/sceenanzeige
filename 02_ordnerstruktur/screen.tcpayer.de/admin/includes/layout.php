@@ -25,6 +25,7 @@ function admin_header(string $titel, string $aktiv = ''): void
         'mediathek'    => ['Mediathek',   'mediathek.php',    true],
         'playlists'    => ['Playlists',   'playlists.php',    true],
         'ticker'       => ['Ticker',      'ticker.php',       true],
+        'vorschau'     => ['Vorschau',    'monitor-vorschau.php', true],
         'monitore'     => ['Monitore',    'monitore.php',     $istAdmin],
         'fret-geraete' => ['FRET-Geräte', 'fret-geraete.php', $istAdmin],
     ];

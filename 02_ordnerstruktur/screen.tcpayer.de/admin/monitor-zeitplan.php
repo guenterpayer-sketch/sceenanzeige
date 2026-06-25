@@ -191,7 +191,10 @@ $tickersFuerJs = array_map(static fn($t) => [
 admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
 ?>
 
-<p><a href="monitore.php" class="adm-zurueck">← zurück zu den Monitoren</a></p>
+<div class="adm-zeitplan-kopf">
+    <a href="monitore.php" class="adm-zurueck">← zurück zu den Monitoren</a>
+    <a href="monitor-vorschau.php?id=<?= (int)$id ?>" class="adm-btn">Vorschau</a>
+</div>
 
 <?php foreach ($fehler as $f): ?>
     <div class="adm-flash adm-flash-fehler"><?= $f ?></div>

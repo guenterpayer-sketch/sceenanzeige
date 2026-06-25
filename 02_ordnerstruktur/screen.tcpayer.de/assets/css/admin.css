@@ -743,3 +743,35 @@ a.adm-kachel-link:hover { background: #fbeaea; }
     opacity: 1;
     background: rgba(255,255,255,.1);
 }
+
+/* ── Live-Vorschau (Schritt 10) ─────────────────────────────────────────── */
+
+.adm-vorschau-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+.adm-vorschau-bar label { font-size: 14px; color: #33424f; }
+.adm-vorschau-sel {
+    padding: 7px 10px;
+    border: 1px solid #dde3ea;
+    border-radius: 6px;
+    font-size: 14px;
+}
+.adm-vorschau-leinwand {
+    border: 1px solid #dde3ea;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #000;
+}
+#vorschau-iframe { display: block; border: none; }
+
+/* Zeitplan-Editor Kopfzeile mit Vorschau-Link */
+.adm-zeitplan-kopf {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
