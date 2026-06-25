@@ -78,8 +78,8 @@ if (($_GET['debug'] ?? '') === '1') {
 $standorte = [];
 foreach ($events as $ev) {
     if (empty($ev['isCourseEvent'])) { continue; }
-    $lid  = isset($ev['location_id']) ? (int)$ev['location_id'] : 0;
-    $name = isset($ev['location'])    ? trim((string)$ev['location']) : '';
+    $lid  = isset($ev['locationId']) ? (int)$ev['locationId'] : 0;
+    $name = isset($ev['location'])   ? trim((string)$ev['location']) : '';
     if ($lid === 0 || $name === '') { continue; }
     $standorte[$lid] = ['id' => $lid, 'name' => $name];
 }

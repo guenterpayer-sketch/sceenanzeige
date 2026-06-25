@@ -110,8 +110,8 @@ foreach ($events as $ev) {
     if (array_key_exists('showInTimetable', $ev) && !$ev['showInTimetable']) {
         continue;
     }
-    // Standort-Filter: nur Events mit passender location_id durchlassen.
-    if (!empty($locationIds) && !in_array((int)($ev['location_id'] ?? 0), $locationIds, true)) {
+    // Standort-Filter: nur Events mit passender locationId durchlassen.
+    if (!empty($locationIds) && !in_array((int)($ev['locationId'] ?? 0), $locationIds, true)) {
         continue;
     }
     $kurse[] = [
