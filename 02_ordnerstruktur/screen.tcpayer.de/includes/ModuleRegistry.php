@@ -123,6 +123,14 @@ final class ModuleRegistry
                 $out .= '</select>';
                 break;
 
+            case 'location_picker':
+                // Platzhalter-Div; JS (in instanz.php) füllt Checkboxen ein.
+                // Wert ist JSON-String "[1,3]" oder "" (= alle Standorte).
+                $jsonVal = htmlspecialchars((string)($value ?? ''));
+                $out .= '<div id="f_' . $key . '" class="adm-location-picker"><span class="adm-leer">Lade Standorte…</span></div>';
+                $out .= '<input type="hidden" name="' . $name . '" id="f_' . $key . '_hidden" value="' . $jsonVal . '">';
+                break;
+
             case 'textarea':
                 $val = htmlspecialchars((string)($value ?? ''));
                 $out .= '<textarea id="f_' . $key . '" name="' . $name . '">' . $val . '</textarea>';
@@ -159,6 +167,10 @@ final class ModuleRegistry
                     break;
                 case 'number':
                     $result[$key] = $raw === null || $raw === '' ? ($field['default'] ?? 0) : (is_numeric($raw) ? (str_contains((string)$raw, '.') ? (float)$raw : (int)$raw) : ($field['default'] ?? 0));
+                    break;
+                case 'location_picker':
+                    // Gespeichert als JSON-String "[1,3]" oder "" (= alle)
+                    $result[$key] = is_string($raw) ? $raw : ($field['default'] ?? '');
                     break;
                 default:
                     $result[$key] = $raw !== null ? (string)$raw : ($field['default'] ?? '');

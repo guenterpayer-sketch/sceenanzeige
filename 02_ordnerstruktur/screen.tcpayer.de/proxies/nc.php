@@ -35,8 +35,17 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'OPTIONS') {
 // ----------------------------------------------------------------------------
 // Parameter einlesen (nur nicht-sensible Anzeige-Einstellungen)
 // ----------------------------------------------------------------------------
-$nurHeute = ($_GET['nur_heute'] ?? '1') !== '0';
-$days     = $nurHeute ? 1 : 7; // Legacy-API: max. 7 Tage
+$nurHeute    = ($_GET['nur_heute'] ?? '1') !== '0';
+$days        = $nurHeute ? 1 : 7; // Legacy-API: max. 7 Tage
+
+$locationIds = [];
+$rawLoc = $_GET['location_ids'] ?? '';
+if ($rawLoc !== '') {
+    $decoded = json_decode($rawLoc, true);
+    if (is_array($decoded)) {
+        $locationIds = array_map('intval', $decoded);
+    }
+}
 
 // ----------------------------------------------------------------------------
 // API-Key serverseitig aus config.php (ein Key pro Schule, schulweit)
@@ -99,6 +108,10 @@ foreach ($events as $ev) {
         continue;
     }
     if (array_key_exists('showInTimetable', $ev) && !$ev['showInTimetable']) {
+        continue;
+    }
+    // Standort-Filter: nur Events mit passender location_id durchlassen.
+    if (!empty($locationIds) && !in_array((int)($ev['location_id'] ?? 0), $locationIds, true)) {
         continue;
     }
     $kurse[] = [

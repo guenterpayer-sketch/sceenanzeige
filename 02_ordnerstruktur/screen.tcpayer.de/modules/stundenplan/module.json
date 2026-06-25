@@ -17,6 +17,12 @@
       "type": "bool",
       "label": "Nur heutige Kurse anzeigen",
       "default": true
+    },
+    {
+      "key": "location_ids",
+      "type": "location_picker",
+      "label": "Standorte anzeigen (leer = alle)",
+      "default": ""
     }
   ]
 }

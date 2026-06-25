@@ -41,11 +41,15 @@
         container.classList.add('tm-modul-stundenplan');
         container.innerHTML = '<div class="tm-sp-status">Lade Stundenplan…</div>';
 
-        var basis    = window.BACKEND_BASE || '';
-        var nurHeute = settings.nur_heute === false ? '0' : '1';
-        var anzahl   = (settings.anzahl_kurse != null) ? parseInt(settings.anzahl_kurse, 10) : 5;
+        var basis       = window.BACKEND_BASE || '';
+        var nurHeute    = settings.nur_heute === false ? '0' : '1';
+        var anzahl      = (settings.anzahl_kurse != null) ? parseInt(settings.anzahl_kurse, 10) : 5;
+        var locationIds = settings.location_ids || '';
 
         var url = basis + '/proxies/nc.php?nur_heute=' + nurHeute;
+        if (locationIds !== '') {
+            url += '&location_ids=' + encodeURIComponent(locationIds);
+        }
 
         fetch(url, { cache: 'no-store' })
             .then(function (r) { return r.json(); })

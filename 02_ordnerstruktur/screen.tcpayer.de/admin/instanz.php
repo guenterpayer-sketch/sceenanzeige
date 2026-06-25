@@ -396,5 +396,60 @@ admin_header(($istNeu ? 'Neue ' : '') . $meta['label'] . '-Instanz', 'bibliothek
 </script>
 <?php endif; ?>
 
+<?php if ($modulTyp === 'stundenplan'): ?>
+<script>
+(function () {
+    var picker = document.getElementById('f_location_ids');
+    var hidden = document.getElementById('f_location_ids_hidden');
+    if (!picker || !hidden) { return; }
+
+    var selected = [];
+    try { selected = JSON.parse(hidden.value || '[]'); } catch (e) {}
+    if (!Array.isArray(selected)) { selected = []; }
+    selected = selected.map(Number);
+
+    function escHtml(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+
+    function syncHidden() {
+        var ids = [];
+        picker.querySelectorAll('input[type="checkbox"]:checked').forEach(function (cb) {
+            ids.push(parseInt(cb.value, 10));
+        });
+        hidden.value = ids.length > 0 ? JSON.stringify(ids) : '';
+    }
+
+    fetch('../proxies/nc-locations.php')
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (!data.ok || !data.standorte || data.standorte.length === 0) {
+                picker.innerHTML = '<span class="adm-leer">'
+                    + (data.error ? escHtml(data.error) : 'Keine Standorte von der NC-API erhalten.')
+                    + '</span>';
+                return;
+            }
+            picker.innerHTML = '';
+            data.standorte.forEach(function (s) {
+                var checked = selected.indexOf(s.id) !== -1;
+                var label = document.createElement('label');
+                label.className = 'adm-location-option';
+                label.innerHTML = '<input type="checkbox" value="' + s.id + '"'
+                    + (checked ? ' checked' : '') + '> ' + escHtml(s.name);
+                picker.appendChild(label);
+            });
+            syncHidden();
+            picker.addEventListener('change', syncHidden);
+        })
+        .catch(function () {
+            picker.innerHTML = '<span class="adm-leer adm-flash-fehler" style="padding:4px 8px;border-radius:4px">'
+                + 'Standorte konnten nicht geladen werden.</span>';
+        });
+})();
+</script>
+<?php endif; ?>
+
 <?php
 admin_footer();

@@ -797,6 +797,34 @@ a.adm-kachel-link:hover { background: #fbeaea; }
 }
 #vorschau-iframe { display: block; border: none; }
 
+/* ── Location-Picker (Stundenplan-Einstellungen) ─────────────────────────── */
+
+.adm-location-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 24px;
+    padding: 10px 0 4px;
+    min-height: 36px;
+}
+
+.adm-location-option {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 14px;
+    color: #1c2733;
+    cursor: pointer;
+    user-select: none;
+}
+
+.adm-location-option input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #ad2121;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
 /* Zeitplan-Editor Kopfzeile mit Vorschau-Link */
 .adm-zeitplan-kopf {
     display: flex;
