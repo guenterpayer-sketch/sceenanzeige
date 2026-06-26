@@ -424,6 +424,42 @@ admin_header(($istNeu ? 'Neue ' : '') . $meta['label'] . '-Instanz', 'bibliothek
 
     var roomSelect = document.getElementById('f_room_id');
     var selectedRoom = roomSelect ? parseInt(roomSelect.getAttribute('data-selected') || '0', 10) : 0;
+    var alleStandorte = [];
+
+    // Baut das Saal-Select neu auf — gefiltert nach den aktuell angehakten Standorten.
+    // Keine Haken = alle Standorte / alle Säle anzeigen.
+    function rebuildRoomSelect() {
+        if (!roomSelect) { return; }
+        var currentVal = parseInt(roomSelect.value || '0', 10);
+
+        var checkedIds = [];
+        picker.querySelectorAll('input[type="checkbox"]:checked').forEach(function (cb) {
+            checkedIds.push(parseInt(cb.value, 10));
+        });
+
+        var sichtbar = checkedIds.length > 0
+            ? alleStandorte.filter(function (s) { return checkedIds.indexOf(s.id) !== -1; })
+            : alleStandorte;
+
+        roomSelect.innerHTML = '<option value="0">— alle Säle —</option>';
+        sichtbar.forEach(function (s) {
+            if (!s.rooms || s.rooms.length === 0) { return; }
+            var group = document.createElement('optgroup');
+            group.label = s.name;
+            s.rooms.forEach(function (r) {
+                var opt = document.createElement('option');
+                opt.value = r.id;
+                opt.textContent = r.name;
+                // Vorherige Auswahl erhalten, wenn der Saal noch sichtbar ist
+                if (r.id === currentVal || (currentVal === 0 && r.id === selectedRoom)) {
+                    opt.selected = true;
+                    selectedRoom = 0; // einmalig anwenden
+                }
+                group.appendChild(opt);
+            });
+            roomSelect.appendChild(group);
+        });
+    }
 
     fetch('../proxies/nc-locations.php')
         .then(function (r) { return r.json(); })
@@ -434,6 +470,8 @@ admin_header(($istNeu ? 'Neue ' : '') . $meta['label'] . '-Instanz', 'bibliothek
                     + '</span>';
                 return;
             }
+
+            alleStandorte = data.standorte;
 
             // Standort-Checkboxen füllen
             picker.innerHTML = '';
@@ -446,25 +484,13 @@ admin_header(($istNeu ? 'Neue ' : '') . $meta['label'] . '-Instanz', 'bibliothek
                 picker.appendChild(label);
             });
             syncHidden();
-            picker.addEventListener('change', syncHidden);
 
-            // Saal-Select füllen (Optgruppen je Standort)
-            if (roomSelect) {
-                roomSelect.innerHTML = '<option value="0">— alle Säle —</option>';
-                data.standorte.forEach(function (s) {
-                    if (!s.rooms || s.rooms.length === 0) { return; }
-                    var group = document.createElement('optgroup');
-                    group.label = escHtml(s.name);
-                    s.rooms.forEach(function (r) {
-                        var opt = document.createElement('option');
-                        opt.value = r.id;
-                        opt.textContent = r.name;
-                        if (r.id === selectedRoom) { opt.selected = true; }
-                        group.appendChild(opt);
-                    });
-                    roomSelect.appendChild(group);
-                });
-            }
+            // Saal-Select initial aufbauen + bei Checkbox-Wechsel neu aufbauen
+            rebuildRoomSelect();
+            picker.addEventListener('change', function () {
+                syncHidden();
+                rebuildRoomSelect();
+            });
         })
         .catch(function () {
             picker.innerHTML = '<span class="adm-leer adm-flash-fehler" style="padding:4px 8px;border-radius:4px">'
