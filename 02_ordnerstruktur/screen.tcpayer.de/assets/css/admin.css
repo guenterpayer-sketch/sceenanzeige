@@ -825,6 +825,12 @@ a.adm-kachel-link:hover { background: #fbeaea; }
     flex-shrink: 0;
 }
 
+/* Room-Picker (Stundenplan-Einstellungen) */
+.field-room_picker select {
+    max-width: 340px;
+    width: 100%;
+}
+
 /* Zeitplan-Editor Kopfzeile mit Vorschau-Link */
 .adm-zeitplan-kopf {
     display: flex;
