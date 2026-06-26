@@ -231,7 +231,10 @@ FRET-Polling 5–10 Sek., Ticker unabhängig.
 - **"Refresh Monitore"-Button:** Feld `reload_at DATETIME` in `monitore`; `Monitor::triggerReloadAlle()` setzt `NOW()`; `monitor.js` erkennt Änderung beim nächsten Poll → `location.reload()`; Migration: `sql/migration_reload_at.sql`
 - **TV-Skalierung:** Google TV rendert trotz Full-HD-Display mit 1280×720 Viewport und ignoriert `<meta name="viewport" content="width=1920">`. Fix: Inline-Script in `saalN/index.html` — misst `window.innerWidth`, setzt `#tm-wrapper` auf 1920×1080 fix und skaliert via `transform: scale(innerWidth/1920)`. Greift nur wenn Breite < 1920px, skaliert nur nach Breite (nicht Höhe) um Rand-Artefakte zu vermeiden.
 - **FRET Fortschrittsbalken:** API liefert `remainingSeconds` immer `null` (serverseitiges FRET-Problem); Balken friert korrekt ein aber läuft nicht — offen bis FRET-Server-Problem gelöst.
-- **Browser-Cache dynamischer Module:** `modules/<id>/frontend.js` wird per `<script>`-Tag dynamisch geladen → Shift+F5 leert diesen Cache nicht; vollständigen Browser-Cache leeren (Strg+Shift+Entf) nötig.
+- **Browser-Cache dynamischer Module:** `module-loader.js` hängt `?v=Date.now()` an jede `frontend.js`-URL → Cache immer umgangen, kein manuelles Leeren nötig.
+- **Stundenplan Standort-Filter:** `location_ids` (JSON-String `"[1,3]"` oder `""`) in `modul_instanzen.einstellungen`; `proxies/nc-locations.php` ruft `POST /data/locations` (Stammdaten, gleicher `NC_API_KEY`) ab und liefert `[{id, name, rooms:[{id,name}]}]`; `nc.php` filtert serverseitig nach `locationId` (camelCase String! nicht `location_id`). Admin-Editor: Checkboxen je Standort, abhängiges Saal-Dropdown.
+- **Stundenplan Saal-Filter:** `room_id` (int, 0 = alle) in Einstellungen; `nc.php` filtert nach `room_id`/`roomId` (camelCase-Fallback); Saal-Dropdown im Admin zeigt nur Säle der angehakten Standorte.
+- **Stundenplan responsive Schrift:** `.tm-spalte { container-type: inline-size }` + `@container (max-width: 700px)` in `monitor.css` → 22px in 3-Spalten-Layout, 32px in 1/2-Spalten.
 
 ---
 
@@ -248,7 +251,7 @@ FRET-Polling 5–10 Sek., Ticker unabhängig.
 | 7 | Backend: Monitore + Zeitplan (monitor-zentrisch) | ✅ live getestet |
 | 8 | Backend: Ticker + Ticker-Zeitplan | ✅ live getestet |
 | 9 | Monitor-Frontend (Anzeige- + Zeitlogik) | ✅ live getestet |
-| 9b | Monitor-Frontend: Layout `stundenplan` (✅ live) + `fret` (offen) | teilweise |
+| 9b | Monitor-Frontend: Layout `stundenplan` (✅ live, inkl. Standort-/Saal-Filter + responsive Schrift) + `fret` (offen) | teilweise |
 | 10 | Live-Vorschau (iFrame) | ✅ live getestet |
 | 11 | Deployment-Guide | offen |
 
