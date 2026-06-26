@@ -253,7 +253,7 @@ FRET-Polling 5–10 Sek., Ticker unabhängig.
 | 9 | Monitor-Frontend (Anzeige- + Zeitlogik) | ✅ live getestet |
 | 9b | Monitor-Frontend: Layout `stundenplan` (✅ live, inkl. Standort-/Saal-Filter + responsive Schrift) + `fret` (offen) | teilweise |
 | 10 | Live-Vorschau (iFrame) | ✅ live getestet |
-| 11 | Deployment-Guide | offen |
+| 11 | Deployment-Guide | ✅ live (manuell per FTP auf all-inkl, läuft produktiv) |
 
 ---
 
