@@ -45,10 +45,14 @@
         var nurHeute    = settings.nur_heute === false ? '0' : '1';
         var anzahl      = (settings.anzahl_kurse != null) ? parseInt(settings.anzahl_kurse, 10) : 5;
         var locationIds = settings.location_ids || '';
+        var roomId      = settings.room_id ? parseInt(settings.room_id, 10) : 0;
 
         var url = basis + '/proxies/nc.php?nur_heute=' + nurHeute;
         if (locationIds !== '') {
             url += '&location_ids=' + encodeURIComponent(locationIds);
+        }
+        if (roomId > 0) {
+            url += '&room_id=' + roomId;
         }
 
         fetch(url, { cache: 'no-store' })

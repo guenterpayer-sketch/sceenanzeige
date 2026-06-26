@@ -63,7 +63,15 @@ foreach ($locationListe as $item) {
     $lid  = isset($item['id'])   ? (int)$item['id']           : 0;
     $name = isset($item['name']) ? trim((string)$item['name']) : '';
     if ($lid === 0 || $name === '') { continue; }
-    $standorte[$lid] = ['id' => $lid, 'name' => $name];
+    $rooms = [];
+    foreach ($item['rooms'] ?? [] as $r) {
+        $rid   = isset($r['id'])   ? (int)$r['id']           : 0;
+        $rname = isset($r['name']) ? trim((string)$r['name']) : '';
+        if ($rid > 0 && $rname !== '') {
+            $rooms[] = ['id' => $rid, 'name' => $rname];
+        }
+    }
+    $standorte[$lid] = ['id' => $lid, 'name' => $name, 'rooms' => $rooms];
 }
 
 if (empty($standorte)) {

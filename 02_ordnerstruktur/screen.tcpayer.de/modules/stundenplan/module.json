@@ -23,6 +23,12 @@
       "type": "location_picker",
       "label": "Standorte anzeigen (leer = alle)",
       "default": ""
+    },
+    {
+      "key": "room_id",
+      "type": "room_picker",
+      "label": "Saal-Filter (leer = alle Säle)",
+      "default": 0
     }
   ]
 }

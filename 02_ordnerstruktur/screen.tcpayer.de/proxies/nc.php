@@ -47,6 +47,8 @@ if ($rawLoc !== '') {
     }
 }
 
+$roomId = (int)($_GET['room_id'] ?? 0);
+
 // ----------------------------------------------------------------------------
 // API-Key serverseitig aus config.php (ein Key pro Schule, schulweit)
 // ----------------------------------------------------------------------------
@@ -113,6 +115,13 @@ foreach ($events as $ev) {
     // Standort-Filter: nur Events mit passender locationId durchlassen.
     if (!empty($locationIds) && !in_array((int)($ev['locationId'] ?? 0), $locationIds, true)) {
         continue;
+    }
+    // Saal-Filter: nur Events mit passender room_id/roomId durchlassen.
+    if ($roomId > 0) {
+        $evRoomId = (int)(($ev['room_id'] ?? $ev['roomId'] ?? 0));
+        if ($evRoomId !== $roomId) {
+            continue;
+        }
     }
     $kurse[] = [
         'displayName' => $ev['displayName'] ?? ($ev['text'] ?? ''),

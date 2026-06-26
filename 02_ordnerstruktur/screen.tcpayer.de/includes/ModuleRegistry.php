@@ -131,6 +131,15 @@ final class ModuleRegistry
                 $out .= '<input type="hidden" name="' . $name . '" id="f_' . $key . '_hidden" value="' . $jsonVal . '">';
                 break;
 
+            case 'room_picker':
+                // Platzhalter-Select; JS (in instanz.php) füllt Optgruppen ein.
+                // Wert ist int (0 = alle Säle, sonst room_id).
+                $selVal = (int)($value ?? 0);
+                $out .= '<select id="f_' . $key . '" name="' . $name . '" data-selected="' . $selVal . '">';
+                $out .= '<option value="0">— alle Säle (lädt…) —</option>';
+                $out .= '</select>';
+                break;
+
             case 'textarea':
                 $val = htmlspecialchars((string)($value ?? ''));
                 $out .= '<textarea id="f_' . $key . '" name="' . $name . '">' . $val . '</textarea>';
@@ -171,6 +180,10 @@ final class ModuleRegistry
                 case 'location_picker':
                     // Gespeichert als JSON-String "[1,3]" oder "" (= alle)
                     $result[$key] = is_string($raw) ? $raw : ($field['default'] ?? '');
+                    break;
+                case 'room_picker':
+                    // Gespeichert als int: 0 = alle Säle, sonst room_id
+                    $result[$key] = ($raw !== null && $raw !== '' && $raw !== '0') ? (int)$raw : 0;
                     break;
                 default:
                     $result[$key] = $raw !== null ? (string)$raw : ($field['default'] ?? '');

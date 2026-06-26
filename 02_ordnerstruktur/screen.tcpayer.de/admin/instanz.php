@@ -422,6 +422,9 @@ admin_header(($istNeu ? 'Neue ' : '') . $meta['label'] . '-Instanz', 'bibliothek
         hidden.value = ids.length > 0 ? JSON.stringify(ids) : '';
     }
 
+    var roomSelect = document.getElementById('f_room_id');
+    var selectedRoom = roomSelect ? parseInt(roomSelect.getAttribute('data-selected') || '0', 10) : 0;
+
     fetch('../proxies/nc-locations.php')
         .then(function (r) { return r.json(); })
         .then(function (data) {
@@ -431,6 +434,8 @@ admin_header(($istNeu ? 'Neue ' : '') . $meta['label'] . '-Instanz', 'bibliothek
                     + '</span>';
                 return;
             }
+
+            // Standort-Checkboxen füllen
             picker.innerHTML = '';
             data.standorte.forEach(function (s) {
                 var checked = selected.indexOf(s.id) !== -1;
@@ -442,6 +447,24 @@ admin_header(($istNeu ? 'Neue ' : '') . $meta['label'] . '-Instanz', 'bibliothek
             });
             syncHidden();
             picker.addEventListener('change', syncHidden);
+
+            // Saal-Select füllen (Optgruppen je Standort)
+            if (roomSelect) {
+                roomSelect.innerHTML = '<option value="0">— alle Säle —</option>';
+                data.standorte.forEach(function (s) {
+                    if (!s.rooms || s.rooms.length === 0) { return; }
+                    var group = document.createElement('optgroup');
+                    group.label = escHtml(s.name);
+                    s.rooms.forEach(function (r) {
+                        var opt = document.createElement('option');
+                        opt.value = r.id;
+                        opt.textContent = r.name;
+                        if (r.id === selectedRoom) { opt.selected = true; }
+                        group.appendChild(opt);
+                    });
+                    roomSelect.appendChild(group);
+                });
+            }
         })
         .catch(function () {
             picker.innerHTML = '<span class="adm-leer adm-flash-fehler" style="padding:4px 8px;border-radius:4px">'
