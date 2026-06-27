@@ -220,7 +220,7 @@ function pl_modul_icon(string $icon): string
 
         <h2>Vorschau (schematisch)</h2>
         <div style="display:flex;gap:24px;align-items:flex-start">
-            <div class="adm-vorschau" id="vorschau">
+            <div class="adm-vorschau" id="vorschau" style="flex:0 0 480px;width:480px;">
                 <div class="adm-vorschau-header" id="vorschau-header">Uhrzeit / Datum</div>
                 <div class="adm-vorschau-spalten" id="vorschau-spalten"></div>
                 <div class="adm-vorschau-footer" id="vorschau-footer">Ticker</div>
