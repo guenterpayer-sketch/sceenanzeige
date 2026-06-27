@@ -20,4 +20,5 @@ return [
     'stundenplan',
     'ankuendigung',
     'fret',
+    'veranstaltung',
 ];

@@ -1,0 +1,31 @@
+{
+  "id": "veranstaltung",
+  "label": "Veranstaltungen",
+  "icon": "calendar",
+  "has_proxy": true,
+  "has_inhalte": false,
+  "settings": [
+    {
+      "key": "anzeige_dauer_sek",
+      "type": "number",
+      "label": "Anzeigedauer je Veranstaltung (Sek.)",
+      "default": 10
+    },
+    {
+      "key": "anzahl",
+      "type": "number",
+      "label": "Anzahl Veranstaltungen (max. 20)",
+      "default": 5
+    },
+    {
+      "key": "uebergang",
+      "type": "select",
+      "label": "Übergang",
+      "options": [
+        { "value": "fade", "label": "Sanft (Fade)" },
+        { "value": "none", "label": "Sofort" }
+      ],
+      "default": "fade"
+    }
+  ]
+}
