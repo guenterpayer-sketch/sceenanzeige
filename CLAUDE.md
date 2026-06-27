@@ -204,10 +204,11 @@ FRET-Polling 5–10 Sek., Ticker unabhängig.
 | Bereich | Funktion |
 |---|---|
 | Bibliothek | Modul-Instanzen anlegen/verwalten (Mediathek-Bild-Picker) |
-| Playlists | Layout + Spalten-Inhalte (kein Zeitplan hier) |
+| Playlists | Layout + Spalten-Inhalte + Vorschau-Button je Kachel |
 | Ticker | Ticker-Playlists + Textzeilen |
-| Monitore | Anlegen (Name, Subdomain) + Zeitplan je Monitor (Playlist + Ticker) |
-| Live-Vorschau | iFrame-Simulation eines Monitors |
+| Monitore | Anlegen (Name, Subdomain) + Zeitplan je Monitor (Playlist + Ticker, mit ↑/↓-Sortierung) |
+| Live-Vorschau | iFrame-Simulation eines Monitors (live, via saalN.tcpayer.de) |
+| Playlist-Vorschau | `playlist-preview.php` — Monitor-Rendering einer einzelnen Playlist (ohne Zeitplan) |
 
 ---
 
@@ -235,6 +236,11 @@ FRET-Polling 5–10 Sek., Ticker unabhängig.
 - **Stundenplan Standort-Filter:** `location_ids` (JSON-String `"[1,3]"` oder `""`) in `modul_instanzen.einstellungen`; `proxies/nc-locations.php` ruft `POST /data/locations` (Stammdaten, gleicher `NC_API_KEY`) ab und liefert `[{id, name, rooms:[{id,name}]}]`; `nc.php` filtert serverseitig nach `locationId` (camelCase String! nicht `location_id`). Admin-Editor: Checkboxen je Standort, abhängiges Saal-Dropdown.
 - **Stundenplan Saal-Filter:** `room_id` (int, 0 = alle) in Einstellungen; `nc.php` filtert nach `room_id`/`roomId` (camelCase-Fallback); Saal-Dropdown im Admin zeigt nur Säle der angehakten Standorte.
 - **Stundenplan responsive Schrift:** `.tm-spalte { container-type: inline-size }` + `@container (max-width: 700px)` in `monitor.css` → 22px in 3-Spalten-Layout, 32px in 1/2-Spalten.
+- **Stundenplan feste Kartenhöhe:** `requestAnimationFrame` in `frontend.js` misst `tm-sp-cards.clientHeight` nach dem Rendern und setzt jede Karte auf `floor((totalH - gap*(anzahl-1)) / anzahl)` px → `flex: 0 0 Xpx`. Verhindert riesige Karten wenn weniger Kurse als konfigurierte Maximalanzahl vorhanden.
+- **Ticker Schriftgröße / Footer-Höhe:** 30 px Schrift (war 22 px), Footer-Höhe 70 px (war 58 px). Hardcodierter Animations-Wert in `monitor.js` (`footerEl.style.height`) muss bei Änderung mitgepflegt werden.
+- **Playlist-Vorschau:** `admin/playlist-preview.php` — standalone HTML-Seite (kein admin_header/footer), lädt Playlist per `?id=X` direkt aus DB, rendert Monitor-Layout mit `TanzschuleLoader.render()`, kein Polling. Wird via `adm-vorschau-btn`-Mechanismus (iFrame-Modal in `layout.php`) aus den Playlist-Kacheln geöffnet. Ticker deaktiviert in Vorschau (kein Zeitplan-Kontext).
+- **Pixel-Größen im Playlist-Editor:** Panel neben der schematischen Vorschau (flex-row); berechnet 1920×1080-Basis dynamisch: Header 80 px, Footer 70 px, Spaltenbreiten aus Prozent-Angaben. Wird bei jedem Layout-/Regler-/Checkbox-Wechsel aktualisiert.
+- **Zeitplan-Sortierung:** ↑/↓-Buttons in jeder Playlist- und Ticker-Zeitplan-Zeile (`monitor-zeitplan.php`); verschiebt Zeilen im DOM, gespeicherte Reihenfolge gilt als Tiebreaker bei gleicher Priorität.
 
 ---
 
@@ -251,9 +257,10 @@ FRET-Polling 5–10 Sek., Ticker unabhängig.
 | 7 | Backend: Monitore + Zeitplan (monitor-zentrisch) | ✅ live getestet |
 | 8 | Backend: Ticker + Ticker-Zeitplan | ✅ live getestet |
 | 9 | Monitor-Frontend (Anzeige- + Zeitlogik) | ✅ live getestet |
-| 9b | Monitor-Frontend: Layout `stundenplan` (✅ live, inkl. Standort-/Saal-Filter + responsive Schrift) + `fret` (offen) | teilweise |
-| 10 | Live-Vorschau (iFrame) | ✅ live getestet |
+| 9b | Monitor-Frontend: `stundenplan` ✅ live (Standort-/Saal-Filter, responsive Schrift, feste Kartenhöhe); `fret` offen (Fortschrittsbalken wartet auf FRET-Server-Fix) | teilweise |
+| 10 | Live-Vorschau (iFrame) + Playlist-Vorschau (`playlist-preview.php`) | ✅ live getestet |
 | 11 | Deployment-Guide | ✅ live (manuell per FTP auf all-inkl, läuft produktiv) |
+| 12 | Livebetrieb-Feedback: Ticker 30 px/70 px, Pixel-Größen-Panel, Zeitplan-Sortierung, Endnutzer-Texte | ✅ live |
 
 ---
 
