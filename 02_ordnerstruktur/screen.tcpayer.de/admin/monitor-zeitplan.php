@@ -211,13 +211,11 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
     <div class="adm-card">
         <h2>Playlist-Zeitplan</h2>
         <p class="adm-hilfe">
-            Lege fest, welche Playlist wann auf diesem Monitor läuft. Pro Eintrag:
-            Playlist (Kachel anklicken) + Wochentage + <strong>optional</strong>
-            ein Uhrzeit-Fenster + Priorität. <strong>Ohne Uhrzeit läuft der
-            Eintrag dauerhaft</strong> (ganztags an den gewählten Tagen) und dient
-            als Fallback — Einträge <strong>mit</strong> Uhrzeit überschreiben ihn.
-            Bei mehreren passenden Einträgen gewinnt die <strong>höhere
-            Priorität</strong> (Zahl). Die Auswertung erfolgt am Monitor (Schritt 9).
+            Lege fest, welche Playlist wann auf diesem Monitor läuft. Playlist auswählen,
+            Wochentage anklicken, und optional ein Uhrzeit-Fenster angeben.
+            <strong>Ohne Uhrzeit</strong> läuft der Eintrag ganztags (Fallback).
+            Bei mehreren passenden Einträgen gewinnt die <strong>höhere Priorität</strong>.
+            Mit ↑/↓ die Reihenfolge bei gleicher Priorität festlegen.
         </p>
         <?php if (empty($playlists)): ?>
             <p class="adm-hilfe">Es gibt noch keine Playlists. Lege zuerst unter
@@ -321,7 +319,11 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
             : '';
 
         zeile.innerHTML =
-            '<button type="button" class="adm-zr-weg" title="Eintrag entfernen" aria-label="Eintrag entfernen">×</button>' +
+            '<div class="adm-zr-sortier">' +
+                '<button type="button" class="adm-mini adm-zr-hoch" title="Nach oben">↑</button>' +
+                '<button type="button" class="adm-mini adm-zr-runter" title="Nach unten">↓</button>' +
+                '<button type="button" class="adm-zr-weg" title="Eintrag entfernen" aria-label="Eintrag entfernen">×</button>' +
+            '</div>' +
             '<div class="adm-zr-feld adm-zr-auswahl">' +
                 '<span class="adm-zr-label">' + META[art].label + '</span>' +
                 '<input type="hidden" data-feld="' + idFeld + '" value="' + (parseInt(idVal, 10) || '') + '">' +
@@ -356,6 +358,16 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
             var zeile = e.target.closest('.adm-zeitregel');
             if (!zeile) { return; }
             if (e.target.closest('.adm-zr-weg')) { zeile.remove(); return; }
+            if (e.target.closest('.adm-zr-hoch')) {
+                var prev = zeile.previousElementSibling;
+                if (prev && prev.classList.contains('adm-zeitregel')) { liste.insertBefore(zeile, prev); }
+                return;
+            }
+            if (e.target.closest('.adm-zr-runter')) {
+                var next = zeile.nextElementSibling;
+                if (next && next.classList.contains('adm-zeitregel')) { liste.insertBefore(next, zeile); }
+                return;
+            }
             if (e.target.closest('.adm-auswahl-kachel')) { oeffnePicker(liste, zeile); return; }
             var tagBtn = e.target.closest('.adm-tag-btn');
             if (tagBtn) {

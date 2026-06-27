@@ -47,11 +47,11 @@ function admin_header(string $titel, string $aktiv = ''): void
             <?php if ($verfuegbar): ?>
                 <a href="<?= htmlspecialchars($link) ?>" class="<?= $key === $aktiv ? 'aktiv' : '' ?>"><?= htmlspecialchars($label) ?></a>
             <?php else: ?>
-                <span class="adm-nav-disabled" title="kommt in einem späteren Schritt"><?= htmlspecialchars($label) ?></span>
+                <span class="adm-nav-disabled"><?= htmlspecialchars($label) ?></span>
             <?php endif; ?>
         <?php endforeach; ?>
         <?php foreach ($kommtNoch as $label): ?>
-            <span class="adm-nav-disabled" title="kommt in einem späteren Schritt"><?= htmlspecialchars($label) ?></span>
+            <span class="adm-nav-disabled"><?= htmlspecialchars($label) ?></span>
         <?php endforeach; ?>
         <?php
         $reloadOk = isset($_GET['reload_ok']);

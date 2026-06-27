@@ -426,7 +426,7 @@
                         }, CROSSFADE_MS + 50);
                     } else if (!oldFooter && newFooter) {
                         footerEl.style.transition = 'height ' + CROSSFADE_MS + 'ms ease, opacity ' + CROSSFADE_MS + 'ms ease';
-                        footerEl.style.height = '58px';
+                        footerEl.style.height = '70px';
                         footerEl.style.opacity = '1';
                         setTimeout(function () {
                             footerEl.style.height = '';

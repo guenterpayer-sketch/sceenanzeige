@@ -219,26 +219,25 @@ function pl_modul_icon(string $icon): string
         </div>
 
         <h2>Vorschau (schematisch)</h2>
-        <p class="adm-hilfe">Nur die Proportionen — das echte Modul-Rendering folgt in einem späteren Schritt.</p>
         <div class="adm-vorschau" id="vorschau">
             <div class="adm-vorschau-header" id="vorschau-header">Uhrzeit / Datum</div>
             <div class="adm-vorschau-spalten" id="vorschau-spalten"></div>
             <div class="adm-vorschau-footer" id="vorschau-footer">Ticker</div>
         </div>
+        <div class="adm-px-info" id="px-info" style="margin-top:12px;font-size:13px;color:#666;line-height:1.8"></div>
     </div>
 
     <div class="adm-card">
         <h2>Spalten-Inhalte</h2>
         <p class="adm-hilfe">
-            Pro Spalte eine oder mehrere Modul-Instanzen aus der Bibliothek. Reihenfolge per ↑/↓.
-            Die Instanzen rotieren später unabhängig (Schritt 9).
+            Pro Spalte eine oder mehrere Modul-Instanzen aus der Bibliothek. Reihenfolge per ↑/↓ oder per Drag&amp;Drop. Mehrere Instanzen in einer Spalte rotieren automatisch.
         </p>
         <div class="adm-spalten" id="spalten"></div>
     </div>
 
     <p class="adm-hilfe">
-        <strong>Wann</strong> diese Playlist auf <strong>welchem Monitor</strong> läuft,
-        legst du im Bereich <a href="monitore.php">Monitore</a> → „Zeitplan" fest.
+        Wann diese Playlist auf welchem Monitor läuft, steuerst du unter
+        <a href="monitore.php">Monitore → Zeitplan</a>.
     </p>
 
     <div class="adm-aktionsleiste">
@@ -311,9 +310,11 @@ function pl_modul_icon(string $icon): string
         }
     }
 
-    // ---- Schematische Vorschau ----
+    // ---- Schematische Vorschau + Pixel-Info ----
     function aktualisiereVorschau() {
         var b = breiten();
+        var hatHeader = document.getElementById('header_sichtbar').checked;
+        var hatFooter = document.getElementById('footer_ticker').checked;
         vorschauSp.innerHTML = '';
         b.forEach(function (br, i) {
             var sp = document.createElement('div');
@@ -322,8 +323,24 @@ function pl_modul_icon(string $icon): string
             sp.textContent = 'Spalte ' + (i + 1) + ' · ' + br + ' %';
             vorschauSp.appendChild(sp);
         });
-        vHeader.style.display = document.getElementById('header_sichtbar').checked ? '' : 'none';
-        vFooter.style.display = document.getElementById('footer_ticker').checked ? '' : 'none';
+        vHeader.style.display = hatHeader ? '' : 'none';
+        vFooter.style.display = hatFooter ? '' : 'none';
+
+        // Pixel-Größen (für Canva / Grafik-Tools)
+        var pxEl = document.getElementById('px-info');
+        if (pxEl) {
+            var contentH = 1080 - (hatHeader ? 80 : 0) - (hatFooter ? 70 : 0);
+            var zeilen = ['<strong>Pixel-Größen (für Canva / Grafik-Tools):</strong>'];
+            zeilen.push('Gesamtschirm: 1920 × 1080 px');
+            if (hatHeader) { zeilen.push('Header: 1920 × 80 px'); }
+            zeilen.push('Hauptfläche: 1920 × ' + contentH + ' px');
+            if (hatFooter) { zeilen.push('Footer-Ticker: 1920 × 70 px'); }
+            b.forEach(function (br, i) {
+                var colW = Math.round(1920 * br / 100);
+                zeilen.push('Spalte ' + (i + 1) + ': ' + colW + ' × ' + contentH + ' px');
+            });
+            pxEl.innerHTML = zeilen.join('<br>');
+        }
     }
 
     // ---- Spalten-Editor ----

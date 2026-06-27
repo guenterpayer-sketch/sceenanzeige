@@ -61,9 +61,9 @@ admin_header('Playlists', 'playlists');
 <?php endif; ?>
 
 <p class="adm-hilfe">
-    Playlists füllen die Monitor-Hauptfläche: ein Layout (1–3 Spalten) mit
-    Modul-Instanzen je Spalte. Zeitregeln und Saal-Zuweisung folgen in einem
-    späteren Schritt.
+    Hier legst du Playlists an. Jede Playlist hat ein Layout (1–3 Spalten) mit
+    Modul-Instanzen je Spalte. Wann welche Playlist läuft, steuerst du unter
+    <a href="monitore.php">Monitore → Zeitplan</a>.
 </p>
 
 <div class="adm-neuzeile">
@@ -93,6 +93,9 @@ admin_header('Playlists', 'playlists');
                 </div>
                 <div class="adm-kachel-aktionen">
                     <a class="adm-btn" href="playlist-editor.php?id=<?= (int)$p['id'] ?>">Bearbeiten</a>
+                    <button type="button" class="adm-btn adm-vorschau-btn"
+                            data-url="playlist-preview.php?id=<?= (int)$p['id'] ?>"
+                            data-name="<?= htmlspecialchars($p['name']) ?>">Vorschau</button>
                     <form method="post" class="adm-inline">
                         <input type="hidden" name="aktion" value="toggle">
                         <input type="hidden" name="id" value="<?= (int)$p['id'] ?>">

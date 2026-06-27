@@ -132,7 +132,7 @@ html, body {
 
 #tm-footer {
     flex: 0 0 auto;
-    height: 58px;
+    height: 70px;
     overflow: hidden;
     display: flex;
     align-items: center;
@@ -148,7 +148,7 @@ html, body {
 .tm-ticker-text {
     position: relative;
     white-space: nowrap;
-    font-size: 22px;
+    font-size: 30px;
     font-weight: 600;
     letter-spacing: 0.01em;
     will-change: transform, opacity;
