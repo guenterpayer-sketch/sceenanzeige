@@ -19,7 +19,7 @@
 Digitales Monitor-Signage-System für eine Tanzschule. Zentrales Backend
 (`screen.tcpayer.de`) + schlanke Saal-Monitor-Frontends (`saalN.tcpayer.de`)
 im Vollbild-Kiosk-Modus. Module: `uhrzeit`, `bild`, `ankuendigung`,
-`stundenplan`, `fret`. Ticker läuft als eigenständiges Footer-System.
+`stundenplan`, `fret`, `veranstaltung`. Ticker läuft als eigenständiges Footer-System.
 
 **Hosting:** all-inkl (PHP 8 + MySQL). Kein Node.js, kein Docker.
 
@@ -27,6 +27,7 @@ im Vollbild-Kiosk-Modus. Module: `uhrzeit`, `bild`, `ankuendigung`,
 |---|---|---|---|
 | **FRET** | Musiksoftware; Songanzeige je Saal | `fret` | `FRET_SCHOOL_ID` + Computer-UUID |
 | **Nimbuscloud** | Tanzschulverwaltung; Stundenplan | `stundenplan` | `NC_API_KEY` (schulweit) |
+| **tcpayer.de** | Homepage; Veranstaltungskalender | `veranstaltung` | kein Key (öffentliche WP REST-API) |
 
 Beide Systeme sind vollständig unabhängig — getrennte Proxys, getrennte Keys.
 
@@ -79,8 +80,9 @@ screen.tcpayer.de/
 │   ├── 2-spaltig-50-50/
 │   └── 3-spaltig-gleich/
 ├── proxies/
-│   ├── nc.php         (NC Legacy-API, Key serverseitig)
-│   └── fret.php       (FRET, schoolId serverseitig)
+│   ├── nc.php              (NC Legacy-API, Key serverseitig)
+│   ├── fret.php            (FRET, schoolId serverseitig)
+│   └── veranstaltungen.php (WP Events Calendar REST-API, kein Key)
 └── uploads/
 ```
 
@@ -120,6 +122,7 @@ Playlist = Layout (1–3 Spalten, Breiten frei in %) + Modul-Instanzen je Spalte
 | `stundenplan` | NC Legacy-API `/timetable/data` |
 | `uhrzeit` | Live Uhrzeit + Datum |
 | `fret` | Aktuell laufender Song (Polling via `proxies/fret.php`) |
+| `veranstaltung` | Kommende Veranstaltungen von tcpayer.de (WP Events Calendar REST-API) |
 
 `community` zurückgestellt (würde sensibleren Stammdaten-Key brauchen).
 
@@ -241,6 +244,8 @@ FRET-Polling 5–10 Sek., Ticker unabhängig.
 - **Playlist-Vorschau:** `admin/playlist-preview.php` — standalone HTML-Seite (kein admin_header/footer), lädt Playlist per `?id=X` direkt aus DB, rendert Monitor-Layout mit `TanzschuleLoader.render()`, kein Polling. Wird via `adm-vorschau-btn`-Mechanismus (iFrame-Modal in `layout.php`) aus den Playlist-Kacheln geöffnet. Ticker deaktiviert in Vorschau (kein Zeitplan-Kontext).
 - **Pixel-Größen im Playlist-Editor:** Panel neben der schematischen Vorschau (flex-row); berechnet 1920×1080-Basis dynamisch: Header 80 px, Footer 70 px, Spaltenbreiten aus Prozent-Angaben. Wird bei jedem Layout-/Regler-/Checkbox-Wechsel aktualisiert.
 - **Zeitplan-Sortierung:** ↑/↓-Buttons in jeder Playlist- und Ticker-Zeitplan-Zeile (`monitor-zeitplan.php`); verschiebt Zeilen im DOM, gespeicherte Reihenfolge gilt als Tiebreaker bei gleicher Priorität.
+- **Vorschau-Schema feste Breite:** `.adm-vorschau` im Playlist-Editor hat `flex: 0 0 480px; width: 480px` (inline), damit es im flex-row neben dem Pixel-Info-Panel nicht zusammengedrückt wird.
+- **Modul `veranstaltung`:** Proxy `proxies/veranstaltungen.php` ruft `https://tcpayer.de/wp-json/tribe/events/v1/events?per_page=N&start_date=heute` ab (öffentlich, kein Key). `status=future` wird von der kostenlosen Version des Plugins nicht unterstützt → stattdessen `start_date`. Felder: `titel`, `start_date`, `end_date`, `bild_url` (aus `image.url` oder null), `venue` (aus `venue.venue`-String), `beschreibung` (HTML gestrippt, max. 160 Zeichen). Frontend: A/B-Crossfade analog zu `ankuendigung`, deutsche Datums-/Uhrzeitformatierung (Wochentag + Monatsname). Einstellungen: `anzahl` (max. 20), `anzeige_dauer_sek`, `uebergang` (fade/none).
 
 ---
 
@@ -261,6 +266,7 @@ FRET-Polling 5–10 Sek., Ticker unabhängig.
 | 10 | Live-Vorschau (iFrame) + Playlist-Vorschau (`playlist-preview.php`) | ✅ live getestet |
 | 11 | Deployment-Guide | ✅ live (manuell per FTP auf all-inkl, läuft produktiv) |
 | 12 | Livebetrieb-Feedback: Ticker 30 px/70 px, Pixel-Größen-Panel, Zeitplan-Sortierung, Endnutzer-Texte | ✅ live |
+| 13 | Modul `veranstaltung` (WP Events Calendar) + Vorschau-Schema-Fix | ✅ geliefert, noch nicht live getestet |
 
 ---
 
