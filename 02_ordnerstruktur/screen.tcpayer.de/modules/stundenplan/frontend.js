@@ -108,6 +108,22 @@
                 });
                 html += '</div>';
                 container.innerHTML = html;
+
+                // Feste Kartenhöhe: immer auf anzahl (max) gerechnet,
+                // damit wenige Kurse keine riesigen Karten erzeugen.
+                requestAnimationFrame(function () {
+                    var cardsEl = container.querySelector('.tm-sp-cards');
+                    if (!cardsEl) { return; }
+                    var totalH = cardsEl.clientHeight;
+                    if (totalH <= 0) { return; }
+                    var gapPx = parseFloat(window.getComputedStyle(cardsEl).gap) || 7;
+                    var cardH = Math.floor((totalH - gapPx * (anzahl - 1)) / anzahl);
+                    if (cardH <= 0) { return; }
+                    cardsEl.querySelectorAll('.tm-sp-card').forEach(function (c) {
+                        c.style.flex = '0 0 ' + cardH + 'px';
+                        c.style.overflow = 'hidden';
+                    });
+                });
             })
             .catch(function () {
                 container.innerHTML = '<div class="tm-sp-status tm-sp-fehler">'

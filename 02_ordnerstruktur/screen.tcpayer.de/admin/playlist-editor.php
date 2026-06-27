@@ -219,12 +219,14 @@ function pl_modul_icon(string $icon): string
         </div>
 
         <h2>Vorschau (schematisch)</h2>
-        <div class="adm-vorschau" id="vorschau">
-            <div class="adm-vorschau-header" id="vorschau-header">Uhrzeit / Datum</div>
-            <div class="adm-vorschau-spalten" id="vorschau-spalten"></div>
-            <div class="adm-vorschau-footer" id="vorschau-footer">Ticker</div>
+        <div style="display:flex;gap:24px;align-items:flex-start">
+            <div class="adm-vorschau" id="vorschau">
+                <div class="adm-vorschau-header" id="vorschau-header">Uhrzeit / Datum</div>
+                <div class="adm-vorschau-spalten" id="vorschau-spalten"></div>
+                <div class="adm-vorschau-footer" id="vorschau-footer">Ticker</div>
+            </div>
+            <div id="px-info" style="font-size:13px;color:#666;line-height:1.9;flex-shrink:0;padding-top:4px"></div>
         </div>
-        <div class="adm-px-info" id="px-info" style="margin-top:12px;font-size:13px;color:#666;line-height:1.8"></div>
     </div>
 
     <div class="adm-card">
