@@ -172,6 +172,7 @@ admin_header('Monitore', 'monitore');
 <script>
 document.querySelectorAll('.adm-del-form').forEach(function (f) {
     f.addEventListener('submit', function (e) {
+        e.preventDefault();
         var n = parseInt(f.dataset.anzahl || '0', 10);
         var txt = 'Monitor „' + (f.dataset.name || '') + '" wirklich löschen?';
         if (n > 0) {
@@ -179,7 +180,9 @@ document.querySelectorAll('.adm-del-form').forEach(function (f) {
                  + '(Playlist + Ticker) — diese werden mit entfernt '
                  + '(die Playlists/Ticker selbst bleiben).';
         }
-        if (!confirm(txt)) { e.preventDefault(); }
+        admBestaetigen(txt, function (ok) {
+            if (ok) { f.submit(); }
+        }, 'Löschen');
     });
 });
 </script>

@@ -185,7 +185,11 @@ admin_header(($istNeu ? 'Neuer Ticker' : 'Ticker bearbeiten'), 'ticker');
         var akt = e.target.getAttribute('data-akt');
         if (akt === 'weg') {
             var text = (zeile.querySelector('[data-feld="text"]').value || '').trim();
-            if (text === '' || confirm('Diese Textzeile entfernen?')) { zeile.remove(); }
+            if (text === '') {
+                zeile.remove();
+            } else {
+                admBestaetigen('Diese Textzeile entfernen?', function (ok) { if (ok) { zeile.remove(); } }, 'Entfernen');
+            }
             return;
         }
         if (akt === 'hoch' && zeile.previousElementSibling) {

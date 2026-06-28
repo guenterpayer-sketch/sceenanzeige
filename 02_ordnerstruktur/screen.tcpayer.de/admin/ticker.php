@@ -102,9 +102,10 @@ admin_header('Ticker', 'ticker');
 <script>
 document.querySelectorAll('.adm-del-form').forEach(function (f) {
     f.addEventListener('submit', function (e) {
-        if (!confirm('Ticker „' + (f.dataset.name || '') + '" wirklich löschen?')) {
-            e.preventDefault();
-        }
+        e.preventDefault();
+        admBestaetigen('Ticker „' + (f.dataset.name || '') + '" wirklich löschen?', function (ok) {
+            if (ok) { f.submit(); }
+        }, 'Löschen');
     });
 });
 </script>

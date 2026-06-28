@@ -87,27 +87,31 @@ if ($view === 'uebersicht') {
                 .catch(function () { alert(fehlertext + ' (Netzwerkfehler).'); return false; });
         }
         document.getElementById('ordner-neu').addEventListener('click', function () {
-            var name = prompt('Name des neuen Ordners:');
-            if (name == null || name.trim() === '') { return; }
-            ordnerAktion({ action: 'create', name: name.trim() }, 'Ordner konnte nicht angelegt werden.')
-                .then(function (ok) { if (ok) { location.reload(); } });
+            admEingabe('Name des neuen Ordners:', '', function (name) {
+                if (!name) { return; }
+                ordnerAktion({ action: 'create', name: name }, 'Ordner konnte nicht angelegt werden.')
+                    .then(function (ok) { if (ok) { location.reload(); } });
+            });
         });
         document.querySelector('.adm-ordnergrid').addEventListener('click', function (e) {
             var ed = e.target.closest('.adm-ordner-edit');
             if (ed) {
                 e.preventDefault();
-                var name = prompt('Ordner umbenennen:', ed.getAttribute('data-name'));
-                if (name == null || name.trim() === '') { return; }
-                ordnerAktion({ action: 'rename', id: ed.getAttribute('data-id'), name: name.trim() }, 'Umbenennen fehlgeschlagen.')
-                    .then(function (ok) { if (ok) { location.reload(); } });
+                admEingabe('Ordner umbenennen:', ed.getAttribute('data-name'), function (name) {
+                    if (!name) { return; }
+                    ordnerAktion({ action: 'rename', id: ed.getAttribute('data-id'), name: name }, 'Umbenennen fehlgeschlagen.')
+                        .then(function (ok) { if (ok) { location.reload(); } });
+                });
                 return;
             }
             var dl = e.target.closest('.adm-ordner-del');
             if (dl) {
                 e.preventDefault();
-                if (!confirm('Ordner „' + dl.getAttribute('data-name') + '" löschen? Die Bilder bleiben erhalten und landen in „Ohne Ordner".')) { return; }
-                ordnerAktion({ action: 'delete', id: dl.getAttribute('data-id') }, 'Löschen fehlgeschlagen.')
-                    .then(function (ok) { if (ok) { location.reload(); } });
+                admBestaetigen('Ordner „' + dl.getAttribute('data-name') + '" löschen? Die Bilder bleiben erhalten und landen in „Ohne Ordner".', function (ok) {
+                    if (!ok) { return; }
+                    ordnerAktion({ action: 'delete', id: dl.getAttribute('data-id') }, 'Löschen fehlgeschlagen.')
+                        .then(function (ok2) { if (ok2) { location.reload(); } });
+                }, 'Löschen');
             }
         });
     })();
@@ -210,27 +214,6 @@ admin_header('Mediathek – ' . $aktuellerName, 'mediathek');
     <?php endforeach; ?>
 </div>
 
-<!-- Bestätigungs-Dialog (ersetzt confirm() + alert()) -->
-<div id="confirm-overlay" class="adm-overlay" hidden>
-    <div class="adm-dialog">
-        <p id="confirm-text" style="margin-bottom:20px;font-size:15px;"></p>
-        <div class="adm-dialog-aktionen">
-            <button type="button" id="confirm-nein" class="adm-btn-grau">Abbrechen</button>
-            <button type="button" id="confirm-ja" class="adm-btn" style="background:#c0392b;color:#fff;">Löschen</button>
-        </div>
-    </div>
-</div>
-
-<!-- Meldungs-Dialog (ersetzt alert()) -->
-<div id="meldung-overlay" class="adm-overlay" hidden>
-    <div class="adm-dialog">
-        <p id="meldung-text" style="margin-bottom:20px;font-size:15px;"></p>
-        <div class="adm-dialog-aktionen">
-            <button type="button" id="meldung-ok" class="adm-btn">OK</button>
-        </div>
-    </div>
-</div>
-
 <!-- Bearbeiten-Dialog -->
 <div id="edit-overlay" class="adm-overlay" hidden>
     <div class="adm-dialog">
@@ -281,38 +264,7 @@ admin_header('Mediathek – ' . $aktuellerName, 'mediathek');
     function bildEl(id) { return galerie.querySelector('.adm-bild[data-id="' + id + '"]'); }
     function tagsHtml(tags) { return (tags || []).map(function (t) { return '<span class="adm-minitag">' + escapeHtml(t) + '</span>'; }).join(''); }
 
-    // Eigene Dialoge statt confirm()/alert() (Browser kann native Dialoge blockieren)
-    var confirmOverlay = document.getElementById('confirm-overlay');
-    var confirmText    = document.getElementById('confirm-text');
-    var confirmJa      = document.getElementById('confirm-ja');
-    var confirmNein    = document.getElementById('confirm-nein');
-    var meldungOverlay = document.getElementById('meldung-overlay');
-    var meldungText    = document.getElementById('meldung-text');
-    var meldungOk      = document.getElementById('meldung-ok');
-
-    function zeigeBestaetigung(text, callback) {
-        confirmText.textContent = text;
-        confirmOverlay.hidden = false;
-        function aufraeumen() {
-            confirmOverlay.hidden = true;
-            confirmJa.removeEventListener('click', jaHandler);
-            confirmNein.removeEventListener('click', neinHandler);
-            confirmOverlay.removeEventListener('click', overlayHandler);
-        }
-        function jaHandler()      { aufraeumen(); callback(true); }
-        function neinHandler()    { aufraeumen(); callback(false); }
-        function overlayHandler(e) { if (e.target === confirmOverlay) { aufraeumen(); callback(false); } }
-        confirmJa.addEventListener('click', jaHandler);
-        confirmNein.addEventListener('click', neinHandler);
-        confirmOverlay.addEventListener('click', overlayHandler);
-    }
-
-    function zeigeMeldung(text) {
-        meldungText.textContent = text;
-        meldungOverlay.hidden = false;
-    }
-    meldungOk.addEventListener('click', function () { meldungOverlay.hidden = true; });
-    meldungOverlay.addEventListener('click', function (e) { if (e.target === meldungOverlay) { meldungOverlay.hidden = true; } });
+    // Globale Dialoge aus layout.php (admBestaetigen / admMeldung) verwenden
 
     function ergaenzeKachel(e) {
         entferneLeerHinweis();
@@ -372,17 +324,17 @@ admin_header('Mediathek – ' . $aktuellerName, 'mediathek');
         var del = e.target.closest('.adm-bild-del');
         if (del) {
             var id = del.getAttribute('data-id');
-            zeigeBestaetigung('Dieses Bild wirklich löschen?', function (ok) {
+            admBestaetigen('Dieses Bild wirklich löschen?', function (ok) {
                 if (!ok) { return; }
                 var fd = new FormData(); fd.append('id', id);
                 fetch('api/mediathek-delete.php', { method: 'POST', body: fd })
                     .then(function (r) { return r.json(); })
                     .then(function (data) {
                         if (data.ok) { var f = bildEl(id); if (f) { f.remove(); aktualisiereAnzahl(-1); } }
-                        else { zeigeMeldung(data.error || 'Löschen nicht möglich.'); }
+                        else { admMeldung(data.error || 'Löschen nicht möglich.'); }
                     })
-                    .catch(function () { zeigeMeldung('Löschen fehlgeschlagen (Netzwerkfehler).'); });
-            });
+                    .catch(function () { admMeldung('Löschen fehlgeschlagen (Netzwerkfehler).'); });
+            }, 'Löschen');
             return;
         }
         var edit = e.target.closest('.adm-bild-edit');
@@ -419,7 +371,7 @@ admin_header('Mediathek – ' . $aktuellerName, 'mediathek');
         fetch('api/mediathek-update.php', { method: 'POST', body: fd })
             .then(function (r) { return r.json(); })
             .then(function (data) {
-                if (!data.ok) { zeigeMeldung(data.error || 'Speichern fehlgeschlagen.'); return; }
+                if (!data.ok) { admMeldung(data.error || 'Speichern fehlgeschlagen.'); return; }
                 var fig = bildEl(aktuelleId);
                 var neuerOrdner = data.ordner_id != null ? String(data.ordner_id) : '';
                 if (fig) {
@@ -437,7 +389,7 @@ admin_header('Mediathek – ' . $aktuellerName, 'mediathek');
                 }
                 schliesseEdit();
             })
-            .catch(function () { zeigeMeldung('Speichern fehlgeschlagen (Netzwerkfehler).'); });
+            .catch(function () { admMeldung('Speichern fehlgeschlagen (Netzwerkfehler).'); });
     });
 })();
 </script>

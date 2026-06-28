@@ -314,7 +314,10 @@ admin_header(($istNeu ? 'Neue ' : '') . $meta['label'] . '-Instanz', 'bibliothek
             return;
         }
         var akt = e.target.getAttribute('data-akt');
-        if (akt === 'weg')   { if (confirm('Diesen Eintrag entfernen?')) { zeile.remove(); } }
+        if (akt === 'weg') {
+            admBestaetigen('Diesen Eintrag entfernen?', function (ok) { if (ok) { zeile.remove(); } }, 'Entfernen');
+            return;
+        }
         if (akt === 'hoch'   && zeile.previousElementSibling) { liste.insertBefore(zeile, zeile.previousElementSibling); }
         if (akt === 'runter' && zeile.nextElementSibling)     { liste.insertBefore(zeile.nextElementSibling, zeile); }
     });

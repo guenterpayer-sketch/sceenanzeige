@@ -116,9 +116,10 @@ admin_header('Playlists', 'playlists');
 <script>
 document.querySelectorAll('.adm-del-form').forEach(function (f) {
     f.addEventListener('submit', function (e) {
-        if (!confirm('Playlist „' + (f.dataset.name || '') + '" wirklich löschen?')) {
-            e.preventDefault();
-        }
+        e.preventDefault();
+        admBestaetigen('Playlist „' + (f.dataset.name || '') + '" wirklich löschen?', function (ok) {
+            if (ok) { f.submit(); }
+        }, 'Löschen');
     });
 });
 </script>

@@ -142,6 +142,100 @@ function admin_footer(): void
 })();
 </script>
 
+<!-- ===== Globale Dialoge (ersetzt confirm / alert / prompt auf allen Seiten) ===== -->
+<div id="adm-dlg-confirm" class="adm-overlay" hidden>
+    <div class="adm-dialog">
+        <p id="adm-dlg-confirm-text" style="margin-bottom:20px;font-size:15px;white-space:pre-line;"></p>
+        <div class="adm-dialog-aktionen">
+            <button type="button" id="adm-dlg-confirm-nein" class="adm-btn adm-btn-grau">Abbrechen</button>
+            <button type="button" id="adm-dlg-confirm-ja" class="adm-btn" style="background:#c0392b;color:#fff;"></button>
+        </div>
+    </div>
+</div>
+<div id="adm-dlg-meldung" class="adm-overlay" hidden>
+    <div class="adm-dialog">
+        <p id="adm-dlg-meldung-text" style="margin-bottom:20px;font-size:15px;white-space:pre-line;"></p>
+        <div class="adm-dialog-aktionen">
+            <button type="button" id="adm-dlg-meldung-ok" class="adm-btn">OK</button>
+        </div>
+    </div>
+</div>
+<div id="adm-dlg-eingabe" class="adm-overlay" hidden>
+    <div class="adm-dialog">
+        <p id="adm-dlg-eingabe-text" style="margin-bottom:12px;font-size:15px;"></p>
+        <input type="text" id="adm-dlg-eingabe-input" style="width:100%;margin-bottom:16px;padding:8px;border:1px solid #ccd3db;border-radius:4px;font-size:15px;">
+        <div class="adm-dialog-aktionen">
+            <button type="button" id="adm-dlg-eingabe-nein" class="adm-btn adm-btn-grau">Abbrechen</button>
+            <button type="button" id="adm-dlg-eingabe-ok" class="adm-btn">OK</button>
+        </div>
+    </div>
+</div>
+<script>
+(function () {
+    // --- Bestätigung (ersetzt confirm) ---
+    var cOv  = document.getElementById('adm-dlg-confirm');
+    var cTxt = document.getElementById('adm-dlg-confirm-text');
+    var cJa  = document.getElementById('adm-dlg-confirm-ja');
+    var cNein= document.getElementById('adm-dlg-confirm-nein');
+    window.admBestaetigen = function (text, callback, jaLabel) {
+        cTxt.textContent  = text;
+        cJa.textContent   = jaLabel || 'OK';
+        cOv.hidden = false;
+        function auf() {
+            cOv.hidden = true;
+            cJa.removeEventListener('click', ja);
+            cNein.removeEventListener('click', nein);
+            cOv.removeEventListener('click', ov);
+        }
+        function ja()   { auf(); callback(true); }
+        function nein() { auf(); callback(false); }
+        function ov(e)  { if (e.target === cOv) { auf(); callback(false); } }
+        cJa.addEventListener('click', ja);
+        cNein.addEventListener('click', nein);
+        cOv.addEventListener('click', ov);
+    };
+
+    // --- Meldung (ersetzt alert) ---
+    var mOv  = document.getElementById('adm-dlg-meldung');
+    var mTxt = document.getElementById('adm-dlg-meldung-text');
+    var mOk  = document.getElementById('adm-dlg-meldung-ok');
+    window.admMeldung = function (text) {
+        mTxt.textContent = text;
+        mOv.hidden = false;
+    };
+    mOk.addEventListener('click', function () { mOv.hidden = true; });
+    mOv.addEventListener('click', function (e) { if (e.target === mOv) { mOv.hidden = true; } });
+
+    // --- Eingabe (ersetzt prompt) ---
+    var eOv  = document.getElementById('adm-dlg-eingabe');
+    var eTxt = document.getElementById('adm-dlg-eingabe-text');
+    var eInp = document.getElementById('adm-dlg-eingabe-input');
+    var eOk  = document.getElementById('adm-dlg-eingabe-ok');
+    var eNein= document.getElementById('adm-dlg-eingabe-nein');
+    window.admEingabe = function (text, standard, callback) {
+        eTxt.textContent = text;
+        eInp.value = standard || '';
+        eOv.hidden = false;
+        setTimeout(function () { eInp.focus(); eInp.select(); }, 50);
+        function auf() {
+            eOv.hidden = true;
+            eOk.removeEventListener('click', ok);
+            eNein.removeEventListener('click', nein);
+            eOv.removeEventListener('click', ov);
+            eInp.removeEventListener('keydown', kd);
+        }
+        function ok()   { var v = eInp.value.trim(); auf(); callback(v === '' ? null : v); }
+        function nein() { auf(); callback(null); }
+        function ov(e)  { if (e.target === eOv) { auf(); callback(null); } }
+        function kd(e)  { if (e.key === 'Enter') { ok(); } else if (e.key === 'Escape') { nein(); } }
+        eOk.addEventListener('click', ok);
+        eNein.addEventListener('click', nein);
+        eOv.addEventListener('click', ov);
+        eInp.addEventListener('keydown', kd);
+    };
+})();
+</script>
+
 </body>
 </html>
 <?php

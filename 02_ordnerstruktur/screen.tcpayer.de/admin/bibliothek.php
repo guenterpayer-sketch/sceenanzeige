@@ -188,9 +188,10 @@ if ($istTypAnsicht) {
 <script>
 document.querySelectorAll('.adm-del-form').forEach(function (f) {
     f.addEventListener('submit', function (e) {
-        if (!confirm('Instanz „' + (f.dataset.name || '') + '" wirklich löschen?')) {
-            e.preventDefault();
-        }
+        e.preventDefault();
+        admBestaetigen('Instanz „' + (f.dataset.name || '') + '" wirklich löschen?', function (ok) {
+            if (ok) { f.submit(); }
+        }, 'Löschen');
     });
 });
 </script>

@@ -521,7 +521,7 @@ function pl_modul_icon(string $icon): string
         ).some(function (el) { return el !== gezogen && el.getAttribute('data-mid') === mid; });
         if (doppelt) {
             if (urParent) { urParent.insertBefore(gezogen, urNext); }
-            alert('Diese Instanz ist in der Zielspalte bereits enthalten.');
+            admMeldung('Diese Instanz ist in der Zielspalte bereits enthalten.');
         }
     });
 
