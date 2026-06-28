@@ -210,6 +210,27 @@ admin_header('Mediathek – ' . $aktuellerName, 'mediathek');
     <?php endforeach; ?>
 </div>
 
+<!-- Bestätigungs-Dialog (ersetzt confirm() + alert()) -->
+<div id="confirm-overlay" class="adm-overlay" hidden>
+    <div class="adm-dialog">
+        <p id="confirm-text" style="margin-bottom:20px;font-size:15px;"></p>
+        <div class="adm-dialog-aktionen">
+            <button type="button" id="confirm-nein" class="adm-btn-grau">Abbrechen</button>
+            <button type="button" id="confirm-ja" class="adm-btn" style="background:#c0392b;color:#fff;">Löschen</button>
+        </div>
+    </div>
+</div>
+
+<!-- Meldungs-Dialog (ersetzt alert()) -->
+<div id="meldung-overlay" class="adm-overlay" hidden>
+    <div class="adm-dialog">
+        <p id="meldung-text" style="margin-bottom:20px;font-size:15px;"></p>
+        <div class="adm-dialog-aktionen">
+            <button type="button" id="meldung-ok" class="adm-btn">OK</button>
+        </div>
+    </div>
+</div>
+
 <!-- Bearbeiten-Dialog -->
 <div id="edit-overlay" class="adm-overlay" hidden>
     <div class="adm-dialog">
@@ -259,6 +280,39 @@ admin_header('Mediathek – ' . $aktuellerName, 'mediathek');
     function entferneLeerHinweis() { var h = document.getElementById('leer-hinweis'); if (h) { h.remove(); } }
     function bildEl(id) { return galerie.querySelector('.adm-bild[data-id="' + id + '"]'); }
     function tagsHtml(tags) { return (tags || []).map(function (t) { return '<span class="adm-minitag">' + escapeHtml(t) + '</span>'; }).join(''); }
+
+    // Eigene Dialoge statt confirm()/alert() (Browser kann native Dialoge blockieren)
+    var confirmOverlay = document.getElementById('confirm-overlay');
+    var confirmText    = document.getElementById('confirm-text');
+    var confirmJa      = document.getElementById('confirm-ja');
+    var confirmNein    = document.getElementById('confirm-nein');
+    var meldungOverlay = document.getElementById('meldung-overlay');
+    var meldungText    = document.getElementById('meldung-text');
+    var meldungOk      = document.getElementById('meldung-ok');
+
+    function zeigeBestaetigung(text, callback) {
+        confirmText.textContent = text;
+        confirmOverlay.hidden = false;
+        function aufraeumen() {
+            confirmOverlay.hidden = true;
+            confirmJa.removeEventListener('click', jaHandler);
+            confirmNein.removeEventListener('click', neinHandler);
+            confirmOverlay.removeEventListener('click', overlayHandler);
+        }
+        function jaHandler()      { aufraeumen(); callback(true); }
+        function neinHandler()    { aufraeumen(); callback(false); }
+        function overlayHandler(e) { if (e.target === confirmOverlay) { aufraeumen(); callback(false); } }
+        confirmJa.addEventListener('click', jaHandler);
+        confirmNein.addEventListener('click', neinHandler);
+        confirmOverlay.addEventListener('click', overlayHandler);
+    }
+
+    function zeigeMeldung(text) {
+        meldungText.textContent = text;
+        meldungOverlay.hidden = false;
+    }
+    meldungOk.addEventListener('click', function () { meldungOverlay.hidden = true; });
+    meldungOverlay.addEventListener('click', function (e) { if (e.target === meldungOverlay) { meldungOverlay.hidden = true; } });
 
     function ergaenzeKachel(e) {
         entferneLeerHinweis();
@@ -318,15 +372,17 @@ admin_header('Mediathek – ' . $aktuellerName, 'mediathek');
         var del = e.target.closest('.adm-bild-del');
         if (del) {
             var id = del.getAttribute('data-id');
-            if (!confirm('Dieses Bild wirklich löschen?')) { return; }
-            var fd = new FormData(); fd.append('id', id);
-            fetch('api/mediathek-delete.php', { method: 'POST', body: fd })
-                .then(function (r) { return r.json(); })
-                .then(function (data) {
-                    if (data.ok) { var f = bildEl(id); if (f) { f.remove(); aktualisiereAnzahl(-1); } }
-                    else { alert(data.error || 'Löschen nicht möglich.'); }
-                })
-                .catch(function () { alert('Löschen fehlgeschlagen (Netzwerkfehler).'); });
+            zeigeBestaetigung('Dieses Bild wirklich löschen?', function (ok) {
+                if (!ok) { return; }
+                var fd = new FormData(); fd.append('id', id);
+                fetch('api/mediathek-delete.php', { method: 'POST', body: fd })
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        if (data.ok) { var f = bildEl(id); if (f) { f.remove(); aktualisiereAnzahl(-1); } }
+                        else { zeigeMeldung(data.error || 'Löschen nicht möglich.'); }
+                    })
+                    .catch(function () { zeigeMeldung('Löschen fehlgeschlagen (Netzwerkfehler).'); });
+            });
             return;
         }
         var edit = e.target.closest('.adm-bild-edit');
@@ -363,7 +419,7 @@ admin_header('Mediathek – ' . $aktuellerName, 'mediathek');
         fetch('api/mediathek-update.php', { method: 'POST', body: fd })
             .then(function (r) { return r.json(); })
             .then(function (data) {
-                if (!data.ok) { alert(data.error || 'Speichern fehlgeschlagen.'); return; }
+                if (!data.ok) { zeigeMeldung(data.error || 'Speichern fehlgeschlagen.'); return; }
                 var fig = bildEl(aktuelleId);
                 var neuerOrdner = data.ordner_id != null ? String(data.ordner_id) : '';
                 if (fig) {
@@ -381,7 +437,7 @@ admin_header('Mediathek – ' . $aktuellerName, 'mediathek');
                 }
                 schliesseEdit();
             })
-            .catch(function () { alert('Speichern fehlgeschlagen (Netzwerkfehler).'); });
+            .catch(function () { zeigeMeldung('Speichern fehlgeschlagen (Netzwerkfehler).'); });
     });
 })();
 </script>
