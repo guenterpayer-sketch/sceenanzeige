@@ -365,20 +365,18 @@
 
             var oldLayout = mainEl.querySelector('.tm-layout');
 
-            // Neues Layout unsichtbar außerhalb des Sichtbereichs vorrendern,
+            // Neues Layout unsichtbar vorrendern (opacity:0, korrekt positioniert),
             // damit Module (Stundenplan-API, Bilder) schon laden können.
             var newLayout = buildLayout(pl);
             newLayout.style.cssText =
-                'position:absolute;top:0;left:-9999px;right:0;bottom:0;opacity:0;width:1920px;';
+                'position:absolute;top:0;left:0;right:0;bottom:0;opacity:0;';
 
             _rotationTimeouts = [];
             mainEl.appendChild(newLayout);
             var maxCycleMs = renderSpalten(newLayout, pl);
 
-            // Nach SETTLE_MS ins Sichtfeld holen und Crossfade starten
+            // Nach SETTLE_MS Crossfade starten
             setTimeout(function () {
-                newLayout.style.left = '0';
-                newLayout.style.width = '';
 
                 // Header/Footer vorab auf Startposition bringen (height:0 für Fade-In)
                 if (!oldHeader && newHeader && headerEl) {
