@@ -29,6 +29,34 @@ define('UPLOADS_DIR', __DIR__ . '/uploads');
 define('UPLOADS_URL', 'https://screen.tcpayer.de/uploads');
 
 // ----------------------------------------------------------------------------
+// Nimbuscloud Legacy-API (stundenplan-Modul, siehe NC_Legacy_API_Stundenplan.md)
+// Basis-URL der schul-spezifischen Instanz, OHNE abschließenden Slash.
+// Es gibt genau EINEN Nimbuscloud-API-Key pro Schule (nicht pro Saal) — er
+// liegt daher schulweit hier, serverseitig, und gelangt nie ans Frontend.
+// Berechtigung des Keys: "Stundenplan — Lesezugriff".
+// ----------------------------------------------------------------------------
+define('NC_API_BASE', 'https://xyz.nimbuscloud.at/api/json/v1');
+define('NC_API_KEY', '');
+
+// ----------------------------------------------------------------------------
+// FRET-API (song-Modul, siehe Projektzusammenfassung_Song_Anzeige.md)
+// FRET_SCHOOL_ID ist sicherheitsrelevant (die FRET-API hat auch schreibende
+// Endpunkte) und darf NIEMALS ans Frontend gelangen — daher serverseitig hier
+// statt in den Modul-Instanz-Einstellungen (die ans Frontend übertragen werden).
+// ----------------------------------------------------------------------------
+define('FRET_API_BASE', 'https://fret-api.azurewebsites.net/api/v1');
+define('FRET_SCHOOL_ID', '');
+
+// ----------------------------------------------------------------------------
+// Admin-Passwörter (Klartext; config.php ist per .htaccess geschützt)
+//   REDAKTEUR_PASSWORT → Bibliothek, Mediathek, Playlists, Ticker
+//   ADMIN_PASSWORT     → zusätzlich Monitore, FRET-Geräte
+// Beim Deployment eigene sichere Passwörter eintragen.
+// ----------------------------------------------------------------------------
+define('REDAKTEUR_PASSWORT', 'redakteur');
+define('ADMIN_PASSWORT',     'admin');
+
+// ----------------------------------------------------------------------------
 // PDO-Verbindung (wird von allen Backend-Skripten/Proxies eingebunden)
 // ----------------------------------------------------------------------------
 function get_pdo(): PDO

@@ -12,9 +12,9 @@ SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- ----------------------------------------------------------------------------
--- 1. Säle
+-- 1. Monitore (je Monitor eine Subdomain; früher "Säle" genannt)
 -- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS saele (
+CREATE TABLE IF NOT EXISTS monitore (
     id          INT UNSIGNED NOT NULL AUTO_INCREMENT,
     name        VARCHAR(100) NOT NULL,
     subdomain   VARCHAR(100) NOT NULL,          -- z.B. "saal1" (ohne Domain)
@@ -24,17 +24,17 @@ CREATE TABLE IF NOT EXISTS saele (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------------------------------------------------------
--- 2. Einstellungen pro Saal (NC-API-Key, Song-API-URL)
+-- 2. Einstellungen pro Monitor (NC-API-Key, Song-API-URL)
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS einstellungen (
     id            INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    saal_id       INT UNSIGNED NOT NULL,
+    monitor_id    INT UNSIGNED NOT NULL,
     nc_api_key    VARCHAR(255) DEFAULT NULL,
     song_api_url  VARCHAR(255) DEFAULT NULL,
     PRIMARY KEY (id),
-    UNIQUE KEY uniq_saal (saal_id),
-    CONSTRAINT fk_einstellungen_saal
-        FOREIGN KEY (saal_id) REFERENCES saele (id)
+    UNIQUE KEY uniq_monitor (monitor_id),
+    CONSTRAINT fk_einstellungen_monitor
+        FOREIGN KEY (monitor_id) REFERENCES monitore (id)
         ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -102,34 +102,25 @@ CREATE TABLE IF NOT EXISTS playlist_layout (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------------------------------------------------------
--- 7. Playlist-Zeitregeln (mehrere pro Playlist möglich, mit Priorität)
+-- 7. Monitor-Zeitplan (monitor-zentrisch): welche Playlist läuft wann auf
+--    welchem Monitor. Ersetzt die früheren playlist_zeitregeln + playlist_saele.
 -- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS playlist_zeitregeln (
+CREATE TABLE IF NOT EXISTS monitor_zeitplan (
     id          INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    monitor_id  INT UNSIGNED NOT NULL,
     playlist_id INT UNSIGNED NOT NULL,
     wochentage  VARCHAR(20) NOT NULL,      -- z.B. "1,2,3,4,5" (Mo-Fr), 1=Montag
-    von_uhrzeit TIME NOT NULL,
-    bis_uhrzeit TIME NOT NULL,
-    prioritaet  INT NOT NULL DEFAULT 0,    -- höherer Wert = höhere Priorität
+    von_uhrzeit TIME DEFAULT NULL,         -- NULL = keine Uhrzeitgrenze (dauerhaft)
+    bis_uhrzeit TIME DEFAULT NULL,         -- NULL = keine Uhrzeitgrenze (dauerhaft)
+    prioritaet  INT NOT NULL DEFAULT 0,    -- höherer Wert gewinnt; Einträge ohne Uhrzeit gelten als Fallback (niedrigste Priorität)
     PRIMARY KEY (id),
+    KEY idx_monitor (monitor_id),
     KEY idx_playlist (playlist_id),
-    CONSTRAINT fk_zeitregeln_playlist
-        FOREIGN KEY (playlist_id) REFERENCES playlists (id)
-        ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- ----------------------------------------------------------------------------
--- 8. Playlist <-> Säle (n:m, saalübergreifende Wiederverwendung)
--- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS playlist_saele (
-    playlist_id INT UNSIGNED NOT NULL,
-    saal_id     INT UNSIGNED NOT NULL,
-    PRIMARY KEY (playlist_id, saal_id),
-    CONSTRAINT fk_playlist_saele_playlist
-        FOREIGN KEY (playlist_id) REFERENCES playlists (id)
+    CONSTRAINT fk_zeitplan_monitor
+        FOREIGN KEY (monitor_id) REFERENCES monitore (id)
         ON DELETE CASCADE,
-    CONSTRAINT fk_playlist_saele_saal
-        FOREIGN KEY (saal_id) REFERENCES saele (id)
+    CONSTRAINT fk_zeitplan_playlist
+        FOREIGN KEY (playlist_id) REFERENCES playlists (id)
         ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -183,43 +174,36 @@ CREATE TABLE IF NOT EXISTS ticker_eintraege (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------------------------------------------------------
--- 12. Ticker-Zeitregeln (KEIN Prioritätsfeld, da bei Überschneidung gemischt wird)
+-- 12. Ticker-Zeitplan (monitor-zentrisch, Schritt 8): welcher Ticker läuft wann
+--     auf welchem Monitor. Ersetzt die früheren ticker_zeitregeln +
+--     ticker_playlist_saele. KEIN Prioritätsfeld — mehrere gleichzeitig aktive
+--     Ticker werden am Monitor GEMISCHT (siehe Abschnitt 7).
 -- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS ticker_zeitregeln (
-    id                  INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    ticker_playlist_id  INT UNSIGNED NOT NULL,
-    wochentage          VARCHAR(20) NOT NULL,
-    von_uhrzeit         TIME NOT NULL,
-    bis_uhrzeit         TIME NOT NULL,
-    PRIMARY KEY (id),
-    KEY idx_ticker_playlist (ticker_playlist_id),
-    CONSTRAINT fk_ticker_zeitregeln_playlist
-        FOREIGN KEY (ticker_playlist_id) REFERENCES ticker_playlists (id)
-        ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- ----------------------------------------------------------------------------
--- 13. Ticker-Playlist <-> Säle (n:m)
--- ----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS ticker_playlist_saele (
+CREATE TABLE IF NOT EXISTS ticker_zeitplan (
+    id                 INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    monitor_id         INT UNSIGNED NOT NULL,
     ticker_playlist_id INT UNSIGNED NOT NULL,
-    saal_id            INT UNSIGNED NOT NULL,
-    PRIMARY KEY (ticker_playlist_id, saal_id),
-    CONSTRAINT fk_ticker_saele_playlist
-        FOREIGN KEY (ticker_playlist_id) REFERENCES ticker_playlists (id)
+    wochentage         VARCHAR(20) NOT NULL,   -- z.B. "1,2,3,4,5" (Mo-Fr), 1=Montag
+    von_uhrzeit        TIME DEFAULT NULL,       -- NULL = keine Uhrzeitgrenze (dauerhaft)
+    bis_uhrzeit        TIME DEFAULT NULL,       -- NULL = keine Uhrzeitgrenze (dauerhaft)
+    PRIMARY KEY (id),
+    KEY idx_monitor (monitor_id),
+    KEY idx_ticker (ticker_playlist_id),
+    CONSTRAINT fk_ticker_zeitplan_monitor
+        FOREIGN KEY (monitor_id) REFERENCES monitore (id)
         ON DELETE CASCADE,
-    CONSTRAINT fk_ticker_saele_saal
-        FOREIGN KEY (saal_id) REFERENCES saele (id)
+    CONSTRAINT fk_ticker_zeitplan_ticker
+        FOREIGN KEY (ticker_playlist_id) REFERENCES ticker_playlists (id)
         ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- ============================================================================
--- Optional: Beispiel-Seed für die Säle (an Subdomains aus Abschnitt 2 angepasst)
--- Bei Bedarf einkommentieren oder im Backend (Bereich "Säle") manuell anlegen.
+-- Optional: Beispiel-Seed für die Monitore (Subdomains aus Abschnitt 2)
+-- Bei Bedarf einkommentieren oder im Backend (Bereich "Monitore") anlegen.
 -- ============================================================================
--- INSERT INTO saele (name, subdomain) VALUES
+-- INSERT INTO monitore (name, subdomain) VALUES
 --   ('Saal 1', 'saal1'),
 --   ('Saal 2', 'saal2'),
 --   ('Saal 3', 'saal3');

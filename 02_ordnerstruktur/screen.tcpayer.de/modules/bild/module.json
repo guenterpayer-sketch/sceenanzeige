@@ -1,0 +1,35 @@
+{
+  "id": "bild",
+  "label": "Bild",
+  "icon": "image",
+  "has_proxy": false,
+  "has_inhalte": true,
+  "settings": [
+    {
+      "key": "intervall_sek",
+      "type": "number",
+      "label": "Standard-Anzeigedauer in Sek. (falls bei einem Bild keine eigene Dauer gesetzt ist)",
+      "default": 10
+    },
+    {
+      "key": "uebergang",
+      "type": "select",
+      "label": "Übergangseffekt",
+      "default": "fade",
+      "options": [
+        { "value": "fade", "label": "Sanft ausblenden" },
+        { "value": "none", "label": "Kein Übergang (harter Schnitt)" }
+      ]
+    },
+    {
+      "key": "bildmodus",
+      "type": "select",
+      "label": "Darstellung",
+      "default": "cover",
+      "options": [
+        { "value": "cover", "label": "Füllen (zuschneiden)" },
+        { "value": "contain", "label": "Vollständig einpassen (keine Beschneidung)" }
+      ]
+    }
+  ]
+}

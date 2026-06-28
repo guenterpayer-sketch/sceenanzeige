@@ -1,0 +1,8 @@
+{
+  "id": "3-spaltig-gleich",
+  "label": "3 Spalten · gleich",
+  "spalten": 3,
+  "default_breiten": [34, 33, 33],
+  "breiten_frei": false,
+  "beschreibung": "Drei gleich breite Spalten (Verhältnis fest)."
+}

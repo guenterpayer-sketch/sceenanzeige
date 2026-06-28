@@ -1,0 +1,8 @@
+{
+  "id": "2-spaltig-50-50",
+  "label": "2 Spalten · 50 / 50",
+  "spalten": 2,
+  "default_breiten": [50, 50],
+  "breiten_frei": true,
+  "beschreibung": "Zwei gleich breite Spalten. Verhältnis frei einstellbar."
+}

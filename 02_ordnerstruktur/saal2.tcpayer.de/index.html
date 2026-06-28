@@ -2,15 +2,49 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Monitor Saal 2</title>
-    <!-- Vollbild/Kiosk-Modus, siehe Abschnitt 10 der Projektdokumentation -->
+    <meta name="viewport" content="width=1920, initial-scale=1.0">
+    <title>Monitor</title>
+    <link rel="stylesheet" href="https://screen.tcpayer.de/assets/css/monitor.css">
 </head>
 <body>
-    <script>
-        // Jedes Saal-Frontend kennt nur seine eigene SAAL_ID (Abschnitt 2 + 10)
-        const SAAL_ID = 2;
-        const BACKEND_BASE = "https://screen.tcpayer.de";
-        // Wird in Schritt 9 (Monitor-Frontend) mit echter Logik gefüllt.
-    </script>
+<div id="tm-wrapper">
+
+    <header id="tm-header">
+        <div id="tm-header-logo">
+            <img src="https://screen.tcpayer.de/uploads/logo.png" alt="Logo">
+        </div>
+        <div id="tm-header-text"></div>
+        <div id="tm-header-uhrzeit">
+            <div id="tm-header-zeit"></div>
+            <div id="tm-header-datum"></div>
+        </div>
+    </header>
+
+    <main id="tm-main"></main>
+
+    <footer id="tm-footer" class="tm-hidden">
+        <div class="tm-ticker-text"></div>
+    </footer>
+
+</div>
+
+<script>
+    var MONITOR_SUBDOMAIN = '';
+    window.BACKEND_BASE  = 'https://screen.tcpayer.de';
+    window.UPLOADS_URL   = 'https://screen.tcpayer.de/uploads';
+
+    (function () {
+        var scale = window.innerWidth / 1920;
+        if (scale < 0.99) {
+            var w = document.getElementById('tm-wrapper');
+            w.style.width = '1920px';
+            w.style.height = '1080px';
+            w.style.transform = 'scale(' + scale + ')';
+            w.style.transformOrigin = 'top left';
+        }
+    })();
+</script>
+<script src="https://screen.tcpayer.de/assets/js/module-loader.js"></script>
+<script src="https://screen.tcpayer.de/assets/js/monitor.js"></script>
 </body>
 </html>

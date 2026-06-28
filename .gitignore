@@ -1,0 +1,16 @@
+# Nutzer-Uploads (landen zur Laufzeit in screen.tcpayer.de/uploads/) –
+# nicht versionieren, nur den Ordner per .gitkeep erhalten.
+02_ordnerstruktur/screen.tcpayer.de/uploads/*
+!02_ordnerstruktur/screen.tcpayer.de/uploads/.gitkeep
+!02_ordnerstruktur/screen.tcpayer.de/uploads/.htaccess
+
+# Lokale Konfiguration mit echten DB-Zugangsdaten NIEMALS einchecken.
+# Die im Repo liegende config.php enthaelt bewusst nur Platzhalter; eine
+# Kopie mit echten Zugangsdaten (z.B. config.local.php) bleibt lokal.
+config.local.php
+**/config.local.php
+
+# OS-/Editor-Artefakte
+.DS_Store
+Thumbs.db
+*.swp

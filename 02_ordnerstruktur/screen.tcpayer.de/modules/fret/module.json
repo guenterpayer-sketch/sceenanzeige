@@ -1,0 +1,36 @@
+{
+  "id": "fret",
+  "label": "FRET – Aktueller Song",
+  "icon": "music",
+  "has_proxy": true,
+  "has_inhalte": false,
+  "settings": [
+    { "key": "anzeige_dauer_sek", "type": "number", "label": "Anzeigedauer in Sek. (bei Spalten-Rotation mit anderen Modulen)", "default": 30 },
+    { "key": "titel", "type": "text", "label": "Überschrift (z.B. Saal-Name; leer = \"FRET\")", "default": "" },
+    {
+      "key": "computer_id",
+      "type": "select",
+      "label": "FRET-Gerät (nur freigegebene; im Bereich „FRET-Geräte“ verwalten)",
+      "default": "",
+      "options": []
+    },
+    {
+      "key": "zeige_playlist",
+      "type": "bool",
+      "label": "Kommende Songs anzeigen",
+      "default": true
+    },
+    {
+      "key": "anzahl_kommende",
+      "type": "number",
+      "label": "Anzahl kommender Songs",
+      "default": 3
+    },
+    {
+      "key": "poll_sek",
+      "type": "number",
+      "label": "Aktualisierungsintervall in Sek. (5–10 empfohlen)",
+      "default": 7
+    }
+  ]
+}

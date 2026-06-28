@@ -1,0 +1,35 @@
+{
+  "id": "stundenplan",
+  "label": "Stundenplan",
+  "icon": "calendar",
+  "has_proxy": true,
+  "has_inhalte": false,
+  "settings": [
+    { "key": "titel", "type": "text", "label": "Überschrift (leer = keine Überschrift)", "default": "" },
+    { "key": "anzeige_dauer_sek", "type": "number", "label": "Anzeigedauer in Sek. (bei Spalten-Rotation mit anderen Modulen)", "default": 30 },
+    {
+      "key": "anzahl_kurse",
+      "type": "number",
+      "label": "Anzahl angezeigter Kurse (0 = alle)",
+      "default": 5
+    },
+    {
+      "key": "nur_heute",
+      "type": "bool",
+      "label": "Nur heutige Kurse anzeigen",
+      "default": true
+    },
+    {
+      "key": "location_ids",
+      "type": "location_picker",
+      "label": "Standorte anzeigen (leer = alle)",
+      "default": ""
+    },
+    {
+      "key": "room_id",
+      "type": "room_picker",
+      "label": "Saal-Filter (leer = alle Säle)",
+      "default": 0
+    }
+  ]
+}

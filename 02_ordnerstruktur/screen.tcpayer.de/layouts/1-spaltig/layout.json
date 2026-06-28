@@ -1,0 +1,8 @@
+{
+  "id": "1-spaltig",
+  "label": "1 Spalte · 100 %",
+  "spalten": 1,
+  "default_breiten": [100],
+  "breiten_frei": false,
+  "beschreibung": "Eine einzelne Spalte über die volle Breite."
+}

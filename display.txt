@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tanzschule – Live-Anzeige</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --red: #ad2121;
+            --bg: #0e0e0e;
+            --surface: rgba(22,22,22,0.85);
+            --surface2: rgba(30,30,30,0.9);
+            --border: rgba(255,255,255,0.06);
+            --text: #f0f0f0;
+            --muted: #888;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 24px 16px;
+            overflow-y: auto;
+        }
+
+        /* ── Multi-Raum-Layout ── */
+        .multi-room-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            width: 100%;
+            max-width: 1800px;
+        }
+
+        .room-container {
+            flex: 1 1 30%;
+            min-width: 300px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 28px 24px;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+            min-height: 75vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        /* Breite je nach Saal-Anzahl */
+        .multi-room-container .room-container:only-child                        { flex: 0 0 68%; }
+        .multi-room-container .room-container:nth-child(2):last-child,
+        .multi-room-container .room-container:nth-child(1):nth-last-child(2)    { flex: 0 0 46%; }
+
+        /* ── Raum-Titel ── */
+        .room-title {
+            font-size: 32px;
+            font-weight: 500;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--red);
+            margin-bottom: 24px;
+            width: 100%;
+        }
+
+        /* ── Aktueller Song ── */
+        .current-song {
+            width: 100%;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .song-title {
+            font-size: 40px;
+            font-weight: 600;
+            line-height: 1.15;
+            letter-spacing: -0.02em;
+            margin-bottom: 10px;
+        }
+
+        .song-artist {
+            font-size: 36px;
+            font-weight: 300;
+            color: #bbb;
+            margin-bottom: 20px;
+        }
+
+        /* Container für Tanz-Badges beim aktuellen Song */
+        .song-dances {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        /* Haupttanz-Badge: gefüllt rot */
+        .badge-main {
+            font-size: 40px;
+            font-weight: 500;
+            color: #fff;
+            background: var(--red);
+            border-radius: 8px;
+            padding: 8px 18px;
+            display: inline-block;
+        }
+
+        /* Nebentanz-Badge: helles Grau mit rotem Rand und roter Schrift */
+        .badge-alt {
+            font-size: 40px;
+            font-weight: 500;
+            color: var(--red);
+            background: #f0f0f0;
+            border: 2px solid var(--red);
+            border-radius: 8px;
+            padding: 8px 18px;
+            display: inline-block;
+        }
+
+        /* ── Fortschrittsbalken ── */
+        .progress-container {
+            width: 100%;
+            height: 10px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 0 0 28px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--red);
+            border-radius: 5px;
+            transition: width 1s linear;
+            width: 0%;
+        }
+
+        /* ── Playlist ── */
+        .playlist-section { width: 100%; }
+
+        .playlist-label {
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            text-align: left;
+            margin-bottom: 10px;
+            padding-left: 2px;
+        }
+
+        .playlist-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            margin-bottom: 8px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .playlist-info { flex: 1; text-align: left; }
+
+        .playlist-song-title {
+            font-size: 28px;
+            font-weight: 500;
+            color: var(--text);
+            margin-bottom: 2px;
+        }
+
+        .playlist-song-artist {
+            font-size: 22px;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        /* Playlist-Badges kleiner als beim aktuellen Song */
+        .playlist-badge-main {
+            font-size: 28px;
+            font-weight: 500;
+            color: #fff;
+            background: var(--red);
+            border-radius: 5px;
+            padding: 4px 10px;
+            display: inline-block;
+            margin-right: 4px;
+        }
+
+        .playlist-badge-alt {
+            font-size: 28px;
+            font-weight: 500;
+            color: var(--red);
+            background: #f0f0f0;
+            border: 1.5px solid var(--red);
+            border-radius: 5px;
+            padding: 4px 10px;
+            display: inline-block;
+            margin-right: 4px;
+        }
+
+        .playlist-countdown {
+            font-size: 16px;
+            color: var(--muted);
+            min-width: 150px;
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        /* ── Statusmeldung ── */
+        .status-msg {
+            font-size: 18px;
+            color: var(--muted);
+            padding: 30px 0;
+            display: none;
+        }
+
+        .no-music {
+            font-size: 24px;
+            color: var(--muted);
+            padding: 30px 0;
+            font-weight: 300;
+        }
+
+        /* ── Zurück-Link ── */
+        .back-link {
+            position: fixed;
+            top: 16px;
+            left: 20px;
+            font-size: 12px;
+            color: var(--muted);
+            text-decoration: none;
+            opacity: 0.4;
+            transition: opacity 0.2s;
+        }
+        .back-link:hover { opacity: 1; }
+
+        /* ── Mobile ── */
+        @media (max-width: 768px) {
+            .multi-room-container { flex-direction: column; }
+            .room-container { flex: 1 1 100% !important; min-height: auto; }
+            .song-title  { font-size: 36px; }
+            .song-artist { font-size: 26px; }
+            .badge-main, .badge-alt { font-size: 16px; }
+        }
+    </style>
+</head>
+<body>
+<a class="back-link" href="index.html">← Konfiguration</a>
+<div class="multi-room-container" id="multiRoomContainer">
+    <!-- Raum-Container werden per JS eingefügt -->
+</div>
+
+<script>
+    const PROXY = './proxy.php';
+
+    // ── Tanz-Badges aufbauen ──────────────────────────────────────────────────
+    // Gibt ein Array von {name, isMain} zurück basierend auf den API-Daten.
+    // Trennzeichen "|" = Haupttanz vs. Nebentänze
+    // Trennzeichen "," = gleichwertige Tänze (alle Haupttänze)
+    function parseDances(song) {
+        if (!song.dances || song.dances.length === 0) return [];
+
+        // isPrimary aus der API nutzen um Haupt- von Nebentänzen zu trennen
+        const hasPrimary = song.dances.some(d => d.isPrimary);
+
+        if (hasPrimary) {
+            // Mindestens ein Tanz ist als Haupttanz markiert
+            return song.dances.map(d => ({
+                name:   d.longName || d.shortName,
+                isMain: d.isPrimary
+            }));
+        } else {
+            // Kein isPrimary gesetzt → alle gleichwertig → alle als Haupttanz
+            return song.dances.map(d => ({
+                name:   d.longName || d.shortName,
+                isMain: true
+            }));
+        }
+    }
+
+    // Badges als HTML-Elemente in einen Container einfügen
+    function renderDanceBadges(song, mainClass, altClass) {
+        const wrapper = document.createElement('div');
+        const dances  = parseDances(song);
+
+        // Duplikate entfernen (API liefert manchmal doppelte Einträge)
+        const seen = new Set();
+        dances.forEach(d => {
+            if (seen.has(d.name)) return;
+            seen.add(d.name);
+
+            const badge = document.createElement('span');
+            badge.className   = d.isMain ? mainClass : altClass;
+            badge.textContent = d.name;
+            wrapper.appendChild(badge);
+        });
+
+        return wrapper;
+    }
+
+    // ── Countdown formatieren ─────────────────────────────────────────────────
+    function formatCountdown(seconds) {
+        if (seconds <= 0) return 'Jetzt';
+        if (seconds < 60) return 'in weniger als einer Minute';
+        const m = Math.floor(seconds / 60);
+        return `in ${m} Minute${m !== 1 ? 'n' : ''}`;
+    }
+
+    // ── URL-Parameter ─────────────────────────────────────────────────────────
+    const urlParams  = new URLSearchParams(window.location.search);
+    const roomParams = urlParams.getAll('pc');
+    const roomTitles = urlParams.getAll('title');
+
+    // ── Initialisierung ───────────────────────────────────────────────────────
+    (function init() {
+        const container = document.getElementById('multiRoomContainer');
+
+        if (roomParams.length === 0) {
+            const err = document.createElement('div');
+            err.className   = 'no-music';
+            err.textContent = 'Keine Säle ausgewählt. Bitte zurück zur Konfiguration.';
+            container.appendChild(err);
+            return;
+        }
+
+        roomParams.forEach((roomId, index) => {
+            const roomTitle = roomTitles[index] || roomId;
+            buildRoom(container, roomId, roomTitle);
+        });
+    })();
+
+    // ── DOM-Struktur für einen Raum aufbauen ──────────────────────────────────
+    function buildRoom(container, roomId, roomTitle) {
+        const wrap = document.createElement('div');
+        wrap.className = 'room-container';
+        wrap.id        = `room-${roomId}`;
+
+        wrap.innerHTML = `
+            <div class="room-title">${roomTitle}</div>
+            <div class="current-song">
+                <div class="song-title">Verbinde…</div>
+                <div class="song-artist"></div>
+                <div class="song-dances" id="dances-${roomId}"></div>
+                <div class="progress-container">
+                    <div class="progress-bar" id="progress-${roomId}"></div>
+                </div>
+            </div>
+            <div class="playlist-section">
+                <div class="playlist-label">Nächste Titel</div>
+                <div id="playlist-${roomId}"></div>
+            </div>
+            <div class="status-msg" id="status-${roomId}"></div>
+        `;
+
+        container.appendChild(wrap);
+        startPolling(roomId);
+    }
+
+    // ── Polling und Anzeige-Logik ─────────────────────────────────────────────
+    function startPolling(roomId) {
+        const UPDATE_INTERVAL = 5000;
+
+        const roomEl       = document.getElementById(`room-${roomId}`);
+        const songTitleEl  = roomEl.querySelector('.song-title');
+        const songArtistEl = roomEl.querySelector('.song-artist');
+        const songDancesEl = document.getElementById(`dances-${roomId}`);
+        const progressBar  = document.getElementById(`progress-${roomId}`);
+        const playlistEl   = document.getElementById(`playlist-${roomId}`);
+        const statusEl     = document.getElementById(`status-${roomId}`);
+
+        let countdownIntervals = [];
+        let progressInterval   = null;
+        let currentSongKey     = null;
+        let errorCount         = 0;
+
+        // ── Fortschrittsbalken: 1-Sekunden-Tick ──
+        function startProgressTick(remaining, duration) {
+            if (progressInterval) clearInterval(progressInterval);
+            let elapsed = duration - remaining;
+
+            progressInterval = setInterval(() => {
+                elapsed++;
+                const pct = Math.min(100, Math.max(0, (elapsed / duration) * 100));
+                progressBar.style.width = `${pct}%`;
+                if (elapsed >= duration) clearInterval(progressInterval);
+            }, 1000);
+        }
+
+        // Tick stoppen, Balken bleibt an aktueller Position (bei Pause)
+        function stopProgressTick() {
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
+        }
+
+        // ── Aktuellen Song anzeigen ──
+        function updateDisplay(song, upcomingSongs, isPlaying) {
+            statusEl.style.display   = 'none';
+            songTitleEl.textContent  = song.title  || 'Unbekannter Titel';
+            songArtistEl.textContent = song.artist || 'Unbekannter Künstler';
+
+            // Tanz-Badges rendern
+            songDancesEl.innerHTML = '';
+            const badges = renderDanceBadges(song, 'badge-main', 'badge-alt');
+            songDancesEl.appendChild(badges);
+
+            // Fortschrittsbalken
+            const newKey = `${song.title}|${song.artist}`;
+            if (song.duration && song.remainingSeconds != null) {
+                // Song läuft → Balken positionieren und Tick starten
+                if (currentSongKey !== newKey) {
+                    currentSongKey = newKey;
+                    const pct = ((song.duration - song.remainingSeconds) / song.duration) * 100;
+                    progressBar.style.width = `${Math.min(100, Math.max(0, pct))}%`;
+                }
+                startProgressTick(song.remainingSeconds, song.duration);
+            } else if (!isPlaying) {
+                // Pausiert → Tick stoppen, Balken einfrieren
+                stopProgressTick();
+            } else {
+                // Kein aktiver Song
+                progressBar.style.width = '0%';
+                stopProgressTick();
+            }
+
+            updatePlaylist(upcomingSongs, isPlaying);
+        }
+
+        // ── Playlist rendern ──
+        function updatePlaylist(songs, isPlaying) {
+            // Alte Countdown-Timer stoppen (verhindert Interval-Leak)
+            countdownIntervals.forEach(id => clearInterval(id));
+            countdownIntervals = [];
+            playlistEl.innerHTML = '';
+
+            if (!songs || songs.length === 0) {
+                const empty = document.createElement('div');
+                empty.style.cssText = 'padding:12px;color:#555;text-align:center;font-size:16px;';
+                empty.textContent   = 'Keine weiteren Titel in der Playlist.';
+                playlistEl.appendChild(empty);
+                return;
+            }
+
+            songs.forEach(song => {
+                const item = document.createElement('div');
+                item.className = 'playlist-item';
+
+                const info = document.createElement('div');
+                info.className = 'playlist-info';
+
+                const titleEl = document.createElement('div');
+                titleEl.className   = 'playlist-song-title';
+                titleEl.textContent = song.title || 'Unbekannt';
+                info.appendChild(titleEl);
+
+                const artistEl = document.createElement('div');
+                artistEl.className   = 'playlist-song-artist';
+                artistEl.textContent = song.artist || '';
+                info.appendChild(artistEl);
+
+                // Tanz-Badges in der Playlist (kleinere Variante)
+                const badgeWrapper = renderDanceBadges(song, 'playlist-badge-main', 'playlist-badge-alt');
+                if (badgeWrapper.children.length > 0) {
+                    info.appendChild(badgeWrapper);
+                }
+
+                item.appendChild(info);
+
+                // Countdown (nur wenn Zeit bekannt)
+                if (song.estimatedSecondsUntilStart != null) {
+                    const countdown = document.createElement('div');
+                    countdown.className   = 'playlist-countdown';
+                    let secs              = song.estimatedSecondsUntilStart;
+                    countdown.textContent = formatCountdown(secs);
+                    item.appendChild(countdown);
+
+                    // Tick nur bei laufendem Player
+                    if (isPlaying) {
+                        const id = setInterval(() => {
+                            secs--;
+                            countdown.textContent = formatCountdown(secs);
+                            if (secs <= 0) clearInterval(id);
+                        }, 1000);
+                        countdownIntervals.push(id);
+                    }
+                }
+
+                playlistEl.appendChild(item);
+            });
+        }
+
+        // ── Kein Song aktiv ──
+        function showNoSong() {
+            songTitleEl.textContent  = 'Hier läuft gerade keine Musik';
+            songArtistEl.textContent = '';
+            songDancesEl.innerHTML   = '';
+            progressBar.style.width  = '0%';
+            stopProgressTick();
+            playlistEl.innerHTML     = '';
+        }
+
+        // ── API-Abfrage über den Proxy ──
+        async function fetchSongData() {
+            try {
+                const response = await fetch(`${PROXY}?computer=${roomId}`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                errorCount = 0;
+                statusEl.style.display = 'none';
+
+                const player = data.player1;
+                if (!player || !player.songs || player.songs.length === 0) {
+                    showNoSong();
+                    return;
+                }
+
+                const available = player.songs.filter(s => s.position >= 0);
+                if (available.length === 0) { showNoSong(); return; }
+
+                const current  = available.find(s => s.position === 0) ?? available[0];
+                const upcoming = available.filter(s => s.position > 0).slice(0, 3);
+
+                updateDisplay(current, upcoming, player.isPlaying);
+
+            } catch (err) {
+                errorCount++;
+                console.error(`Raum ${roomId}:`, err);
+                if (errorCount >= 3) {
+                    statusEl.textContent   = 'Verbindung unterbrochen – wird neu versucht…';
+                    statusEl.style.display = 'block';
+                }
+            }
+        }
+
+        // ── Polling starten ──
+        let intervalId = setInterval(fetchSongData, UPDATE_INTERVAL);
+
+        // Tab im Hintergrund → Polling pausieren
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                clearInterval(intervalId);
+            } else {
+                fetchSongData();
+                intervalId = setInterval(fetchSongData, UPDATE_INTERVAL);
+            }
+        });
+
+        fetchSongData();
+    }
+</script>
+</body>
+</html>

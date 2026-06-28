@@ -1,0 +1,39 @@
+# ============================================================================
+# screen.tcpayer.de — Backend / Admin
+# ============================================================================
+
+# PHP-Version (all-inkl KAS: ggf. anpassen, falls per .htaccess gesteuert)
+# AddHandler application/x-httpd-php8 .php
+
+# UTF-8 als Standard-Zeichensatz
+AddDefaultCharset UTF-8
+
+# Verzeichnis-Listing global deaktivieren
+Options -Indexes
+
+# ----------------------------------------------------------------------------
+# Zugriffsschutz: config.php (DB-Zugangsdaten) darf niemals direkt aufrufbar
+# sein, egal wo sie liegt.
+# ----------------------------------------------------------------------------
+<FilesMatch "^config\.php$">
+    Require all denied
+</FilesMatch>
+
+# ----------------------------------------------------------------------------
+# Schutz von Includes: /includes/ enthält nur PHP-Klassen/Helper, die per
+# require/include eingebunden werden — kein Direktaufruf nötig.
+# ----------------------------------------------------------------------------
+<IfModule mod_alias.c>
+    RedirectMatch 403 ^/includes/
+</IfModule>
+
+# Hinweis: uploads/ hat eine eigene .htaccess, die PHP-Ausführung dort
+# deaktiviert (siehe uploads/.htaccess) — Schutz gegen Upload-Exploits.
+
+# ----------------------------------------------------------------------------
+# CORS: alle Subdomains dürfen Bilder/Proxies von hier laden.
+# Neue Säle funktionieren automatisch ohne Anpassung.
+# ----------------------------------------------------------------------------
+<IfModule mod_headers.c>
+    Header set Access-Control-Allow-Origin "*"
+</IfModule>

@@ -1,0 +1,32 @@
+{
+  "id": "uhrzeit",
+  "label": "Uhrzeit & Datum",
+  "icon": "clock",
+  "has_proxy": false,
+  "has_inhalte": false,
+  "settings": [
+    { "key": "anzeige_dauer_sek", "type": "number", "label": "Anzeigedauer in Sek. (bei Spalten-Rotation mit anderen Modulen)", "default": 30 },
+    { "key": "zeige_datum", "type": "bool", "label": "Datum anzeigen", "default": true },
+    {
+      "key": "format_zeit",
+      "type": "select",
+      "label": "Zeitformat",
+      "default": "H:i",
+      "options": [
+        { "value": "H:i", "label": "24h, z.B. 14:05" },
+        { "value": "H:i:s", "label": "24h mit Sekunden, z.B. 14:05:32" },
+        { "value": "g:i A", "label": "12h, z.B. 2:05 PM" }
+      ]
+    },
+    {
+      "key": "format_datum",
+      "type": "select",
+      "label": "Datumsformat",
+      "default": "d.m.Y",
+      "options": [
+        { "value": "d.m.Y", "label": "31.12.2026" },
+        { "value": "l, d.m.Y", "label": "Donnerstag, 31.12.2026" }
+      ]
+    }
+  ]
+}
