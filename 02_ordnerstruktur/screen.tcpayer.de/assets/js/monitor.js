@@ -368,8 +368,13 @@
             // Neues Layout unsichtbar vorrendern (opacity:0, korrekt positioniert),
             // damit Module (Stundenplan-API, Bilder) schon laden können.
             var newLayout = buildLayout(pl);
-            newLayout.style.cssText =
-                'position:absolute;top:0;left:0;right:0;bottom:0;opacity:0;';
+            // Einzelne Properties setzen — cssText würde gridTemplateColumns löschen
+            newLayout.style.position = 'absolute';
+            newLayout.style.top      = '0';
+            newLayout.style.left     = '0';
+            newLayout.style.right    = '0';
+            newLayout.style.bottom   = '0';
+            newLayout.style.opacity  = '0';
 
             _rotationTimeouts = [];
             mainEl.appendChild(newLayout);
