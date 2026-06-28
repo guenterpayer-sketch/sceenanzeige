@@ -3,7 +3,7 @@
 > **Branch:** `claude/nifty-johnson-3q6u7g`  
 > Eine neue Session liest `CLAUDE.md` (Konzept) + diese Datei (Stand) und kann sofort weiterarbeiten.
 
-_Letzte Aktualisierung: Modul `veranstaltung` geliefert, Admin-Dialoge ersetzt, Stundenplan-Überschrift + FRET-Countdown-Schrift angepasst._
+_Letzte Aktualisierung: Bugfixes Crossfade/Pre-render/Ticker-Vorschau._
 
 ---
 
@@ -35,10 +35,19 @@ _Letzte Aktualisierung: Modul `veranstaltung` geliefert, Admin-Dialoge ersetzt, 
 - **Modul `veranstaltung`:** geliefert, aber noch nicht live getestet — Feedback ausstehend
 - **FRET Countdown 22px:** Schriftgröße erhöht, live-Test noch ausstehend
 - **FRET Fortschrittsbalken:** FRET-API liefert `remainingSeconds` immer `null` → Balken friert ein, läuft nicht; serverseitiges FRET-Problem, kein Code-Fehler
+- **SETTLE_MS = 800:** Heuristik für Off-screen-Pre-render; bei sehr langsamer NC-API ggf. auf 1000–1200ms erhöhen
 
 ---
 
 ## Was in den letzten Sessions erledigt wurde
+
+### Bugfixes — Crossfade, Pre-render, Ticker-Vorschau
+
+| Datei | Was |
+|---|---|
+| `assets/js/monitor.js` | `rotateModule`: Crossfade 600ms zwischen Modul-Instanzen (statt hartem Schnitt) |
+| `assets/js/monitor.js` | `doRender`: Neues Layout 800ms off-screen vorrendern (`SETTLE_MS`) bevor Crossfade startet |
+| `admin/playlist-preview.php` | Ticker anzeigen wenn `footer_ticker` aktiv: DB-Abfrage + `startTicker`-Logik eingebaut |
 
 ### Schritt 13 — Modul `veranstaltung` + Fixes
 
