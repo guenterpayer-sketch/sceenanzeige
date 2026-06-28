@@ -251,7 +251,7 @@
     function rotateModule(spalteEl, module, scaleFactor) {
         scaleFactor = scaleFactor || 1;
         var index = 0;
-        var FADE_MS = 600;
+        var FADE_MS = 1500;
 
         spalteEl.style.position = 'relative';
 
@@ -376,6 +376,9 @@
             newLayout.style.bottom   = '0';
             newLayout.style.opacity  = '0';
 
+            // Alte Rotation einfrieren, damit das alte Layout während SETTLE_MS
+            // nicht weiterzählt und unerwünschte Modul-Wechsel zeigt.
+            _rotationTimeouts.forEach(clearTimeout);
             _rotationTimeouts = [];
             mainEl.appendChild(newLayout);
             var maxCycleMs = renderSpalten(newLayout, pl);
