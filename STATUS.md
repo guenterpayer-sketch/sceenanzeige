@@ -45,9 +45,10 @@ _Letzte Aktualisierung: Bugfixes Crossfade/Pre-render/Ticker-Vorschau._
 
 | Datei | Was |
 |---|---|
-| `assets/js/monitor.js` | `rotateModule`: Crossfade 600ms zwischen Modul-Instanzen (statt hartem Schnitt) |
-| `assets/js/monitor.js` | `doRender`: Neues Layout 800ms off-screen vorrendern (`SETTLE_MS`) bevor Crossfade startet |
-| `admin/playlist-preview.php` | Ticker anzeigen wenn `footer_ticker` aktiv: DB-Abfrage + `startTicker`-Logik eingebaut |
+| `assets/js/monitor.js` | `rotateModule`: Crossfade 1500ms zwischen Modul-Instanzen (statt hartem Schnitt); passend zu `bild/frontend.js` |
+| `assets/js/monitor.js` | `doRender`: Neues Layout 800ms (`SETTLE_MS`) unsichtbar vorrendern (opacity:0, korrekt positioniert) bevor Crossfade startet — verhindert halb-fertige Module beim Layout-Wechsel |
+| `assets/js/monitor.js` | `doRender`: `_rotationTimeouts.forEach(clearTimeout)` vor Reset — altes Layout friert sofort ein, rotiert nicht weiter während SETTLE_MS |
+| `admin/playlist-preview.php` | Ticker anzeigen wenn `footer_ticker` aktiv: DB-Abfrage aller aktiven `ticker_eintraege` + `startTicker`-Logik eingebaut |
 
 ### Schritt 13 — Modul `veranstaltung` + Fixes
 
