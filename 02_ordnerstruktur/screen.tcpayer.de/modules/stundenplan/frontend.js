@@ -39,7 +39,10 @@
     window.TanzschuleModule.stundenplan = function (container, settings) {
         settings = settings || {};
         container.classList.add('tm-modul-stundenplan');
-        container.innerHTML = '<div class="tm-sp-status">Lade Stundenplan…</div>';
+
+        var titel = (settings.titel || '').trim();
+        container.innerHTML = (titel ? '<div class="tm-sp-heading">' + escapeHtml(titel) + '</div>' : '')
+            + '<div class="tm-sp-status">Lade Stundenplan…</div>';
 
         var basis       = window.BACKEND_BASE || '';
         var nurHeute    = settings.nur_heute === false ? '0' : '1';
@@ -55,11 +58,13 @@
             url += '&room_id=' + roomId;
         }
 
+        var headingHtml = titel ? '<div class="tm-sp-heading">' + escapeHtml(titel) + '</div>' : '';
+
         fetch(url, { cache: 'no-store' })
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 if (data.error) {
-                    container.innerHTML = '<div class="tm-sp-status tm-sp-fehler">'
+                    container.innerHTML = headingHtml + '<div class="tm-sp-status tm-sp-fehler">'
                         + escapeHtml(data.error) + '</div>';
                     return;
                 }
@@ -90,11 +95,11 @@
                 if (anzahl > 0) { sichtbar = sichtbar.slice(0, anzahl); }
 
                 if (sichtbar.length === 0) {
-                    container.innerHTML = '<div class="tm-sp-status">Keine weiteren Kurse heute</div>';
+                    container.innerHTML = headingHtml + '<div class="tm-sp-status">Keine weiteren Kurse heute</div>';
                     return;
                 }
 
-                var html = '<div class="tm-sp-cards">';
+                var html = headingHtml + '<div class="tm-sp-cards">';
                 sichtbar.forEach(function (item) {
                     var k  = item.kurs;
                     var ak = item.aktuell;
@@ -126,7 +131,7 @@
                 });
             })
             .catch(function () {
-                container.innerHTML = '<div class="tm-sp-status tm-sp-fehler">'
+                container.innerHTML = headingHtml + '<div class="tm-sp-status tm-sp-fehler">'
                     + 'Stundenplan konnte nicht geladen werden.</div>';
             });
     };
