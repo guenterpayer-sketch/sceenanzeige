@@ -251,22 +251,43 @@
     function rotateModule(spalteEl, module, scaleFactor) {
         scaleFactor = scaleFactor || 1;
         var index = 0;
+        var FADE_MS = 600;
+
+        spalteEl.style.position = 'relative';
 
         function zeigeNaechstes() {
-            if (!spalteEl.isConnected) { return; } // spalteEl wurde entfernt → stoppen
+            if (!spalteEl.isConnected) { return; }
             var mod      = module[index];
             var dauerSek = modulAnzeigeDauer(mod) * scaleFactor;
             index = (index + 1) % module.length;
 
-            // Alten Container aufräumen
-            var existing = spalteEl.querySelector('.tm-modul-container');
-            if (existing) { cleanupModulContainer(existing); }
-            spalteEl.innerHTML = '';
+            var oldContainer = spalteEl.querySelector('.tm-modul-container');
 
-            var container = document.createElement('div');
-            container.className = 'tm-modul-container';
-            spalteEl.appendChild(container);
-            renderModulInContainer(container, skaliereMod(mod, scaleFactor));
+            var newContainer = document.createElement('div');
+            newContainer.className = 'tm-modul-container';
+            newContainer.style.cssText = 'position:absolute;top:0;left:0;right:0;bottom:0;opacity:0;';
+            spalteEl.appendChild(newContainer);
+            renderModulInContainer(newContainer, skaliereMod(mod, scaleFactor));
+
+            if (oldContainer) {
+                requestAnimationFrame(function () {
+                    requestAnimationFrame(function () {
+                        newContainer.style.transition = 'opacity ' + FADE_MS + 'ms ease';
+                        newContainer.style.opacity = '1';
+                        oldContainer.style.transition = 'opacity ' + FADE_MS + 'ms ease';
+                        oldContainer.style.opacity = '0';
+                        setTimeout(function () {
+                            if (oldContainer.parentNode) {
+                                cleanupModulContainer(oldContainer);
+                                oldContainer.parentNode.removeChild(oldContainer);
+                            }
+                        }, FADE_MS + 50);
+                    });
+                });
+            } else {
+                // Erster Render: direkt einblenden, kein Crossfade
+                newContainer.style.opacity = '1';
+            }
 
             var t = setTimeout(zeigeNaechstes, dauerSek * 1000);
             _rotationTimeouts.push(t);
@@ -323,9 +344,10 @@
     // ── Playlist-Rotation ─────────────────────────────────────────────────────
 
     function startPlaylistRotation(playlists, ticker) {
-        var mainEl   = document.getElementById('tm-main');
-        var footerEl = document.getElementById('tm-footer');
+        var mainEl     = document.getElementById('tm-main');
+        var footerEl   = document.getElementById('tm-footer');
         var CROSSFADE_MS = 600;
+        var SETTLE_MS    = 800; // Zeit für Off-screen-Pre-render bevor Crossfade startet
 
         mainEl.style.position = 'relative';
         mainEl.style.overflow = 'hidden';
@@ -333,7 +355,6 @@
         function doRender(pl) {
             var headerEl = document.getElementById('tm-header');
 
-            // Alte Zustände für synchronisierten Übergang
             var oldHeader = _currentPl ? !!_currentPl.header_sichtbar
                                        : (headerEl ? !headerEl.classList.contains('tm-hidden') : true);
             var oldFooter = _currentPl ? (_currentPl.footer_ticker !== false && !!(ticker && ticker.length))
@@ -342,106 +363,112 @@
             var newFooter = pl.footer_ticker !== false && !!(ticker && ticker.length);
             _currentPl = pl;
 
-            // Header/Footer vorab auf Startposition bringen (height:0 für Fade-In)
-            if (!oldHeader && newHeader && headerEl) {
-                headerEl.classList.remove('tm-hidden');
-                headerEl.style.height = '0';
-                headerEl.style.opacity = '0';
-            }
-            if (!oldFooter && newFooter) {
-                footerEl.classList.remove('tm-hidden');
-                footerEl.style.height = '0';
-                footerEl.style.opacity = '0';
-            }
-
             var oldLayout = mainEl.querySelector('.tm-layout');
-            if (oldLayout) {
-                oldLayout.style.position = 'absolute';
-                oldLayout.style.top = '0'; oldLayout.style.left = '0';
-                oldLayout.style.right = '0'; oldLayout.style.bottom = '0';
-            }
 
+            // Neues Layout unsichtbar außerhalb des Sichtbereichs vorrendern,
+            // damit Module (Stundenplan-API, Bilder) schon laden können.
             var newLayout = buildLayout(pl);
-            newLayout.style.position = 'absolute';
-            newLayout.style.top = '0'; newLayout.style.left = '0';
-            newLayout.style.right = '0'; newLayout.style.bottom = '0';
-            newLayout.style.opacity = '0';
+            newLayout.style.cssText =
+                'position:absolute;top:0;left:-9999px;right:0;bottom:0;opacity:0;width:1920px;';
 
             _rotationTimeouts = [];
             mainEl.appendChild(newLayout);
             var maxCycleMs = renderSpalten(newLayout, pl);
 
-            // Alle Übergänge synchron im selben rAF-Block starten
-            requestAnimationFrame(function () {
-                requestAnimationFrame(function () {
-                    // Layout
-                    newLayout.style.transition = 'opacity ' + CROSSFADE_MS + 'ms ease';
-                    newLayout.style.opacity = '1';
-                    if (oldLayout) {
-                        oldLayout.style.transition = 'opacity ' + CROSSFADE_MS + 'ms ease';
-                        oldLayout.style.opacity = '0';
-                        setTimeout(function () {
-                            if (oldLayout.parentNode) {
-                                oldLayout.querySelectorAll('.tm-modul-container')
-                                    .forEach(cleanupModulContainer);
-                                oldLayout.parentNode.removeChild(oldLayout);
-                            }
-                        }, CROSSFADE_MS + 50);
-                    }
+            // Nach SETTLE_MS ins Sichtfeld holen und Crossfade starten
+            setTimeout(function () {
+                newLayout.style.left = '0';
+                newLayout.style.width = '';
 
-                    // Header (height + opacity synchron mit Layout)
-                    if (headerEl) {
-                        if (oldHeader && !newHeader) {
-                            headerEl.style.transition = 'height ' + CROSSFADE_MS + 'ms ease, opacity ' + CROSSFADE_MS + 'ms ease';
-                            headerEl.style.height = '0';
-                            headerEl.style.opacity = '0';
+                // Header/Footer vorab auf Startposition bringen (height:0 für Fade-In)
+                if (!oldHeader && newHeader && headerEl) {
+                    headerEl.classList.remove('tm-hidden');
+                    headerEl.style.height = '0';
+                    headerEl.style.opacity = '0';
+                }
+                if (!oldFooter && newFooter) {
+                    footerEl.classList.remove('tm-hidden');
+                    footerEl.style.height = '0';
+                    footerEl.style.opacity = '0';
+                }
+
+                if (oldLayout) {
+                    oldLayout.style.position = 'absolute';
+                    oldLayout.style.top = '0'; oldLayout.style.left = '0';
+                    oldLayout.style.right = '0'; oldLayout.style.bottom = '0';
+                }
+
+                requestAnimationFrame(function () {
+                    requestAnimationFrame(function () {
+                        // Layout einblenden
+                        newLayout.style.transition = 'opacity ' + CROSSFADE_MS + 'ms ease';
+                        newLayout.style.opacity = '1';
+                        if (oldLayout) {
+                            oldLayout.style.transition = 'opacity ' + CROSSFADE_MS + 'ms ease';
+                            oldLayout.style.opacity = '0';
                             setTimeout(function () {
-                                headerEl.classList.add('tm-hidden');
-                                headerEl.style.height = '';
-                                headerEl.style.opacity = '';
-                                headerEl.style.transition = '';
-                            }, CROSSFADE_MS + 50);
-                        } else if (!oldHeader && newHeader) {
-                            headerEl.style.transition = 'height ' + CROSSFADE_MS + 'ms ease, opacity ' + CROSSFADE_MS + 'ms ease';
-                            headerEl.style.height = '80px';
-                            headerEl.style.opacity = '1';
-                            setTimeout(function () {
-                                headerEl.style.height = '';
-                                headerEl.style.opacity = '';
-                                headerEl.style.transition = '';
+                                if (oldLayout.parentNode) {
+                                    oldLayout.querySelectorAll('.tm-modul-container')
+                                        .forEach(cleanupModulContainer);
+                                    oldLayout.parentNode.removeChild(oldLayout);
+                                }
                             }, CROSSFADE_MS + 50);
                         }
-                    }
 
-                    // Footer (height + opacity synchron mit Layout)
-                    if (oldFooter && !newFooter) {
-                        footerEl.style.transition = 'height ' + CROSSFADE_MS + 'ms ease, opacity ' + CROSSFADE_MS + 'ms ease';
-                        footerEl.style.height = '0';
-                        footerEl.style.opacity = '0';
-                        setTimeout(function () {
-                            footerEl.classList.add('tm-hidden');
-                            footerEl.style.height = '';
-                            footerEl.style.opacity = '';
-                            footerEl.style.transition = '';
-                        }, CROSSFADE_MS + 50);
-                    } else if (!oldFooter && newFooter) {
-                        footerEl.style.transition = 'height ' + CROSSFADE_MS + 'ms ease, opacity ' + CROSSFADE_MS + 'ms ease';
-                        footerEl.style.height = '70px';
-                        footerEl.style.opacity = '1';
-                        setTimeout(function () {
-                            footerEl.style.height = '';
-                            footerEl.style.opacity = '';
-                            footerEl.style.transition = '';
-                        }, CROSSFADE_MS + 50);
-                    }
+                        // Header
+                        if (headerEl) {
+                            if (oldHeader && !newHeader) {
+                                headerEl.style.transition = 'height ' + CROSSFADE_MS + 'ms ease, opacity ' + CROSSFADE_MS + 'ms ease';
+                                headerEl.style.height = '0';
+                                headerEl.style.opacity = '0';
+                                setTimeout(function () {
+                                    headerEl.classList.add('tm-hidden');
+                                    headerEl.style.height = '';
+                                    headerEl.style.opacity = '';
+                                    headerEl.style.transition = '';
+                                }, CROSSFADE_MS + 50);
+                            } else if (!oldHeader && newHeader) {
+                                headerEl.style.transition = 'height ' + CROSSFADE_MS + 'ms ease, opacity ' + CROSSFADE_MS + 'ms ease';
+                                headerEl.style.height = '80px';
+                                headerEl.style.opacity = '1';
+                                setTimeout(function () {
+                                    headerEl.style.height = '';
+                                    headerEl.style.opacity = '';
+                                    headerEl.style.transition = '';
+                                }, CROSSFADE_MS + 50);
+                            }
+                        }
+
+                        // Footer
+                        if (oldFooter && !newFooter) {
+                            footerEl.style.transition = 'height ' + CROSSFADE_MS + 'ms ease, opacity ' + CROSSFADE_MS + 'ms ease';
+                            footerEl.style.height = '0';
+                            footerEl.style.opacity = '0';
+                            setTimeout(function () {
+                                footerEl.classList.add('tm-hidden');
+                                footerEl.style.height = '';
+                                footerEl.style.opacity = '';
+                                footerEl.style.transition = '';
+                            }, CROSSFADE_MS + 50);
+                        } else if (!oldFooter && newFooter) {
+                            footerEl.style.transition = 'height ' + CROSSFADE_MS + 'ms ease, opacity ' + CROSSFADE_MS + 'ms ease';
+                            footerEl.style.height = '70px';
+                            footerEl.style.opacity = '1';
+                            setTimeout(function () {
+                                footerEl.style.height = '';
+                                footerEl.style.opacity = '';
+                                footerEl.style.transition = '';
+                            }, CROSSFADE_MS + 50);
+                        }
+                    });
                 });
-            });
+            }, SETTLE_MS);
 
-            // Nächste Playlist einplanen (nur bei echter Rotation).
-            // Basis: berechnete Zyklusdauer; dauer_sek dient als Mindestgarantie.
+            // Nächste Playlist einplanen. Timer läuft ab sofort (inkl. SETTLE_MS),
+            // damit die Gesamtanzeigedauer stabil bleibt.
             if (playlists.length > 1) {
                 var timerMs = Math.max(maxCycleMs, (pl.dauer_sek || 0) * 1000);
-                if (timerMs <= 0) { timerMs = 300000; } // Fallback 5 Min
+                if (timerMs <= 0) { timerMs = 300000; }
                 _playlistRotTimer = setTimeout(function () {
                     _playlistIndex = (_playlistIndex + 1) % playlists.length;
                     doRender(playlists[_playlistIndex]);
