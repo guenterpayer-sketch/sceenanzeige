@@ -246,6 +246,9 @@ FRET-Polling 5–10 Sek., Ticker unabhängig.
 - **Zeitplan-Sortierung:** ↑/↓-Buttons in jeder Playlist- und Ticker-Zeitplan-Zeile (`monitor-zeitplan.php`); verschiebt Zeilen im DOM, gespeicherte Reihenfolge gilt als Tiebreaker bei gleicher Priorität.
 - **Vorschau-Schema feste Breite:** `.adm-vorschau` im Playlist-Editor hat `flex: 0 0 480px; width: 480px` (inline), damit es im flex-row neben dem Pixel-Info-Panel nicht zusammengedrückt wird.
 - **Modul `veranstaltung`:** Proxy `proxies/veranstaltungen.php` ruft `https://tcpayer.de/wp-json/tribe/events/v1/events?per_page=N&start_date=heute` ab (öffentlich, kein Key). `status=future` wird von der kostenlosen Version des Plugins nicht unterstützt → stattdessen `start_date`. Felder: `titel`, `start_date`, `end_date`, `bild_url` (aus `image.url` oder null), `venue` (aus `venue.venue`-String), `beschreibung` (HTML gestrippt, max. 160 Zeichen). Frontend: A/B-Crossfade analog zu `ankuendigung`, deutsche Datums-/Uhrzeitformatierung (Wochentag + Monatsname). Einstellungen: `anzahl` (max. 20), `anzeige_dauer_sek`, `uebergang` (fade/none).
+- **Globale Admin-Dialoge:** `confirm()`, `alert()`, `prompt()` auf allen Admin-Seiten durch eigene HTML-Modals ersetzt (`admBestaetigen`, `admMeldung`, `admEingabe` — definiert in `admin_footer()` in `layout.php`). Browser-Dialog-Blockierung kann den Admin-Bereich nicht mehr lahmlegen.
+- **Stundenplan Überschrift:** Setting `titel` (leer = keine Überschrift); rendert `.tm-sp-heading` — 48 px, zentriert, Großbuchstaben, Rot — analog zum FRET-Modul. Kartenhöhe passt sich automatisch an.
+- **FRET Countdown-Schrift:** `.tm-song-k-countdown` von 16 px auf 22 px vergrößert (live noch nicht bestätigt).
 
 ---
 
