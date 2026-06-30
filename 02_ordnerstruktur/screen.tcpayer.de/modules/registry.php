@@ -21,4 +21,5 @@ return [
     'ankuendigung',
     'fret',
     'veranstaltung',
+    'video',
 ];

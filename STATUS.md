@@ -27,11 +27,13 @@ _Letzte Aktualisierung: Bugfixes Crossfade/Pre-render/Ticker-Vorschau._
 | 11 | Deployment-Guide | ✅ live (manuell per FTP auf all-inkl) |
 | 12 | Livebetrieb-Feedback: Ticker 30px/70px, Pixel-Panel, Zeitplan-Sortierung | ✅ live |
 | 13 | Modul `veranstaltung` (WP Events Calendar) + Vorschau-Schema-Fix | ✅ geliefert, noch nicht live getestet |
+| 14 | Modul `video` (eigene Uploads + YouTube/PeerTube-Embeds) + Videothek-Admin | ✅ geliefert, noch nicht live getestet |
 
 ---
 
 ## Offene Punkte
 
+- **Modul `video`:** geliefert, noch nicht live getestet — SQL-Migration `12_migration_video.sql` muss zuerst eingespielt werden
 - **Modul `veranstaltung`:** geliefert, aber noch nicht live getestet — Feedback ausstehend
 - **FRET Countdown 22px:** Schriftgröße erhöht, live-Test noch ausstehend
 - **FRET Fortschrittsbalken:** FRET-API liefert `remainingSeconds` immer `null` → Balken friert ein, läuft nicht; serverseitiges FRET-Problem, kein Code-Fehler
@@ -49,6 +51,27 @@ _Letzte Aktualisierung: Bugfixes Crossfade/Pre-render/Ticker-Vorschau._
 | `assets/js/monitor.js` | `doRender`: Neues Layout 800ms (`SETTLE_MS`) unsichtbar vorrendern (opacity:0, korrekt positioniert) bevor Crossfade startet — verhindert halb-fertige Module beim Layout-Wechsel |
 | `assets/js/monitor.js` | `doRender`: `_rotationTimeouts.forEach(clearTimeout)` vor Reset — altes Layout friert sofort ein, rotiert nicht weiter während SETTLE_MS |
 | `admin/playlist-preview.php` | Ticker anzeigen wenn `footer_ticker` aktiv: DB-Abfrage aller aktiven `ticker_eintraege` + `startTicker`-Logik eingebaut |
+
+### Schritt 14 — Modul `video` + Videothek-Admin
+
+| Datei | Was |
+|---|---|
+| `12_migration_video.sql` | NEU (repo root) — Tabelle `video_dateien` + Spalten `video_datei_id`/`video_embed_url` in `modul_instanz_inhalte` |
+| `includes/Videothek.php` | NEU — CRUD für `video_dateien`, MIME-Prüfung via `finfo` (mp4/webm), Upload + Löschen |
+| `admin/videothek.php` | NEU — eigener Admin-Menüpunkt „Videos"; Drag&Drop-Upload, Galerie, Löschen |
+| `admin/api/video-upload.php` | NEU — POST-Endpoint; nimmt `datei` + optionale `dauer_sek`, gibt `{ok, duplikat, eintrag}` zurück |
+| `admin/api/video-delete.php` | NEU — POST-Endpoint; ruft `Videothek::delete()` auf |
+| `admin/api/video-list.php` | NEU — GET-Endpoint; liefert `{ok, videos:[{id,url,original_name,dateiname,dauer_sek}]}` |
+| `admin/includes/bootstrap.php` | `Videothek.php` eingebunden |
+| `admin/includes/layout.php` | Nav-Eintrag `videos → videothek.php` nach `mediathek` |
+| `modules/video/module.json` | NEU — `has_inhalte: true`, Einstellung `intervall_sek` |
+| `modules/video/frontend.js` | NEU — event-getrieben (`ended`), YouTube IFrame API, PeerTube postMessage, 15-Min-Timeout |
+| `modules/registry.php` | `video` eingetragen |
+| `includes/ModulInstanz.php` | `listInhalte`: JOIN `video_dateien`; `ersetzeInhalte`: `video_datei_id`/`video_embed_url` |
+| `admin/instanz.php` | Video-Editor-Zeile mit Radio-Toggle Datei/Embed, Video-Picker-Dialog, POST-Verarbeitung |
+| `admin/bibliothek.php` | `modul_icon`: `video → 🎬`; `instanz_vorschau`: Video-Vorschau-Branch |
+| `assets/css/admin.css` | Styles für Video-Vorschau in Zeilen + Kacheln, Embed-URL-Feld, Picker-Video |
+| `assets/js/monitor.js` | `cleanupModulContainer`: `_tmYtPlayer.destroy()` + `_tmPeertubeListener` entfernen |
 
 ### Schritt 13 — Modul `veranstaltung` + Fixes
 

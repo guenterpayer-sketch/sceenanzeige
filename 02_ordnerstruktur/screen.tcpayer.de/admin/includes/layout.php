@@ -23,6 +23,7 @@ function admin_header(string $titel, string $aktiv = ''): void
     $nav = [
         'bibliothek'   => ['Bibliothek',  'bibliothek.php',   true],
         'mediathek'    => ['Mediathek',   'mediathek.php',    true],
+        'videos'       => ['Videos',      'videothek.php',    true],
         'playlists'    => ['Playlists',   'playlists.php',    true],
         'ticker'       => ['Ticker',      'ticker.php',       true],
         'vorschau'     => ['Vorschau',    'monitor-vorschau.php', true],

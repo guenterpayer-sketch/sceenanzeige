@@ -19,7 +19,7 @@
 Digitales Monitor-Signage-System für eine Tanzschule. Zentrales Backend
 (`screen.tcpayer.de`) + schlanke Saal-Monitor-Frontends (`saalN.tcpayer.de`)
 im Vollbild-Kiosk-Modus. Module: `uhrzeit`, `bild`, `ankuendigung`,
-`stundenplan`, `fret`, `veranstaltung`. Ticker läuft als eigenständiges Footer-System.
+`stundenplan`, `fret`, `veranstaltung`, `video`. Ticker läuft als eigenständiges Footer-System.
 
 **Hosting:** all-inkl (PHP 8 + MySQL). Kein Node.js, kein Docker.
 
@@ -123,6 +123,7 @@ Playlist = Layout (1–3 Spalten, Breiten frei in %) + Modul-Instanzen je Spalte
 | `uhrzeit` | Live Uhrzeit + Datum |
 | `fret` | Aktuell laufender Song (Polling via `proxies/fret.php`) |
 | `veranstaltung` | Kommende Veranstaltungen von tcpayer.de (WP Events Calendar REST-API) |
+| `video` | Rotierende Videos: eigene Uploads (mp4/webm via Videothek) oder Embed-Links (YouTube/PeerTube) |
 
 `community` zurückgestellt (würde sensibleren Stammdaten-Key brauchen).
 
@@ -247,6 +248,7 @@ FRET-Polling 5–10 Sek., Ticker unabhängig.
 - **Pixel-Größen im Playlist-Editor:** Panel neben der schematischen Vorschau (flex-row); berechnet 1920×1080-Basis dynamisch: Header 80 px, Footer 70 px, Spaltenbreiten aus Prozent-Angaben. Wird bei jedem Layout-/Regler-/Checkbox-Wechsel aktualisiert.
 - **Zeitplan-Sortierung:** ↑/↓-Buttons in jeder Playlist- und Ticker-Zeitplan-Zeile (`monitor-zeitplan.php`); verschiebt Zeilen im DOM, gespeicherte Reihenfolge gilt als Tiebreaker bei gleicher Priorität.
 - **Vorschau-Schema feste Breite:** `.adm-vorschau` im Playlist-Editor hat `flex: 0 0 480px; width: 480px` (inline), damit es im flex-row neben dem Pixel-Info-Panel nicht zusammengedrückt wird.
+- **Modul `video`:** Zwei Inhaltstypen pro Eintrag: eigene Datei (`video_datei_id` → `video_dateien`-Tabelle, Upload via `admin/videothek.php`) oder Embed-Link (`video_embed_url`, YouTube/PeerTube auto-erkannt). Weiterschaltung event-getrieben via `ended`-Event (kein fester Timer) — YouTube IFrame API (`YT.PlayerState.ENDED`), PeerTube via `postMessage` (`playbackStatusUpdate/ended`). Sicherheits-Timeout: 15 Minuten hardcodiert. Immer stumm (Browser-Autoplay-Pflicht). `dauer_sek` nur Schätzwert für Spalten-Synchronisation. Neue Tabelle `video_dateien` (analog `mediathek`, MIME-Prüfung via `finfo`). Neuer Admin-Menüpunkt „Videos" (`admin/videothek.php`), unabhängig von Mediathek. Migration: `12_migration_video.sql`. Embed-Typ-Erkennung: `/youtube\.com|youtu\.be/i` → YouTube, `/\/videos\/embed\//i` → PeerTube.
 - **Modul `veranstaltung`:** Proxy `proxies/veranstaltungen.php` ruft `https://tcpayer.de/wp-json/tribe/events/v1/events?per_page=N&start_date=heute` ab (öffentlich, kein Key). `status=future` wird von der kostenlosen Version des Plugins nicht unterstützt → stattdessen `start_date`. Felder: `titel`, `start_date`, `end_date`, `bild_url` (aus `image.url` oder null), `venue` (aus `venue.venue`-String), `beschreibung` (HTML gestrippt, max. 160 Zeichen). Frontend: A/B-Crossfade analog zu `ankuendigung`, deutsche Datums-/Uhrzeitformatierung (Wochentag + Monatsname). Einstellungen: `anzahl` (max. 20), `anzeige_dauer_sek`, `uebergang` (fade/none).
 - **Globale Admin-Dialoge:** `confirm()`, `alert()`, `prompt()` auf allen Admin-Seiten durch eigene HTML-Modals ersetzt (`admBestaetigen`, `admMeldung`, `admEingabe` — definiert in `admin_footer()` in `layout.php`). Browser-Dialog-Blockierung kann den Admin-Bereich nicht mehr lahmlegen.
 - **Stundenplan Überschrift:** Setting `titel` (leer = keine Überschrift); rendert `.tm-sp-heading` — 48 px, zentriert, Großbuchstaben, Rot — analog zum FRET-Modul. Kartenhöhe passt sich automatisch an.
@@ -272,6 +274,7 @@ FRET-Polling 5–10 Sek., Ticker unabhängig.
 | 11 | Deployment-Guide | ✅ live (manuell per FTP auf all-inkl, läuft produktiv) |
 | 12 | Livebetrieb-Feedback: Ticker 30 px/70 px, Pixel-Größen-Panel, Zeitplan-Sortierung, Endnutzer-Texte | ✅ live |
 | 13 | Modul `veranstaltung` (WP Events Calendar) + Vorschau-Schema-Fix | ✅ geliefert, noch nicht live getestet |
+| 14 | Modul `video` (eigene Uploads + YouTube/PeerTube-Embeds, event-getrieben) + Videothek-Admin | ✅ geliefert, noch nicht live getestet |
 
 ---
 

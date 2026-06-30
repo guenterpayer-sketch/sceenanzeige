@@ -53,6 +53,14 @@
         if (container._tmInterval) { clearInterval(container._tmInterval); container._tmInterval = null; }
         if (container._tmPoll)     { clearInterval(container._tmPoll);     container._tmPoll     = null; }
         if (container._tmTick)     { clearInterval(container._tmTick);     container._tmTick     = null; }
+        if (container._tmYtPlayer) {
+            try { container._tmYtPlayer.destroy(); } catch (e) { /* ignore */ }
+            container._tmYtPlayer = null;
+        }
+        if (container._tmPeertubeListener) {
+            window.removeEventListener('message', container._tmPeertubeListener);
+            container._tmPeertubeListener = null;
+        }
     }
 
     function cleanupAlles() {

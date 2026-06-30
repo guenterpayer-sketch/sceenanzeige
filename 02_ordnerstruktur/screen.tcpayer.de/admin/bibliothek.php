@@ -54,6 +54,7 @@ function modul_icon(string $icon): string
         'calendar'  => '📅',
         'megaphone' => '📢',
         'music'     => '🎵',
+        'video'     => '🎬',
     ][$icon] ?? '🧩';
 }
 
@@ -88,6 +89,25 @@ function instanz_vorschau(array $inst, array $meta, string $uploadsBasis, array 
             : '';
         return '<div class="adm-kachel-vorschau text">' . $bildHtml
             . '<span class="adm-kachel-txt">' . htmlspecialchars($txt) . '</span></div>';
+    }
+
+    if ($typ === 'video') {
+        $eintraege = ModulInstanz::listInhalte((int)$inst['id']);
+        $erstes = null;
+        $erstesIstEmbed = false;
+        foreach ($eintraege as $en) {
+            if (!empty($en['video_dateiname'])) { $erstes = $en['video_dateiname']; $erstesIstEmbed = false; break; }
+            if ($erstes === null && !empty($en['video_embed_url'])) { $erstes = $en['video_embed_url']; $erstesIstEmbed = true; }
+        }
+        if ($erstes && !$erstesIstEmbed) {
+            return '<div class="adm-kachel-vorschau bild">'
+                . '<video src="' . htmlspecialchars($uploadsBasis . rawurlencode($erstes)) . '" muted preload="metadata"></video></div>';
+        }
+        if ($erstes && $erstesIstEmbed) {
+            return '<div class="adm-kachel-vorschau info"><span class="adm-kachel-icon">🎬</span>'
+                . '<span class="adm-kachel-info">Embed-Link</span></div>';
+        }
+        return '<div class="adm-kachel-vorschau leer">' . modul_icon($meta['icon'] ?? '') . ' keine Videos</div>';
     }
 
     // Dynamische Module: Icon + Kurz-Info aus den Einstellungen

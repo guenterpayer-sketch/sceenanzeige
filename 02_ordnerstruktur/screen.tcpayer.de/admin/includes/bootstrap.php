@@ -30,6 +30,7 @@ require $WURZEL . '/includes/Monitor.php';
 require $WURZEL . '/includes/MediathekOrdner.php';
 require $WURZEL . '/includes/MediathekTag.php';
 require $WURZEL . '/includes/Mediathek.php';
+require $WURZEL . '/includes/Videothek.php';
 require $WURZEL . '/includes/FretApi.php';
 require $WURZEL . '/includes/FretGeraet.php';
 
