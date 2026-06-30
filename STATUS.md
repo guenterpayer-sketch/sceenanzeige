@@ -1,6 +1,6 @@
 # STATUS — Tanzschule Monitor-System
 
-> **Branch:** `claude/sceenanzeige-review-8e7qg8`  
+> **Branch:** `claude/nifty-johnson-3q6u7g`  
 > Eine neue Session liest `CLAUDE.md` (Konzept) + diese Datei (Stand) und kann sofort weiterarbeiten.
 
 _Letzte Aktualisierung: Schritt 14 — Modul `video` live getestet + Bugfixes._
