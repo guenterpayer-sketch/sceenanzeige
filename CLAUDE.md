@@ -253,6 +253,8 @@ FRET-Polling 5–10 Sek., Ticker unabhängig.
 - **Globale Admin-Dialoge:** `confirm()`, `alert()`, `prompt()` auf allen Admin-Seiten durch eigene HTML-Modals ersetzt (`admBestaetigen`, `admMeldung`, `admEingabe` — definiert in `admin_footer()` in `layout.php`). Browser-Dialog-Blockierung kann den Admin-Bereich nicht mehr lahmlegen.
 - **Stundenplan Überschrift:** Setting `titel` (leer = keine Überschrift); rendert `.tm-sp-heading` — 48 px, zentriert, Großbuchstaben, Rot — analog zum FRET-Modul. Kartenhöhe passt sich automatisch an.
 - **FRET Countdown-Schrift:** `.tm-song-k-countdown` von 16 px auf 22 px vergrößert (live noch nicht bestätigt).
+- **Monitor-Domain:** `monitore.subdomain` enthält die vollständige Domain (z.B. `saal1.tcpayer.de`, `testmon.spass-am-tanzen.de`). `Monitor::normDomain()` validiert und normalisiert die Eingabe (Kleinbuchstaben, `[a-z0-9.-]`, mind. ein Punkt). Früher war nur der Subdomain-Teil gespeichert und `.tcpayer.de` hardcodiert angehängt — das ist abgelöst. `normSubdomain()` existiert noch als Deprecated-Alias. Migration `13_migration_monitor_domain.sql` war für bestehende Installationen vorgesehen, war aber nicht nötig da die DB-Einträge bereits korrekt waren.
+- **CI/CD:** `.github/workflows/deploy.yml` — Push auf `claude/nifty-johnson-3q6u7g` deployt via FTP auf `screen.spass-am-tanzen.de/` (Staging-Backend) und `testmon.spass-am-tanzen.de/` (Staging-Monitor). Merge auf `main` deployt auf `screen.tcpayer.de/` (Live). Secrets `FTP_HOST`/`FTP_USER`/`FTP_PASS` in GitHub-Repository-Settings hinterlegt. `config.php` ist per `exclude` in allen Jobs ausgenommen — muss einmalig manuell per FTP hochgeladen/gepflegt werden.
 
 ---
 
@@ -271,10 +273,11 @@ FRET-Polling 5–10 Sek., Ticker unabhängig.
 | 9 | Monitor-Frontend (Anzeige- + Zeitlogik) | ✅ live getestet |
 | 9b | Monitor-Frontend: `stundenplan` ✅ live (Standort-/Saal-Filter, responsive Schrift, feste Kartenhöhe); `fret` offen (Fortschrittsbalken wartet auf FRET-Server-Fix) | teilweise |
 | 10 | Live-Vorschau (iFrame) + Playlist-Vorschau (`playlist-preview.php`) | ✅ live getestet |
-| 11 | Deployment-Guide | ✅ live (manuell per FTP auf all-inkl, läuft produktiv) |
+| 11 | Deployment-Guide | ✅ ersetzt durch CI/CD (Schritt 15) |
 | 12 | Livebetrieb-Feedback: Ticker 30 px/70 px, Pixel-Größen-Panel, Zeitplan-Sortierung, Endnutzer-Texte | ✅ live |
 | 13 | Modul `veranstaltung` (WP Events Calendar) + Vorschau-Schema-Fix | ✅ geliefert, noch nicht live getestet |
 | 14 | Modul `video` (eigene Uploads + YouTube/PeerTube-Embeds, event-getrieben) + Videothek-Admin | ✅ live getestet |
+| 15 | CI/CD via GitHub Actions + Monitor-Domain (vollständig statt Subdomain) + Testmon-Frontend | ✅ Staging getestet, bereit für Live-Merge |
 
 ---
 

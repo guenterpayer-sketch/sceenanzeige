@@ -3,7 +3,7 @@
 > **Branch:** `claude/nifty-johnson-3q6u7g`  
 > Eine neue Session liest `CLAUDE.md` (Konzept) + diese Datei (Stand) und kann sofort weiterarbeiten.
 
-_Letzte Aktualisierung: Schritt 14 — Modul `video` live getestet + Bugfixes._
+_Letzte Aktualisierung: Schritt 15 — Monitor-Domain, CI/CD-Deploy, Testmon-Frontend._
 
 ---
 
@@ -24,10 +24,11 @@ _Letzte Aktualisierung: Schritt 14 — Modul `video` live getestet + Bugfixes._
 | 9b-fret | Monitor-Frontend: Layout `fret` | ✅ live getestet |
 | 9c | TV-Skalierung (Google TV 720p → scale auf 1920px) | ✅ live getestet |
 | 10 | Live-Vorschau (iFrame) + Playlist-Vorschau | ✅ live getestet |
-| 11 | Deployment-Guide | ✅ live (manuell per FTP auf all-inkl) |
+| 11 | Deployment-Guide | ✅ ersetzt durch CI/CD (Schritt 15) |
 | 12 | Livebetrieb-Feedback: Ticker 30px/70px, Pixel-Panel, Zeitplan-Sortierung | ✅ live |
 | 13 | Modul `veranstaltung` (WP Events Calendar) + Vorschau-Schema-Fix | ✅ geliefert, noch nicht live getestet |
 | 14 | Modul `video` (eigene Uploads + YouTube/PeerTube-Embeds) + Videothek-Admin | ✅ live getestet |
+| 15 | CI/CD via GitHub Actions + Monitor-Domain + Testmon-Frontend | ✅ auf Staging getestet, bereit für Live-Merge |
 
 ---
 
@@ -37,27 +38,29 @@ _Letzte Aktualisierung: Schritt 14 — Modul `video` live getestet + Bugfixes._
 - **FRET Countdown 22px:** Schriftgröße erhöht, live-Test noch ausstehend
 - **FRET Fortschrittsbalken:** FRET-API liefert `remainingSeconds` immer `null` → Balken friert ein, läuft nicht; serverseitiges FRET-Problem, kein Code-Fehler
 - **SETTLE_MS = 800:** Heuristik für Off-screen-Pre-render; bei sehr langsamer NC-API ggf. auf 1000–1200ms erhöhen
+- **Live-Merge ausstehend:** Branch `claude/nifty-johnson-3q6u7g` → `main` noch nicht gemergt (Schritt 15 + alle vorherigen Änderungen)
 
 ---
 
 ## Was in den letzten Sessions erledigt wurde
 
-### Bugfixes — Crossfade, Pre-render, Ticker-Vorschau
+### Schritt 15 — CI/CD + Monitor-Domain + Testmon (auf Staging getestet ✅)
 
 | Datei | Was |
 |---|---|
-| `assets/js/monitor.js` | `rotateModule`: Crossfade 1500ms zwischen Modul-Instanzen (statt hartem Schnitt); passend zu `bild/frontend.js` |
-| `assets/js/monitor.js` | `doRender`: Neues Layout 800ms (`SETTLE_MS`) unsichtbar vorrendern (opacity:0, korrekt positioniert) bevor Crossfade startet — verhindert halb-fertige Module beim Layout-Wechsel |
-| `assets/js/monitor.js` | `doRender`: `_rotationTimeouts.forEach(clearTimeout)` vor Reset — altes Layout friert sofort ein, rotiert nicht weiter während SETTLE_MS |
-| `admin/playlist-preview.php` | Ticker anzeigen wenn `footer_ticker` aktiv: DB-Abfrage aller aktiven `ticker_eintraege` + `startTicker`-Logik eingebaut |
+| `.github/workflows/deploy.yml` | NEU — GitHub Actions: Push auf `claude/nifty-johnson-3q6u7g` → FTP-Deploy auf `screen.spass-am-tanzen.de` (Staging-Backend) + `testmon.spass-am-tanzen.de` (Staging-Monitor); Merge auf `main` → FTP-Deploy auf `screen.tcpayer.de` (Live) |
+| `includes/Monitor.php` | `normSubdomain()` → `normDomain()`: akzeptiert vollständige Domain (z.B. `saal1.tcpayer.de`, `testmon.spass-am-tanzen.de`); `normSubdomain()` als Deprecated-Alias erhalten |
+| `admin/monitore.php` | Eingabefeld-Label/Placeholder → „Domain" (vollständige Domain); Kachel-Anzeige + Vorschau-URL ohne hardcodiertes `.tcpayer.de` |
+| `13_migration_monitor_domain.sql` | Migration: `UPDATE monitore SET subdomain = CONCAT(subdomain, '.tcpayer.de') WHERE subdomain NOT LIKE '%.%'` — **nicht nötig**, DB-Einträge waren bereits korrekt |
+| `02_ordnerstruktur/testmon.spass-am-tanzen.de/index.html` | NEU — Monitor-Frontend für Test-Monitor; Tippfehler `screen.spass-am.tanzen.de` → `screen.spass-am-tanzen.de` korrigiert; `BACKEND_BASE` + `UPLOADS_URL` zeigen auf `screen.spass-am-tanzen.de` |
 
 ### Schritt 14 — Modul `video` + Videothek-Admin (live getestet ✅)
 
 | Datei | Was |
 |---|---|
-| `12_migration_video.sql` | NEU (repo root) — Tabelle `video_dateien` + Spalten `video_datei_id`/`video_embed_url` in `modul_instanz_inhalte` |
+| `12_migration_video.sql` | NEU — Tabelle `video_dateien` + Spalten `video_datei_id`/`video_embed_url` in `modul_instanz_inhalte` |
 | `includes/Videothek.php` | NEU — CRUD für `video_dateien`, MIME-Prüfung via `finfo` (mp4/webm), Upload + Bearbeiten + Löschen |
-| `admin/videothek.php` | NEU — eigener Admin-Menüpunkt „Videos"; Drag&Drop-Upload, Galerie, Bearbeiten (Name/Laufzeit), Löschen |
+| `admin/videothek.php` | NEU — eigener Admin-Menüpunkt „Videos"; Drag&Drop-Upload, Galerie, Bearbeiten (Name/Laufzeit via `.adm-bild-edit`-Button wie Mediathek), Löschen |
 | `admin/api/video-upload.php` | NEU — POST-Endpoint; nimmt `datei` + optionale `dauer_sek`, gibt `{ok, duplikat, eintrag}` zurück |
 | `admin/api/video-delete.php` | NEU — POST-Endpoint; ruft `Videothek::delete()` auf |
 | `admin/api/video-list.php` | NEU — GET-Endpoint; liefert `{ok, videos:[{id,url,original_name,dateiname,dauer_sek}]}` |
@@ -74,35 +77,52 @@ _Letzte Aktualisierung: Schritt 14 — Modul `video` live getestet + Bugfixes._
 | `assets/css/admin.css` | Styles für Video-Vorschau in Zeilen + Kacheln, Embed-URL-Feld, Picker-Video; Bearbeiten-Button `.adm-bild-edit` (wie Mediathek) |
 | `assets/js/monitor.js` | `cleanupModulContainer`: `_tmYtPlayer.destroy()` + `_tmPeertubeListener` entfernen |
 
+### Bugfixes — Crossfade, Pre-render, Ticker-Vorschau
+
+| Datei | Was |
+|---|---|
+| `assets/js/monitor.js` | `rotateModule`: Crossfade 1500ms zwischen Modul-Instanzen (statt hartem Schnitt) |
+| `assets/js/monitor.js` | `doRender`: Neues Layout 800ms (`SETTLE_MS`) unsichtbar vorrendern bevor Crossfade startet |
+| `assets/js/monitor.js` | `doRender`: `_rotationTimeouts.forEach(clearTimeout)` — altes Layout friert sofort ein während SETTLE_MS |
+| `admin/playlist-preview.php` | Ticker anzeigen wenn `footer_ticker` aktiv |
+
 ### Schritt 13 — Modul `veranstaltung` + Fixes
 
 | Datei | Was |
 |---|---|
-| `proxies/veranstaltungen.php` | NEU — Proxy für WP Events Calendar REST-API (öffentlich, kein Key) |
+| `proxies/veranstaltungen.php` | NEU — Proxy für WP Events Calendar REST-API |
 | `modules/veranstaltung/module.json` | NEU — Einstellungen: `anzahl`, `anzeige_dauer_sek`, `uebergang` |
 | `modules/veranstaltung/frontend.js` | NEU — A/B-Crossfade, deutsche Datums-/Uhrzeitformatierung |
 | `modules/registry.php` | `veranstaltung` eingetragen |
 | `assets/css/monitor.css` | Styles für `veranstaltung`-Modul + `.tm-sp-heading` + FRET-Countdown 22px |
-| `admin/includes/layout.php` | Globale Admin-Dialoge in `admin_footer()` (admBestaetigen/admMeldung/admEingabe) |
-| `admin/bibliothek.php` | `confirm()` → `admBestaetigen()` |
-| `admin/playlists.php` | `confirm()` → `admBestaetigen()` |
-| `admin/ticker.php` | `confirm()` → `admBestaetigen()` |
-| `admin/monitore.php` | `confirm()` → `admBestaetigen()` |
-| `admin/instanz.php` | `confirm()` → `admBestaetigen()` |
-| `admin/ticker-edit.php` | `confirm()` → `admBestaetigen()` |
-| `admin/playlist-editor.php` | `alert()` → `admMeldung()`; Vorschau-Breite Fix (flex: 0 0 480px) |
-| `admin/mediathek.php` | Lokale Modals entfernt; alle Dialoge auf globale Funktionen umgestellt |
+| `admin/includes/layout.php` | Globale Admin-Dialoge `admBestaetigen`/`admMeldung`/`admEingabe` in `admin_footer()` |
 | `modules/stundenplan/module.json` | Setting `titel` hinzugefügt |
 | `modules/stundenplan/frontend.js` | `.tm-sp-heading` rendern wenn `titel` gesetzt |
 
-### Schritt 12 — Livebetrieb-Feedback (ältere Session)
+### Schritt 12 — Livebetrieb-Feedback
 
 - **Ticker:** Schriftgröße 30px, Footer-Höhe 70px
 - **Pixel-Größen-Panel** im Playlist-Editor neben der Vorschau
 - **Zeitplan-Sortierung:** ↑/↓-Buttons, Reihenfolge als Tiebreaker
-- **Stundenplan Standort-/Saal-Filter:** `location_ids`, `room_id` in Einstellungen; `proxies/nc-locations.php`
+- **Stundenplan Standort-/Saal-Filter:** `location_ids`, `room_id`; `proxies/nc-locations.php`
 - **Stundenplan feste Kartenhöhe:** `requestAnimationFrame` berechnet Höhe nach Render
 - **Stundenplan responsive Schrift:** Container Queries, `@container (max-width: 700px)` → 22px
+
+---
+
+## CI/CD-Workflow
+
+```
+Push auf claude/nifty-johnson-3q6u7g
+  → FTP-Deploy: screen.spass-am-tanzen.de/   (Staging-Backend)
+  → FTP-Deploy: testmon.spass-am-tanzen.de/  (Staging-Monitor)
+
+Merge auf main
+  → FTP-Deploy: screen.tcpayer.de/           (Live-Backend)
+```
+
+GitHub Secrets: `FTP_HOST`, `FTP_USER`, `FTP_PASS` (in Repository-Settings hinterlegt).
+`config.php` ist in allen Jobs per `exclude` ausgenommen — muss einmalig manuell per FTP hochgeladen werden.
 
 ---
 
@@ -132,8 +152,9 @@ Vollständige Liste in `CLAUDE.md` Abschnitt 12. Highlights:
 - **FRET:** `FRET_SCHOOL_ID` niemals im Frontend — nur in `config.php` + `proxies/fret.php`
 - **Admin-Dialoge:** `confirm()`/`alert()`/`prompt()` → `admBestaetigen()`/`admMeldung()`/`admEingabe()` (global in `layout.php`)
 - **veranstaltung:** `status=future` nicht unterstützt (free Plugin) → `start_date=heute` als Filter
-- **video:** `proxies/monitor.php` braucht expliziten LEFT JOIN auf `video_dateien` — reines `ModulInstanz::listInhalte` reicht nicht, weil monitor.php eine eigene Abfrage hat
-- **video YT:** YouTube-UI maximal reduzierbar per API: `controls=0, modestbranding=1, rel=0, showinfo=0, iv_load_policy=3`; Logo-Entfernung per CSS-Overlay wäre ToS-Verstoß
+- **video:** `proxies/monitor.php` braucht expliziten LEFT JOIN auf `video_dateien` — `ModulInstanz::listInhalte` allein reicht nicht
+- **video YT:** YouTube-UI maximal reduzierbar per API: `controls=0, modestbranding=1, rel=0, showinfo=0, iv_load_policy=3`; CSS-Overlay wäre ToS-Verstoß
+- **Monitor-Domain:** `monitore.subdomain` enthält seit Schritt 15 die vollständige Domain (z.B. `saal1.tcpayer.de`), nicht nur den Subdomain-Teil
 
 ---
 
