@@ -1,9 +1,9 @@
 # STATUS — Tanzschule Monitor-System
 
-> **Branch:** `claude/nifty-johnson-3q6u7g`  
+> **Branch:** `claude/sceenanzeige-review-8e7qg8`  
 > Eine neue Session liest `CLAUDE.md` (Konzept) + diese Datei (Stand) und kann sofort weiterarbeiten.
 
-_Letzte Aktualisierung: Bugfixes Crossfade/Pre-render/Ticker-Vorschau._
+_Letzte Aktualisierung: Schritt 14 — Modul `video` live getestet + Bugfixes._
 
 ---
 
@@ -27,13 +27,12 @@ _Letzte Aktualisierung: Bugfixes Crossfade/Pre-render/Ticker-Vorschau._
 | 11 | Deployment-Guide | ✅ live (manuell per FTP auf all-inkl) |
 | 12 | Livebetrieb-Feedback: Ticker 30px/70px, Pixel-Panel, Zeitplan-Sortierung | ✅ live |
 | 13 | Modul `veranstaltung` (WP Events Calendar) + Vorschau-Schema-Fix | ✅ geliefert, noch nicht live getestet |
-| 14 | Modul `video` (eigene Uploads + YouTube/PeerTube-Embeds) + Videothek-Admin | ✅ geliefert, noch nicht live getestet |
+| 14 | Modul `video` (eigene Uploads + YouTube/PeerTube-Embeds) + Videothek-Admin | ✅ live getestet |
 
 ---
 
 ## Offene Punkte
 
-- **Modul `video`:** geliefert, noch nicht live getestet — SQL-Migration `12_migration_video.sql` muss zuerst eingespielt werden
 - **Modul `veranstaltung`:** geliefert, aber noch nicht live getestet — Feedback ausstehend
 - **FRET Countdown 22px:** Schriftgröße erhöht, live-Test noch ausstehend
 - **FRET Fortschrittsbalken:** FRET-API liefert `remainingSeconds` immer `null` → Balken friert ein, läuft nicht; serverseitiges FRET-Problem, kein Code-Fehler
@@ -52,25 +51,27 @@ _Letzte Aktualisierung: Bugfixes Crossfade/Pre-render/Ticker-Vorschau._
 | `assets/js/monitor.js` | `doRender`: `_rotationTimeouts.forEach(clearTimeout)` vor Reset — altes Layout friert sofort ein, rotiert nicht weiter während SETTLE_MS |
 | `admin/playlist-preview.php` | Ticker anzeigen wenn `footer_ticker` aktiv: DB-Abfrage aller aktiven `ticker_eintraege` + `startTicker`-Logik eingebaut |
 
-### Schritt 14 — Modul `video` + Videothek-Admin
+### Schritt 14 — Modul `video` + Videothek-Admin (live getestet ✅)
 
 | Datei | Was |
 |---|---|
 | `12_migration_video.sql` | NEU (repo root) — Tabelle `video_dateien` + Spalten `video_datei_id`/`video_embed_url` in `modul_instanz_inhalte` |
-| `includes/Videothek.php` | NEU — CRUD für `video_dateien`, MIME-Prüfung via `finfo` (mp4/webm), Upload + Löschen |
-| `admin/videothek.php` | NEU — eigener Admin-Menüpunkt „Videos"; Drag&Drop-Upload, Galerie, Löschen |
+| `includes/Videothek.php` | NEU — CRUD für `video_dateien`, MIME-Prüfung via `finfo` (mp4/webm), Upload + Bearbeiten + Löschen |
+| `admin/videothek.php` | NEU — eigener Admin-Menüpunkt „Videos"; Drag&Drop-Upload, Galerie, Bearbeiten (Name/Laufzeit), Löschen |
 | `admin/api/video-upload.php` | NEU — POST-Endpoint; nimmt `datei` + optionale `dauer_sek`, gibt `{ok, duplikat, eintrag}` zurück |
 | `admin/api/video-delete.php` | NEU — POST-Endpoint; ruft `Videothek::delete()` auf |
 | `admin/api/video-list.php` | NEU — GET-Endpoint; liefert `{ok, videos:[{id,url,original_name,dateiname,dauer_sek}]}` |
+| `admin/api/video-update.php` | NEU — POST-Endpoint; aktualisiert `original_name` + `dauer_sek` |
 | `admin/includes/bootstrap.php` | `Videothek.php` eingebunden |
 | `admin/includes/layout.php` | Nav-Eintrag `videos → videothek.php` nach `mediathek` |
 | `modules/video/module.json` | NEU — `has_inhalte: true`, Einstellung `intervall_sek` |
-| `modules/video/frontend.js` | NEU — event-getrieben (`ended`), YouTube IFrame API, PeerTube postMessage, 15-Min-Timeout |
+| `modules/video/frontend.js` | NEU — event-getrieben (`ended`), YouTube IFrame API (`controls=0, modestbranding=1, rel=0, showinfo=0, iv_load_policy=3`), PeerTube postMessage, 15-Min-Timeout |
 | `modules/registry.php` | `video` eingetragen |
 | `includes/ModulInstanz.php` | `listInhalte`: JOIN `video_dateien`; `ersetzeInhalte`: `video_datei_id`/`video_embed_url` |
+| `proxies/monitor.php` | `$stmtInhalte`: LEFT JOIN `video_dateien` + Felder `video_dateiname`/`video_embed_url` (Bugfix: ohne diese fehlten die Daten im Frontend) |
 | `admin/instanz.php` | Video-Editor-Zeile mit Radio-Toggle Datei/Embed, Video-Picker-Dialog, POST-Verarbeitung |
 | `admin/bibliothek.php` | `modul_icon`: `video → 🎬`; `instanz_vorschau`: Video-Vorschau-Branch |
-| `assets/css/admin.css` | Styles für Video-Vorschau in Zeilen + Kacheln, Embed-URL-Feld, Picker-Video |
+| `assets/css/admin.css` | Styles für Video-Vorschau in Zeilen + Kacheln, Embed-URL-Feld, Picker-Video; Bearbeiten-Button `.adm-bild-edit` (wie Mediathek) |
 | `assets/js/monitor.js` | `cleanupModulContainer`: `_tmYtPlayer.destroy()` + `_tmPeertubeListener` entfernen |
 
 ### Schritt 13 — Modul `veranstaltung` + Fixes
@@ -131,6 +132,8 @@ Vollständige Liste in `CLAUDE.md` Abschnitt 12. Highlights:
 - **FRET:** `FRET_SCHOOL_ID` niemals im Frontend — nur in `config.php` + `proxies/fret.php`
 - **Admin-Dialoge:** `confirm()`/`alert()`/`prompt()` → `admBestaetigen()`/`admMeldung()`/`admEingabe()` (global in `layout.php`)
 - **veranstaltung:** `status=future` nicht unterstützt (free Plugin) → `start_date=heute` als Filter
+- **video:** `proxies/monitor.php` braucht expliziten LEFT JOIN auf `video_dateien` — reines `ModulInstanz::listInhalte` reicht nicht, weil monitor.php eine eigene Abfrage hat
+- **video YT:** YouTube-UI maximal reduzierbar per API: `controls=0, modestbranding=1, rel=0, showinfo=0, iv_load_policy=3`; Logo-Entfernung per CSS-Overlay wäre ToS-Verstoß
 
 ---
 
