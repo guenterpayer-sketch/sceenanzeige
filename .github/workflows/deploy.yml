@@ -7,8 +7,8 @@ on:
       - main                           # → Live
 
 jobs:
-  deploy-staging:
-    name: Deploy → screen.spass-am-tanzen.de (Staging)
+  deploy-staging-backend:
+    name: Deploy → screen.spass-am-tanzen.de (Staging Backend)
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/claude/nifty-johnson-3q6u7g'
     steps:
@@ -26,6 +26,25 @@ jobs:
             **/.git*
             **/.git*/**
             **/config.php
+
+  deploy-staging-testmon:
+    name: Deploy → testmon.spass-am-tanzen.de (Staging Monitor)
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/claude/nifty-johnson-3q6u7g'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: FTP Deploy
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASS }}
+          local-dir: 02_ordnerstruktur/testmon.spass-am-tanzen.de/
+          server-dir: testmon.spass-am-tanzen.de/
+          exclude: |
+            **/.git*
+            **/.git*/**
 
   deploy-live:
     name: Deploy → screen.tcpayer.de (Live)

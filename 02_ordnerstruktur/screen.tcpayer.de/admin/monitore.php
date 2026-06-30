@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($aktion === 'speichern') {
         $formId         = (int)($_POST['id'] ?? 0);
         $formName       = trim((string)($_POST['name'] ?? ''));
-        $formSub        = Monitor::normSubdomain((string)($_POST['subdomain'] ?? ''));
+        $formSub        = Monitor::normDomain((string)($_POST['subdomain'] ?? ''));
         $formHeaderText = trim((string)($_POST['header_text'] ?? ''));
         $istNeu         = ($formId === 0);
 
@@ -44,9 +44,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $fehler[] = 'Bitte einen Namen für den Monitor angeben.';
         }
         if ($formSub === '') {
-            $fehler[] = 'Bitte eine gültige Subdomain angeben (z.B. „saal1").';
+            $fehler[] = 'Bitte eine gültige Domain angeben (z.B. „saal1.tcpayer.de").';
         } elseif (Monitor::subdomainExistiert($formSub, $istNeu ? null : $formId)) {
-            $fehler[] = 'Die Subdomain „' . htmlspecialchars($formSub) . '" ist bereits vergeben.';
+            $fehler[] = 'Die Domain „' . htmlspecialchars($formSub) . '" ist bereits vergeben.';
         }
 
         if (empty($fehler)) {
@@ -91,10 +91,10 @@ admin_header('Monitore', 'monitore');
 <?php endforeach; ?>
 
 <p class="adm-hilfe">
-    Jeder Monitor läuft unter einer eigenen Subdomain (z.&nbsp;B.
-    <code>saal1.tcpayer.de</code> → Subdomain <code>saal1</code>). Klicke eine
-    Kachel an, um den <strong>Zeitplan</strong> dieses Monitors zu pflegen
-    (welche Playlist und welcher Ticker wann laufen).
+    Jeder Monitor läuft unter einer eigenen Domain (z.&nbsp;B.
+    <code>saal1.tcpayer.de</code>). Die vollständige Domain wird beim Anlegen
+    eingetragen. Klicke eine Kachel an, um den <strong>Zeitplan</strong> dieses
+    Monitors zu pflegen (welche Playlist und welcher Ticker wann laufen).
 </p>
 
 <?php if ($zeigeForm): ?>
@@ -110,9 +110,9 @@ admin_header('Monitore', 'monitore');
                    placeholder="z.B. Saal 1" required>
         </div>
         <div class="field">
-            <label for="subdomain">Subdomain</label>
+            <label for="subdomain">Domain</label>
             <input type="text" id="subdomain" name="subdomain" value="<?= htmlspecialchars($formSub) ?>"
-                   placeholder="z.B. saal1" required>
+                   placeholder="z.B. saal1.tcpayer.de" required>
         </div>
         <div class="field">
             <label for="header_text">Header-Text (Mitte des Monitors)</label>
@@ -142,7 +142,7 @@ admin_header('Monitore', 'monitore');
                title="Zeitplan von <?= htmlspecialchars($m['name']) ?> bearbeiten">
                 <span class="adm-kachel-icon">🖥️</span>
                 <span class="adm-kachel-info">
-                    <?= htmlspecialchars($m['subdomain']) ?>.tcpayer.de<br>
+                    <?= htmlspecialchars($m['subdomain']) ?><br>
                     🗂️ <?= (int)$m['anzahl_zeitplan'] ?> Playlist<?= (int)$m['anzahl_zeitplan'] === 1 ? '' : 's' ?>
                     · 📰 <?= (int)$m['anzahl_ticker'] ?> Ticker
                 </span>
@@ -152,7 +152,7 @@ admin_header('Monitore', 'monitore');
                 <div class="adm-kachel-aktionen">
                     <a class="adm-btn adm-btn-primary" href="monitor-zeitplan.php?id=<?= (int)$m['id'] ?>">Zeitplan</a>
                     <button class="adm-btn adm-vorschau-btn"
-                            data-url="https://<?= htmlspecialchars($m['subdomain']) ?>.tcpayer.de"
+                            data-url="https://<?= htmlspecialchars($m['subdomain']) ?>"
                             data-name="<?= htmlspecialchars($m['name']) ?>">Vorschau</button>
                     <a class="adm-btn" href="monitore.php?edit=<?= (int)$m['id'] ?>">Bearbeiten</a>
                     <form method="post" class="adm-inline adm-del-form"
