@@ -1,0 +1,15 @@
+{
+  "id": "video",
+  "label": "Video",
+  "icon": "video",
+  "has_proxy": false,
+  "has_inhalte": true,
+  "settings": [
+    {
+      "key": "intervall_sek",
+      "type": "number",
+      "label": "Geschätzte Anzeigedauer in Sek. (nur Schätzwert für die Spalten-Synchronisation; die tatsächliche Weiterschaltung erfolgt nach Videoende)",
+      "default": 30
+    }
+  ]
+}

@@ -138,7 +138,9 @@ final class ModulInstanz
      * Inhalte einer Instanz. Der Dateiname wird abwärtskompatibel aufgelöst:
      * bevorzugt aus der Mediathek (mediathek_id), sonst der alte direkte
      * dateiname-Wert. Damit funktioniert das bestehende bild/frontend.js
-     * (liest i.dateiname) unverändert weiter.
+     * (liest i.dateiname) unverändert weiter. Für das video-Modul wird
+     * zusätzlich der Videothek-Dateiname (video_datei_id) sowie die
+     * video_embed_url mitgeliefert.
      */
     public static function listInhalte(int $modulInstanzId): array
     {
@@ -146,9 +148,11 @@ final class ModulInstanz
         $stmt = $pdo->prepare(
             'SELECT i.id, i.modul_instanz_id, i.mediathek_id,
                     COALESCE(m.dateiname, i.dateiname) AS dateiname,
+                    i.video_datei_id, v.dateiname AS video_dateiname, i.video_embed_url,
                     i.text_inhalt, i.gueltig_bis, i.reihenfolge, i.dauer_sek, i.aktiv
              FROM modul_instanz_inhalte i
              LEFT JOIN mediathek m ON m.id = i.mediathek_id
+             LEFT JOIN video_dateien v ON v.id = i.video_datei_id
              WHERE i.modul_instanz_id = :mid
              ORDER BY i.reihenfolge, i.id'
         );
@@ -161,7 +165,7 @@ final class ModulInstanz
      * (für den Bibliotheks-Editor: die komplette Eintragsliste wird neu
      * geschrieben). Die Reihenfolge ergibt sich aus der Array-Reihenfolge.
      *
-     * @param array<int,array{mediathek_id?:?int,dateiname?:?string,text?:?string,dauer_sek?:int,gueltig_bis?:?string,aktiv?:bool}> $inhalte
+     * @param array<int,array{mediathek_id?:?int,dateiname?:?string,text?:?string,dauer_sek?:int,gueltig_bis?:?string,aktiv?:bool,video_datei_id?:?int,video_embed_url?:?string}> $inhalte
      */
     public static function ersetzeInhalte(int $instanzId, array $inhalte): void
     {
@@ -173,8 +177,8 @@ final class ModulInstanz
 
             $stmt = $pdo->prepare(
                 'INSERT INTO modul_instanz_inhalte
-                    (modul_instanz_id, mediathek_id, dateiname, text_inhalt, gueltig_bis, reihenfolge, dauer_sek, aktiv)
-                 VALUES (:mid, :media, :datei, :text, :gueltig, :reihenfolge, :dauer, :aktiv)'
+                    (modul_instanz_id, mediathek_id, dateiname, text_inhalt, gueltig_bis, reihenfolge, dauer_sek, aktiv, video_datei_id, video_embed_url)
+                 VALUES (:mid, :media, :datei, :text, :gueltig, :reihenfolge, :dauer, :aktiv, :video, :embed)'
             );
             $r = 0;
             foreach ($inhalte as $in) {
@@ -187,6 +191,8 @@ final class ModulInstanz
                     ':reihenfolge'=> $r++,
                     ':dauer'      => (int)($in['dauer_sek'] ?? 10),
                     ':aktiv'      => !empty($in['aktiv']) ? 1 : 0,
+                    ':video'      => !empty($in['video_datei_id']) ? (int)$in['video_datei_id'] : null,
+                    ':embed'      => !empty($in['video_embed_url']) ? trim((string)$in['video_embed_url']) : null,
                 ]);
             }
             $pdo->commit();

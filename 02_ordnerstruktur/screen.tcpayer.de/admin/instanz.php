@@ -85,6 +85,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'speic
                         'gueltig_bis'  => $row['gueltig_bis'] ?? null,
                         'aktiv'        => !empty($row['aktiv']),
                     ];
+                } elseif ($modulTyp === 'video') {
+                    $videoDatei = !empty($row['video_datei_id']) ? (int)$row['video_datei_id'] : null;
+                    $embedUrl   = trim((string)($row['video_embed_url'] ?? ''));
+                    if ($videoDatei === null && $embedUrl === '') { continue; } // leere Zeile
+                    $inhalte[] = [
+                        'video_datei_id'  => $videoDatei,
+                        'video_embed_url' => $embedUrl !== '' ? $embedUrl : null,
+                        'dauer_sek'       => (int)($row['dauer_sek'] ?? 30),
+                        'gueltig_bis'     => $row['gueltig_bis'] ?? null,
+                        'aktiv'           => !empty($row['aktiv']),
+                    ];
                 } else { // ankuendigung
                     if ($text === '' && $media === null) { continue; } // leere Zeile
                     $inhalte[] = [
@@ -117,24 +128,36 @@ if ($hasInhalte) {
                 $m = Mediathek::find($media);
                 if ($m) { $url = $uploadsBasis . rawurlencode($m['dateiname']); }
             }
+            $videoDatei = !empty($row['video_datei_id']) ? (int)$row['video_datei_id'] : null;
+            $videoUrl = null;
+            if ($videoDatei !== null) {
+                $vd = Videothek::find($videoDatei);
+                if ($vd) { $videoUrl = $uploadsBasis . rawurlencode($vd['dateiname']); }
+            }
             $inhalteFuerJs[] = [
-                'mediathek_id' => $media,
-                'url'          => $url,
-                'text'         => (string)($row['text'] ?? ''),
-                'dauer_sek'    => (int)($row['dauer_sek'] ?? 10),
-                'gueltig_bis'  => $row['gueltig_bis'] ?? '',
-                'aktiv'        => !empty($row['aktiv']),
+                'mediathek_id'    => $media,
+                'url'             => $url,
+                'text'            => (string)($row['text'] ?? ''),
+                'dauer_sek'       => (int)($row['dauer_sek'] ?? 10),
+                'gueltig_bis'     => $row['gueltig_bis'] ?? '',
+                'aktiv'           => !empty($row['aktiv']),
+                'video_datei_id'  => $videoDatei,
+                'video_url'       => $videoUrl,
+                'video_embed_url' => (string)($row['video_embed_url'] ?? ''),
             ];
         }
     } elseif (!$istNeu) {
         foreach (ModulInstanz::listInhalte($id) as $in) {
             $inhalteFuerJs[] = [
-                'mediathek_id' => $in['mediathek_id'] !== null ? (int)$in['mediathek_id'] : null,
-                'url'          => $in['dateiname'] ? $uploadsBasis . rawurlencode($in['dateiname']) : null,
-                'text'         => (string)($in['text_inhalt'] ?? ''),
-                'dauer_sek'    => (int)$in['dauer_sek'],
-                'gueltig_bis'  => $in['gueltig_bis'] ?? '',
-                'aktiv'        => (bool)$in['aktiv'],
+                'mediathek_id'    => $in['mediathek_id'] !== null ? (int)$in['mediathek_id'] : null,
+                'url'             => $in['dateiname'] ? $uploadsBasis . rawurlencode($in['dateiname']) : null,
+                'text'            => (string)($in['text_inhalt'] ?? ''),
+                'dauer_sek'       => (int)$in['dauer_sek'],
+                'gueltig_bis'     => $in['gueltig_bis'] ?? '',
+                'aktiv'           => (bool)$in['aktiv'],
+                'video_datei_id'  => $in['video_datei_id'] !== null ? (int)$in['video_datei_id'] : null,
+                'video_url'       => !empty($in['video_dateiname']) ? $uploadsBasis . rawurlencode($in['video_dateiname']) : null,
+                'video_embed_url' => (string)($in['video_embed_url'] ?? ''),
             ];
         }
     }
@@ -199,11 +222,16 @@ admin_header(($istNeu ? 'Neue ' : '') . $meta['label'] . '-Instanz', 'bibliothek
 
     <?php if ($hasInhalte): ?>
     <div class="adm-card">
-        <h2><?= $modulTyp === 'bild' ? 'Bilder' : 'Ankündigungs-Einträge' ?></h2>
+        <h2><?= $modulTyp === 'bild' ? 'Bilder' : ($modulTyp === 'video' ? 'Video-Einträge' : 'Ankündigungs-Einträge') ?></h2>
         <p class="adm-hilfe">
             <?php if ($modulTyp === 'bild'): ?>
                 Bilder aus der Mediathek hinzufügen. Reihenfolge per ↑/↓. Pro Eintrag: Anzeigedauer,
                 optionales Gültig-bis-Datum und Aktiv-Schalter.
+            <?php elseif ($modulTyp === 'video'): ?>
+                Pro Eintrag entweder eine eigene Videodatei (aus den <a href="videothek.php">Videos</a>)
+                oder einen Embed-Link (YouTube oder PeerTube). Reihenfolge per ↑/↓. Die Weiterschaltung
+                erfolgt automatisch nach Videoende, nicht nach der Anzeigedauer — diese dient nur als
+                grobe Schätzung für die Spalten-Synchronisation mit anderen Modulen.
             <?php else: ?>
                 Einträge mit Text und/oder Bild. Reihenfolge per ↑/↓. Pro Eintrag: Anzeigedauer,
                 optionales Gültig-bis-Datum und Aktiv-Schalter.
@@ -237,6 +265,19 @@ admin_header(($istNeu ? 'Neue ' : '') . $meta['label'] . '-Instanz', 'bibliothek
     </div>
 </div>
 
+<?php if ($modulTyp === 'video'): ?>
+<!-- Video-Picker-Dialog -->
+<div id="video-picker-overlay" class="adm-overlay" hidden>
+    <div class="adm-dialog adm-dialog-breit">
+        <h3>Video aus der Videothek wählen</h3>
+        <div id="video-picker-galerie" class="adm-picker-galerie"></div>
+        <div class="adm-dialog-aktionen">
+            <button type="button" id="video-picker-abbrechen" class="adm-btn-grau">Abbrechen</button>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <script>
 (function () {
     var MODUL_TYP = <?= json_encode($modulTyp) ?>;
@@ -257,7 +298,74 @@ admin_header(($istNeu ? 'Neue ' : '') . $meta['label'] . '-Instanz', 'bibliothek
             : '<span class="adm-kein-bild">kein Bild</span>';
     }
 
+    function videoVorschau(data) {
+        if (data.video_url) {
+            return '<video src="' + escapeHtml(data.video_url) + '" muted preload="metadata" style="max-width:160px;max-height:90px"></video>';
+        }
+        if (data.video_embed_url) {
+            return '<span class="adm-kein-bild">Embed: ' + escapeHtml(data.video_embed_url) + '</span>';
+        }
+        return '<span class="adm-kein-bild">kein Video</span>';
+    }
+
+    function baueVideoZeile(data) {
+        data = data || {};
+        var zeile = document.createElement('div');
+        zeile.className = 'adm-inhalt-zeile';
+        var hatDatei = !!data.video_datei_id;
+
+        var rname = 'quelle-' + Math.random().toString(36).slice(2);
+        var quelleBlock =
+            '<div class="adm-inhalt-bild">' +
+                '<div class="adm-inhalt-vorschau">' + videoVorschau(data) + '</div>' +
+                '<input type="hidden" data-feld="video_datei_id" value="' + (data.video_datei_id != null ? data.video_datei_id : '') + '">' +
+                '<label class="adm-inhalt-aktiv"><input type="radio" name="' + rname + '" class="adm-video-quelle" value="datei" ' + (hatDatei || !data.video_embed_url ? 'checked' : '') + '> Datei hochladen</label>' +
+                '<label class="adm-inhalt-aktiv"><input type="radio" name="' + rname + '" class="adm-video-quelle" value="embed" ' + (!hatDatei && data.video_embed_url ? 'checked' : '') + '> Embed-Link</label>' +
+                '<button type="button" class="adm-btn adm-video-waehlen" ' + (hatDatei || !data.video_embed_url ? '' : 'hidden') + '>Video wählen</button>' +
+                '<input type="url" class="adm-video-embed-feld" data-feld="video_embed_url" placeholder="https://youtube.com/... oder PeerTube-Embed-Link" value="' + escapeHtml(data.video_embed_url || '') + '" ' + (!hatDatei && data.video_embed_url ? '' : 'hidden') + '>' +
+            '</div>';
+
+        var metaBlock =
+            '<div class="adm-inhalt-meta">' +
+                '<label>Geschätzte Dauer (Sek.)<input type="number" min="1" data-feld="dauer_sek" value="' + (data.dauer_sek || STD_DAUER) + '"></label>' +
+                '<label>Gültig bis<input type="date" data-feld="gueltig_bis" value="' + escapeHtml(data.gueltig_bis || '') + '"></label>' +
+                '<label class="adm-inhalt-aktiv"><input type="checkbox" data-feld="aktiv" ' + (data.aktiv === false ? '' : 'checked') + '> aktiv</label>' +
+            '</div>';
+
+        var steuer =
+            '<div class="adm-inhalt-steuer">' +
+                '<button type="button" class="adm-mini" data-akt="hoch" title="nach oben">↑</button>' +
+                '<button type="button" class="adm-mini" data-akt="runter" title="nach unten">↓</button>' +
+                '<button type="button" class="adm-mini adm-mini-rot" data-akt="weg" title="entfernen">×</button>' +
+            '</div>';
+
+        zeile.innerHTML = quelleBlock + metaBlock + steuer;
+
+        // Quelle umschalten: Datei-Button vs. Embed-Feld; jeweils anderes Feld leeren
+        var radios = zeile.querySelectorAll('.adm-video-quelle');
+        var waehlenBtn = zeile.querySelector('.adm-video-waehlen');
+        var embedFeld = zeile.querySelector('.adm-video-embed-feld');
+        var hiddenDatei = zeile.querySelector('[data-feld="video_datei_id"]');
+        radios.forEach(function (r) {
+            r.addEventListener('change', function () {
+                if (r.value === 'datei' && r.checked) {
+                    waehlenBtn.hidden = false;
+                    embedFeld.hidden = true;
+                    embedFeld.value = '';
+                } else if (r.value === 'embed' && r.checked) {
+                    waehlenBtn.hidden = true;
+                    embedFeld.hidden = false;
+                    hiddenDatei.value = '';
+                    zeile.querySelector('.adm-inhalt-vorschau').innerHTML = videoVorschau({});
+                }
+            });
+        });
+
+        return zeile;
+    }
+
     function baueZeile(data) {
+        if (MODUL_TYP === 'video') { return baueVideoZeile(data); }
         data = data || {};
         var zeile = document.createElement('div');
         zeile.className = 'adm-inhalt-zeile';
@@ -313,6 +421,7 @@ admin_header(($istNeu ? 'Neue ' : '') . $meta['label'] . '-Instanz', 'bibliothek
             zeile.querySelector('.adm-inhalt-vorschau').innerHTML = bildVorschau(null);
             return;
         }
+        if (e.target.closest('.adm-video-waehlen')) { oeffneVideoPicker(zeile); return; }
         var akt = e.target.getAttribute('data-akt');
         if (akt === 'weg') {
             admBestaetigen('Diesen Eintrag entfernen?', function (ok) { if (ok) { zeile.remove(); } }, 'Entfernen');
@@ -394,6 +503,56 @@ admin_header(($istNeu ? 'Neue ' : '') . $meta['label'] . '-Instanz', 'bibliothek
         zielZeile.querySelector('[data-feld="mediathek_id"]').value = b.id;
         zielZeile.querySelector('.adm-inhalt-vorschau').innerHTML = '<img src="' + escapeHtml(b.url) + '" alt="">';
         schliessePicker();
+    }
+
+    // ---- Video-Picker ----
+    var videoOverlay = document.getElementById('video-picker-overlay');
+    if (videoOverlay) {
+        var videoGalerie  = document.getElementById('video-picker-galerie');
+        var videoZielZeile = null;
+        var videoGeladen   = false;
+
+        function oeffneVideoPicker(zeile) {
+            videoZielZeile = zeile;
+            videoOverlay.hidden = false;
+            ladeVideoPicker();
+        }
+        function schliesseVideoPicker() { videoOverlay.hidden = true; videoZielZeile = null; }
+
+        document.getElementById('video-picker-abbrechen').addEventListener('click', schliesseVideoPicker);
+        videoOverlay.addEventListener('click', function (e) { if (e.target === videoOverlay) { schliesseVideoPicker(); } });
+
+        function ladeVideoPicker() {
+            if (videoGeladen) { return; }
+            videoGalerie.innerHTML = '<p class="adm-leer">Lade …</p>';
+            fetch('api/video-list.php')
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (!data.ok) { videoGalerie.innerHTML = '<p class="adm-leer">Fehler beim Laden.</p>'; return; }
+                    if (data.videos.length === 0) { videoGalerie.innerHTML = '<p class="adm-leer">Keine Videos. <a href="videothek.php">Jetzt hochladen</a>.</p>'; return; }
+                    videoGeladen = true;
+                    videoGalerie.innerHTML = '';
+                    data.videos.forEach(function (v) {
+                        var fig = document.createElement('button');
+                        fig.type = 'button';
+                        fig.className = 'adm-picker-bild';
+                        fig.innerHTML = '<video src="' + escapeHtml(v.url) + '" muted preload="metadata"></video>' +
+                                        '<span>' + escapeHtml(v.original_name || v.dateiname) + '</span>';
+                        fig.addEventListener('click', function () { waehleVideo(v); });
+                        videoGalerie.appendChild(fig);
+                    });
+                })
+                .catch(function () { videoGalerie.innerHTML = '<p class="adm-leer">Netzwerkfehler.</p>'; });
+        }
+
+        function waehleVideo(v) {
+            if (!videoZielZeile) { return; }
+            videoZielZeile.querySelector('[data-feld="video_datei_id"]').value = v.id;
+            videoZielZeile.querySelector('.adm-inhalt-vorschau').innerHTML = videoVorschau({ video_url: v.url });
+            var embedFeld = videoZielZeile.querySelector('.adm-video-embed-feld');
+            if (embedFeld) { embedFeld.value = ''; }
+            schliesseVideoPicker();
+        }
     }
 })();
 </script>

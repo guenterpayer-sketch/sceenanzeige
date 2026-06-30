@@ -66,12 +66,27 @@ foreach ($spaltenZeilen as $zeile) {
     ];
 }
 
+// Ticker laden wenn footer_ticker aktiv — kein Zeitplan-Filter (kein Monitor-Kontext)
+$tickerEintraege = [];
+if (!empty($layout['footer_ticker'])) {
+    $stmtTicker = $pdo->query(
+        'SELECT te.text, te.dauer_sek
+         FROM ticker_eintraege te
+         JOIN ticker_playlists tp ON tp.id = te.ticker_playlist_id
+         WHERE tp.aktiv = 1
+         ORDER BY tp.id, te.reihenfolge, te.id'
+    );
+    $tickerEintraege = $stmtTicker->fetchAll();
+}
+
 $previewData = [
     'spalten_anzahl'  => (int)($layout['spalten_anzahl'] ?? 1),
     'spalte1_breite'  => isset($layout['spalte1_breite']) ? (int)$layout['spalte1_breite'] : null,
     'spalte2_breite'  => isset($layout['spalte2_breite']) ? (int)$layout['spalte2_breite'] : null,
     'spalte3_breite'  => isset($layout['spalte3_breite']) ? (int)$layout['spalte3_breite'] : null,
     'header_sichtbar' => (bool)($layout['header_sichtbar'] ?? false),
+    'footer_ticker'   => !empty($layout['footer_ticker']) && count($tickerEintraege) > 0,
+    'ticker'          => $tickerEintraege,
     'spalten'         => $spalten,
 ];
 
@@ -97,7 +112,7 @@ $previewJson  = json_encode($previewData, JSON_UNESCAPED_UNICODE);
         </div>
     </header>
     <main id="tm-main"></main>
-    <footer id="tm-footer" class="tm-hidden">
+    <footer id="tm-footer"<?= $previewData['footer_ticker'] ? '' : ' class="tm-hidden"' ?>>
         <div class="tm-ticker-text"></div>
     </footer>
 </div>
@@ -125,6 +140,72 @@ var PREVIEW = <?= $previewJson ?>;
         }
         tick();
         setInterval(tick, 1000);
+    }
+
+    // Ticker (aus monitor.js übernommen, ohne Poll-Logik)
+    var _tickerTimeout = null;
+    var footerEl = document.getElementById('tm-footer');
+    var ticker   = PREVIEW.ticker || [];
+
+    function startTicker(eintraege) {
+        if (_tickerTimeout) { clearTimeout(_tickerTimeout); _tickerTimeout = null; }
+        var textEl = footerEl ? footerEl.querySelector('.tm-ticker-text') : null;
+        if (!textEl || !eintraege || eintraege.length === 0) { return; }
+
+        var einziger = eintraege.length === 1;
+        var index    = 0;
+
+        function zeigeNaechsten() {
+            var eintrag  = eintraege[index];
+            var dauerMs  = ((eintrag.dauer_sek > 0) ? eintrag.dauer_sek : 8) * 1000;
+            index = (index + 1) % eintraege.length;
+
+            textEl.style.transition  = 'none';
+            textEl.style.transform   = 'none';
+            textEl.style.opacity     = '0';
+            textEl.textContent       = eintrag.text;
+            footerEl.classList.remove('tm-ticker-zentriert');
+
+            var containerWidth = footerEl.clientWidth - 56;
+            var textWidth      = textEl.scrollWidth;
+
+            if (textWidth > containerWidth * 0.95) {
+                var scrollPx   = textWidth + containerWidth;
+                var durationMs = Math.max(6000, (scrollPx / 90) * 1000);
+                textEl.style.transform = 'translateX(' + containerWidth + 'px)';
+                textEl.style.opacity   = '1';
+                requestAnimationFrame(function () {
+                    requestAnimationFrame(function () {
+                        textEl.style.transition = 'transform ' + (durationMs / 1000).toFixed(2) + 's linear';
+                        textEl.style.transform  = 'translateX(-' + textWidth + 'px)';
+                    });
+                });
+                _tickerTimeout = setTimeout(function () {
+                    textEl.style.transition = 'none';
+                    textEl.style.transform  = 'none';
+                    zeigeNaechsten();
+                }, durationMs + 300);
+            } else {
+                footerEl.classList.add('tm-ticker-zentriert');
+                if (einziger) {
+                    textEl.style.opacity = '1';
+                } else {
+                    requestAnimationFrame(function () {
+                        textEl.style.transition = 'opacity 600ms ease';
+                        textEl.style.opacity    = '1';
+                    });
+                    _tickerTimeout = setTimeout(function () {
+                        textEl.style.opacity = '0';
+                        _tickerTimeout = setTimeout(zeigeNaechsten, 700);
+                    }, dauerMs);
+                }
+            }
+        }
+        zeigeNaechsten();
+    }
+
+    if (PREVIEW.footer_ticker && ticker.length > 0) {
+        startTicker(ticker);
     }
 
     // Layout aufbauen

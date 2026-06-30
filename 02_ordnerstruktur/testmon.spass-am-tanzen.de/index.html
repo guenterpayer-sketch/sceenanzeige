@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, initial-scale=1.0">
+    <title>Monitor</title>
+    <link rel="stylesheet" href="https://screen.spass-am-tanzen.de/assets/css/monitor.css">
+</head>
+<body>
+<div id="tm-wrapper">
+
+    <header id="tm-header">
+        <div id="tm-header-logo">
+            <img src="https://screen.spass-am-tanzen.de/uploads/logo.png" alt="Logo">
+        </div>
+        <div id="tm-header-text"></div>
+        <div id="tm-header-uhrzeit">
+            <div id="tm-header-zeit"></div>
+            <div id="tm-header-datum"></div>
+        </div>
+    </header>
+
+    <main id="tm-main"></main>
+
+    <footer id="tm-footer" class="tm-hidden">
+        <div class="tm-ticker-text"></div>
+    </footer>
+
+</div>
+
+<script>
+    /* Leer lassen für Selbsterkennung über Subdomain.
+       Zum Testen lokal überschreiben, z.B.: const MONITOR_SUBDOMAIN = 'saal1'; */
+    var MONITOR_SUBDOMAIN = '';
+    window.BACKEND_BASE  = 'https://screen.spass-am-tanzen.de';
+    window.UPLOADS_URL   = 'https://screen.spass-am-tanzen.de/uploads';
+
+    (function () {
+        var scale = window.innerWidth / 1920;
+        if (scale < 0.99) {
+            var w = document.getElementById('tm-wrapper');
+            w.style.width = '1920px';
+            w.style.height = '1080px';
+            w.style.transform = 'scale(' + scale + ')';
+            w.style.transformOrigin = 'top left';
+        }
+    })();
+</script>
+<script src="https://screen.spass-am-tanzen.de/assets/js/module-loader.js"></script>
+<script src="https://screen.spass-am-tanzen.de/assets/js/monitor.js"></script>
+</body>
+</html>

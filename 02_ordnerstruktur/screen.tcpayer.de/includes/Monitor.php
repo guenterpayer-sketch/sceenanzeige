@@ -16,17 +16,23 @@ declare(strict_types=1);
 final class Monitor
 {
     /**
-     * Normalisiert eine Subdomain-Eingabe: Kleinbuchstaben, nur a–z 0–9 und
-     * Bindestrich; eine evtl. mitgetippte Domain (".tcpayer.de") fällt weg.
+     * Normalisiert eine vollständige Domain-Eingabe: Kleinbuchstaben, nur
+     * a–z, 0–9, Bindestrich und Punkt. Muss mindestens einen Punkt enthalten.
+     * Gibt einen leeren String zurück wenn die Eingabe ungültig ist.
      */
-    public static function normSubdomain(string $raw): string
+    public static function normDomain(string $raw): string
     {
         $s = strtolower(trim($raw));
-        if (($pos = strpos($s, '.')) !== false) {
-            $s = substr($s, 0, $pos);
-        }
-        $s = preg_replace('/[^a-z0-9-]/', '', $s);
-        return trim((string)$s, '-');
+        $s = preg_replace('/[^a-z0-9.\-]/', '', $s);
+        $s = trim($s, '.');
+        if (strpos($s, '.') === false) { return ''; }
+        return $s;
+    }
+
+    /** @deprecated Verwende normDomain(). */
+    public static function normSubdomain(string $raw): string
+    {
+        return self::normDomain($raw);
     }
 
     /**

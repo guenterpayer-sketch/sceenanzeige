@@ -97,13 +97,14 @@ body {
     display: flex;
     flex-direction: column;
 }
-.adm-bild img {
+.adm-bild img, .adm-bild video {
     width: 100%;
     height: 140px;
     object-fit: contain;
     background: #f0f2f5;
     display: block;
 }
+.adm-bild video { background: #111; }
 .adm-bild figcaption {
     padding: 8px 10px;
     font-size: 12px;
@@ -437,9 +438,15 @@ body {
 }
 .adm-picker-bild:hover { border-color: #ad2121; box-shadow: 0 0 0 2px rgba(173,33,33,.2); }
 .adm-picker-bild img { width: 100%; height: 90px; object-fit: contain; background: #f0f2f5; }
+.adm-picker-bild video { width: 100%; height: 90px; object-fit: contain; background: #111; display: block; }
 .adm-picker-bild span {
     font-size: 11px; padding: 4px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+/* Video-Eintrag in der Inhalts-Liste */
+.adm-inhalt-vorschau video { width: 100%; height: 100%; object-fit: contain; background: #111; }
+.adm-video-embed-feld { width: 100%; padding: 6px 8px; border: 1px solid #dde3ea; border-radius: 6px; font-size: 13px; box-sizing: border-box; }
+/* Preview-Video in der Kachel-Übersicht */
+.adm-kachel-vorschau.bild video { width: 100%; height: 100%; object-fit: contain; background: #111; }
 
 /* ===== Playlist-Editor (Schritt 6) ===== */
 
