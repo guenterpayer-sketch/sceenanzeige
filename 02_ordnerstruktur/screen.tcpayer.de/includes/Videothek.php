@@ -111,6 +111,18 @@ final class Videothek
         return (int)$stmt->fetchColumn();
     }
 
+    /** Aktualisiert Anzeigename und optional Laufzeit eines Videos. */
+    public static function update(int $id, string $originalName, ?int $dauerSek): void
+    {
+        $pdo = get_pdo();
+        $pdo->prepare('UPDATE video_dateien SET original_name = :on, dauer_sek = :d WHERE id = :id')
+            ->execute([
+                ':on' => mb_substr(trim($originalName), 0, 255),
+                ':d'  => ($dauerSek !== null && $dauerSek > 0) ? $dauerSek : null,
+                ':id' => $id,
+            ]);
+    }
+
     /**
      * Löscht ein Video (DB-Eintrag + Datei), aber nur wenn es nicht mehr
      * verwendet wird.

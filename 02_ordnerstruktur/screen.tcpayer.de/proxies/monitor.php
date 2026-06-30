@@ -107,9 +107,11 @@ $stmtSpalten = $pdo->prepare(
 );
 $stmtInhalte = $pdo->prepare(
     'SELECT i.id, COALESCE(med.dateiname, i.dateiname) AS dateiname,
-            i.text_inhalt, i.gueltig_bis, i.reihenfolge, i.dauer_sek, i.aktiv
+            i.text_inhalt, i.gueltig_bis, i.reihenfolge, i.dauer_sek, i.aktiv,
+            vid.dateiname AS video_dateiname, i.video_embed_url
      FROM modul_instanz_inhalte i
      LEFT JOIN mediathek med ON med.id = i.mediathek_id
+     LEFT JOIN video_dateien vid ON vid.id = i.video_datei_id
      WHERE i.modul_instanz_id = :mid
        AND i.aktiv = 1
        AND (i.gueltig_bis IS NULL OR i.gueltig_bis >= CURDATE())

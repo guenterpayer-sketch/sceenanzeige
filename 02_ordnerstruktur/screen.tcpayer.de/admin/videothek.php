@@ -47,6 +47,10 @@ admin_header('Videos', 'videos');
                 <span class="adm-bild-name" title="<?= htmlspecialchars((string)$v['original_name']) ?>"><?= htmlspecialchars((string)($v['original_name'] ?? $v['dateiname'])) ?></span>
                 <span class="adm-bild-meta"><?= $v['dauer_sek'] !== null ? (int)$v['dauer_sek'] . ' Sek.' : 'Laufzeit unbekannt' ?></span>
             </figcaption>
+            <button type="button" class="adm-video-edit" data-id="<?= (int)$v['id'] ?>"
+                    data-name="<?= htmlspecialchars((string)($v['original_name'] ?? $v['dateiname'])) ?>"
+                    data-dauer="<?= $v['dauer_sek'] !== null ? (int)$v['dauer_sek'] : '' ?>"
+                    title="Bearbeiten">✏️</button>
             <button type="button" class="adm-bild-del" data-id="<?= (int)$v['id'] ?>" title="Löschen">×</button>
         </figure>
     <?php endforeach; ?>
@@ -83,6 +87,7 @@ admin_header('Videos', 'videos');
                 '<span class="adm-bild-name" title="' + escapeHtml(anzeige) + '">' + escapeHtml(anzeige) + '</span>' +
                 '<span class="adm-bild-meta">' + (e.dauer_sek ? e.dauer_sek + ' Sek.' : 'Laufzeit unbekannt') + '</span>' +
             '</figcaption>' +
+            '<button type="button" class="adm-video-edit" data-id="' + e.id + '" data-name="' + escapeHtml(anzeige) + '" data-dauer="' + (e.dauer_sek || '') + '" title="Bearbeiten">✏️</button>' +
             '<button type="button" class="adm-bild-del" data-id="' + e.id + '" title="Löschen">×</button>';
         galerie.insertBefore(fig, galerie.firstChild);
     }
@@ -140,6 +145,42 @@ admin_header('Videos', 'videos');
     dateiInput.addEventListener('change', function () { if (dateiInput.files.length) { ladeHoch(dateiInput.files); dateiInput.value = ''; } });
 
     galerie.addEventListener('click', function (e) {
+        var edit = e.target.closest('.adm-video-edit');
+        if (edit) {
+            var id    = edit.getAttribute('data-id');
+            var name  = edit.getAttribute('data-name');
+            var dauer = edit.getAttribute('data-dauer');
+            admEingabe('Name des Videos:', name, function (neuerName) {
+                if (neuerName === null) { return; }
+                neuerName = neuerName.trim();
+                if (neuerName === '') { admMeldung('Name darf nicht leer sein.'); return; }
+                admEingabe('Laufzeit in Sekunden (leer = unbekannt):', dauer, function (neueDauer) {
+                    if (neueDauer === null) { return; }
+                    var dauerVal = neueDauer.trim() !== '' ? parseInt(neueDauer.trim(), 10) : '';
+                    var fd = new FormData();
+                    fd.append('id', id);
+                    fd.append('original_name', neuerName);
+                    if (dauerVal !== '' && !isNaN(dauerVal)) { fd.append('dauer_sek', dauerVal); }
+                    fetch('api/video-update.php', { method: 'POST', body: fd })
+                        .then(function (r) { return r.json(); })
+                        .then(function (data) {
+                            if (!data.ok) { admMeldung(data.error || 'Speichern fehlgeschlagen.'); return; }
+                            var fig = galerie.querySelector('.adm-bild[data-id="' + id + '"]');
+                            if (!fig) { return; }
+                            var anzeige = data.eintrag.original_name || data.eintrag.dateiname;
+                            var nameEl  = fig.querySelector('.adm-bild-name');
+                            var metaEl  = fig.querySelector('.adm-bild-meta');
+                            if (nameEl) { nameEl.textContent = anzeige; nameEl.title = anzeige; }
+                            if (metaEl) { metaEl.textContent = data.eintrag.dauer_sek ? data.eintrag.dauer_sek + ' Sek.' : 'Laufzeit unbekannt'; }
+                            edit.setAttribute('data-name', anzeige);
+                            edit.setAttribute('data-dauer', data.eintrag.dauer_sek || '');
+                        })
+                        .catch(function () { admMeldung('Speichern fehlgeschlagen (Netzwerkfehler).'); });
+                }, 'Speichern');
+            }, 'Speichern');
+            return;
+        }
+
         var del = e.target.closest('.adm-bild-del');
         if (!del) { return; }
         var id = del.getAttribute('data-id');
