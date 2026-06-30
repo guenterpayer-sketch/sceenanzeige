@@ -1,0 +1,48 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - claude/nifty-johnson-3q6u7g   # → Staging (test)
+      - main                           # → Live
+
+jobs:
+  deploy-staging:
+    name: Deploy → screen.spass-am-tanzen.de (Staging)
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/claude/nifty-johnson-3q6u7g'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: FTP Deploy
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASS }}
+          local-dir: 02_ordnerstruktur/screen.tcpayer.de/
+          server-dir: screen.spass-am-tanzen.de/
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/config.php
+
+  deploy-live:
+    name: Deploy → screen.tcpayer.de (Live)
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: FTP Deploy
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASS }}
+          local-dir: 02_ordnerstruktur/screen.tcpayer.de/
+          server-dir: screen.tcpayer.de/
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/config.php
