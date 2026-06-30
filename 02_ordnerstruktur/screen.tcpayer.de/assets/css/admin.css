@@ -133,20 +133,6 @@ body {
     cursor: pointer;
 }
 .adm-bild-del:hover { background: #ad2121; }
-.adm-video-edit {
-    position: absolute;
-    top: 6px; right: 38px;
-    width: 26px; height: 26px;
-    border: none;
-    border-radius: 50%;
-    background: rgba(28,39,51,.65);
-    color: #fff;
-    font-size: 13px;
-    line-height: 26px;
-    cursor: pointer;
-    padding: 0;
-}
-.adm-video-edit:hover { background: #2471a3; }
 
 /* --- Ordner-Leiste --- */
 .adm-ordnerleiste {

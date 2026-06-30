@@ -47,7 +47,7 @@ admin_header('Videos', 'videos');
                 <span class="adm-bild-name" title="<?= htmlspecialchars((string)$v['original_name']) ?>"><?= htmlspecialchars((string)($v['original_name'] ?? $v['dateiname'])) ?></span>
                 <span class="adm-bild-meta"><?= $v['dauer_sek'] !== null ? (int)$v['dauer_sek'] . ' Sek.' : 'Laufzeit unbekannt' ?></span>
             </figcaption>
-            <button type="button" class="adm-video-edit" data-id="<?= (int)$v['id'] ?>"
+            <button type="button" class="adm-bild-edit" data-id="<?= (int)$v['id'] ?>"
                     data-name="<?= htmlspecialchars((string)($v['original_name'] ?? $v['dateiname'])) ?>"
                     data-dauer="<?= $v['dauer_sek'] !== null ? (int)$v['dauer_sek'] : '' ?>"
                     title="Bearbeiten">✏️</button>
@@ -87,7 +87,7 @@ admin_header('Videos', 'videos');
                 '<span class="adm-bild-name" title="' + escapeHtml(anzeige) + '">' + escapeHtml(anzeige) + '</span>' +
                 '<span class="adm-bild-meta">' + (e.dauer_sek ? e.dauer_sek + ' Sek.' : 'Laufzeit unbekannt') + '</span>' +
             '</figcaption>' +
-            '<button type="button" class="adm-video-edit" data-id="' + e.id + '" data-name="' + escapeHtml(anzeige) + '" data-dauer="' + (e.dauer_sek || '') + '" title="Bearbeiten">✏️</button>' +
+            '<button type="button" class="adm-bild-edit" data-id="' + e.id + '" data-name="' + escapeHtml(anzeige) + '" data-dauer="' + (e.dauer_sek || '') + '" title="Bearbeiten">✏️</button>' +
             '<button type="button" class="adm-bild-del" data-id="' + e.id + '" title="Löschen">×</button>';
         galerie.insertBefore(fig, galerie.firstChild);
     }
@@ -145,7 +145,7 @@ admin_header('Videos', 'videos');
     dateiInput.addEventListener('change', function () { if (dateiInput.files.length) { ladeHoch(dateiInput.files); dateiInput.value = ''; } });
 
     galerie.addEventListener('click', function (e) {
-        var edit = e.target.closest('.adm-video-edit');
+        var edit = e.target.closest('.adm-bild-edit');
         if (edit) {
             var id    = edit.getAttribute('data-id');
             var name  = edit.getAttribute('data-name');
