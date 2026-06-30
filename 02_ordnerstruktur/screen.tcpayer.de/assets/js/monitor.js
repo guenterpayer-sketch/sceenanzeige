@@ -33,9 +33,7 @@
             ? String(window.MONITOR_SUBDOMAIN).trim() : '';
         if (konstante) { return konstante; }
 
-        var hostname = window.location.hostname;
-        var teile    = hostname.split('.');
-        return teile.length >= 3 ? teile[0] : hostname;
+        return window.location.hostname;
     }
 
     // ── Modul-Cleanup ────────────────────────────────────────────────────────

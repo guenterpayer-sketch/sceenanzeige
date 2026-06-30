@@ -22,17 +22,17 @@ admin_header('Live-Vorschau', 'vorschau');
         <select name="id" id="id" onchange="this.form.submit()" class="adm-vorschau-sel">
             <?php foreach ($monitore as $m): ?>
                 <option value="<?= (int)$m['id'] ?>" <?= (int)$m['id'] === $id ? 'selected' : '' ?>>
-                    <?= htmlspecialchars($m['name']) ?> (<?= htmlspecialchars($m['subdomain']) ?>.tcpayer.de)
+                    <?= htmlspecialchars($m['name']) ?> (<?= htmlspecialchars($m['subdomain']) ?>)
                 </option>
             <?php endforeach; ?>
         </select>
     </form>
     <?php elseif ($aktuell): ?>
     <strong><?= htmlspecialchars($aktuell['name']) ?></strong>
-    <span class="adm-eintrag-typ"><?= htmlspecialchars($aktuell['subdomain']) ?>.tcpayer.de</span>
+    <span class="adm-eintrag-typ"><?= htmlspecialchars($aktuell['subdomain']) ?></span>
     <?php endif; ?>
     <?php if ($aktuell): ?>
-    <a href="https://<?= htmlspecialchars($aktuell['subdomain']) ?>.tcpayer.de"
+    <a href="https://<?= htmlspecialchars($aktuell['subdomain']) ?>"
        target="_blank" rel="noopener" class="adm-btn">↗ Im neuen Tab öffnen</a>
     <a href="monitor-zeitplan.php?id=<?= (int)$aktuell['id'] ?>" class="adm-btn adm-btn-grau">Zeitplan</a>
     <?php endif; ?>
@@ -41,7 +41,7 @@ admin_header('Live-Vorschau', 'vorschau');
 <?php if ($aktuell): ?>
 <div class="adm-vorschau-leinwand" id="vorschau-rahmen">
     <iframe id="vorschau-iframe"
-            src="https://<?= htmlspecialchars($aktuell['subdomain']) ?>.tcpayer.de"
+            src="https://<?= htmlspecialchars($aktuell['subdomain']) ?>"
             scrolling="no"
             title="Vorschau <?= htmlspecialchars($aktuell['name']) ?>">
     </iframe>

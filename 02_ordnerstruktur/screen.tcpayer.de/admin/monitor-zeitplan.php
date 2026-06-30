@@ -194,7 +194,7 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
 <div class="adm-zeitplan-kopf">
     <a href="monitore.php" class="adm-zurueck">← zurück zu den Monitoren</a>
     <button class="adm-btn adm-vorschau-btn"
-            data-url="https://<?= htmlspecialchars($monitor['subdomain']) ?>.tcpayer.de"
+            data-url="https://<?= htmlspecialchars($monitor['subdomain']) ?>"
             data-name="<?= htmlspecialchars($monitor['name']) ?>">Vorschau</button>
 </div>
 
