@@ -3,7 +3,7 @@
 > **Branch:** `claude/nifty-johnson-3q6u7g`  
 > Eine neue Session liest `CLAUDE.md` (Konzept) + diese Datei (Stand) und kann sofort weiterarbeiten.
 
-_Letzte Aktualisierung: Schritt 15 — Monitor-Domain, CI/CD-Deploy, Testmon-Frontend._
+_Letzte Aktualisierung: Schritt 15 — Monitor-Domain, CI/CD-Deploy, Testmon-Frontend + Bugfixes._
 
 ---
 
@@ -38,7 +38,7 @@ _Letzte Aktualisierung: Schritt 15 — Monitor-Domain, CI/CD-Deploy, Testmon-Fro
 - **FRET Countdown 22px:** Schriftgröße erhöht, live-Test noch ausstehend
 - **FRET Fortschrittsbalken:** FRET-API liefert `remainingSeconds` immer `null` → Balken friert ein, läuft nicht; serverseitiges FRET-Problem, kein Code-Fehler
 - **SETTLE_MS = 800:** Heuristik für Off-screen-Pre-render; bei sehr langsamer NC-API ggf. auf 1000–1200ms erhöhen
-- **Live-Merge ausstehend:** Branch `claude/nifty-johnson-3q6u7g` → `main` noch nicht gemergt (Schritt 15 + alle vorherigen Änderungen)
+- **Live-Merge ausstehend:** Branch `claude/nifty-johnson-3q6u7g` → `main` noch nicht gemergt (Schritt 15 + alle vorherigen Änderungen inkl. Bugfixes Monitor-Domain)
 
 ---
 
@@ -52,7 +52,10 @@ _Letzte Aktualisierung: Schritt 15 — Monitor-Domain, CI/CD-Deploy, Testmon-Fro
 | `includes/Monitor.php` | `normSubdomain()` → `normDomain()`: akzeptiert vollständige Domain (z.B. `saal1.tcpayer.de`, `testmon.spass-am-tanzen.de`); `normSubdomain()` als Deprecated-Alias erhalten |
 | `admin/monitore.php` | Eingabefeld-Label/Placeholder → „Domain" (vollständige Domain); Kachel-Anzeige + Vorschau-URL ohne hardcodiertes `.tcpayer.de` |
 | `13_migration_monitor_domain.sql` | Migration: `UPDATE monitore SET subdomain = CONCAT(subdomain, '.tcpayer.de') WHERE subdomain NOT LIKE '%.%'` — **nicht nötig**, DB-Einträge waren bereits korrekt |
-| `02_ordnerstruktur/testmon.spass-am-tanzen.de/index.html` | NEU — Monitor-Frontend für Test-Monitor; Tippfehler `screen.spass-am.tanzen.de` → `screen.spass-am-tanzen.de` korrigiert; `BACKEND_BASE` + `UPLOADS_URL` zeigen auf `screen.spass-am-tanzen.de` |
+| `02_ordnerstruktur/testmon.spass-am-tanzen.de/index.html` | NEU — Monitor-Frontend für Test-Monitor; Tippfehler `screen.spass-am.tanzen.de` korrigiert; `BACKEND_BASE` zeigt auf `screen.spass-am-tanzen.de`, `UPLOADS_URL` zeigt auf `screen.tcpayer.de/uploads` (Bilder vom Live-Server, kein eigener Upload-Ordner auf Staging nötig) |
+| `assets/js/monitor.js` | Bugfix: `getSubdomain()` liefert jetzt `window.location.hostname` (vollständig) statt nur ersten Teil — Monitor findet sich korrekt in der DB |
+| `admin/monitor-vorschau.php` | Bugfix: hardcodiertes `.tcpayer.de` entfernt |
+| `admin/monitor-zeitplan.php` | Bugfix: hardcodiertes `.tcpayer.de` im Vorschau-Button entfernt |
 
 ### Schritt 14 — Modul `video` + Videothek-Admin (live getestet ✅)
 
