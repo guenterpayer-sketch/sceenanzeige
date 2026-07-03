@@ -1,18 +1,11 @@
 /**
  * modules/fret/frontend.js
  *
- * Modul "fret" (benannt nach der Musiksoftware FRET). Zeigt den aktuell
- * laufenden Song (Titel, Künstler, Tanz-Badges, Fortschrittsbalken) sowie
- * optional die kommenden Songs. Daten kommen vom Proxy proxies/fret.php
- * (FRET-API; schoolId bleibt serverseitig in config.php).
- *
- * Übernommene Bausteine aus dem Standalone-Projekt
- * (Projektzusammenfassung_Song_Anzeige.md):
- *   - Tanz-Badges Haupt-/Nebentanz über isPrimary (vom Proxy als isMain)
- *   - Fortschrittsbalken mit lokalem 1-Sek-Tick; Pause friert den Balken ein
- *     (remainingSeconds == null), setzt ihn NICHT zurück
- *   - sämtliche Timer (Poll + Tick) werden bei Neu-Render aufgeräumt
- *     (Interval-Leak-Bugfix)
+ * Fortschrittsbalken-Logik (neu):
+ *   - remainingSeconds + lokale Empfangszeit (Date.now()) → requestAnimationFrame-Loop
+ *   - isPlaying=false oder remainingSeconds=null → Balken einfrieren (kein Reset)
+ *   - Songwechsel (songId) → Balken auf 0 zurücksetzen
+ *   - Kein setInterval-Tick mehr (kein Drift)
  *
  * Konvention (siehe module-loader.js):
  *   window.TanzschuleModule.fret = function(container, settings, inhalte)
@@ -44,20 +37,21 @@
         settings = settings || {};
         container.classList.add('tm-modul-fret');
 
-        // Alte Timer dieses Containers zwingend aufräumen (Leak-Schutz).
-        if (container._tmPoll) { clearInterval(container._tmPoll); }
-        if (container._tmTick) { clearInterval(container._tmTick); }
+        // Alte Timer/Frames dieses Containers aufräumen (Leak-Schutz).
+        if (container._tmPoll)      { clearInterval(container._tmPoll); }
+        if (container._tmTick)      { clearInterval(container._tmTick); } // Altlast
+        if (container._tmRaf)       { cancelAnimationFrame(container._tmRaf); }
         if (container._tmCountdowns) {
             container._tmCountdowns.forEach(function (id) { clearInterval(id); });
         }
         container._tmCountdowns = [];
 
-        var basis = window.BACKEND_BASE || '';
-        var titel = settings.titel || 'FRET';
-        var computerId = settings.computer_id || '';
-        var zeigePlaylist = settings.zeige_playlist !== false;
+        var basis          = window.BACKEND_BASE || '';
+        var titel          = settings.titel || 'FRET';
+        var computerId     = settings.computer_id || '';
+        var zeigePlaylist  = settings.zeige_playlist !== false;
         var anzahlKommende = (settings.anzahl_kommende != null) ? settings.anzahl_kommende : 3;
-        var pollSek = (settings.poll_sek && settings.poll_sek >= 3) ? settings.poll_sek : 7;
+        var pollSek        = (settings.poll_sek && settings.poll_sek >= 3) ? settings.poll_sek : 7;
 
         if (!computerId) {
             container.innerHTML = '<div class="tm-song-heading">' + escapeHtml(titel) + '</div>'
@@ -73,49 +67,87 @@
                 ? '<div class="tm-song-label">Nächste Titel</div><div class="tm-song-kommende"></div>'
                 : '');
 
-        var aktuellEl = container.querySelector('.tm-song-aktuell');
-        var barEl = container.querySelector('.tm-song-progress-bar');
+        var aktuellEl  = container.querySelector('.tm-song-aktuell');
+        var barEl      = container.querySelector('.tm-song-progress-bar');
         var kommendeEl = container.querySelector('.tm-song-kommende');
 
         var fehlerZaehler = 0;
-        // Lokaler Fortschritts-Zustand für den 1-Sek-Tick zwischen den Polls.
-        var prog = { dauer: null, rest: null, laeuft: false };
+
+        // Fortschritts-Zustand
+        var bar = {
+            songId:          null,  // aktuell angezeigte Song-UUID
+            dauer:           null,  // Gesamtlänge in Sek.
+            restBeiEmpfang:  null,  // remainingSeconds zum Zeitpunkt des Poll-Eingangs
+            empfangenAm:     null,  // Date.now() beim Poll-Eingang
+            letzterWert:     0,     // letzter gezeichneter Fortschritt (0–1), für Einfrieren
+            laeuft:          false  // true nur wenn isPlaying + remainingSeconds vorhanden
+        };
+
+        function zeichneBalken(anteil) {
+            barEl.style.width = (Math.max(0, Math.min(1, anteil)) * 100).toFixed(2) + '%';
+        }
+
+        function rafLoop() {
+            if (!bar.laeuft) { return; }
+            var vergangenSek = (Date.now() - bar.empfangenAm) / 1000;
+            var restSek      = bar.restBeiEmpfang - vergangenSek;
+            if (restSek <= 0) {
+                zeichneBalken(1);
+                bar.letzterWert = 1;
+                bar.laeuft = false;
+                return; // Song abgelaufen — nächster Poll bringt neuen Song
+            }
+            var anteil = 1 - restSek / bar.dauer;
+            bar.letzterWert = anteil;
+            zeichneBalken(anteil);
+            container._tmRaf = requestAnimationFrame(rafLoop);
+        }
+
+        function starteAnimation() {
+            if (container._tmRaf) { cancelAnimationFrame(container._tmRaf); }
+            container._tmRaf = requestAnimationFrame(rafLoop);
+        }
 
         function renderAktuell(data) {
             var s = data.aktuell;
             if (!s) {
                 aktuellEl.innerHTML = '<div class="tm-song-status">Kein Song</div>';
-                prog.laeuft = false;
+                bar.laeuft = false;
+                if (container._tmRaf) { cancelAnimationFrame(container._tmRaf); }
                 return;
             }
+
             aktuellEl.innerHTML =
                 '<div class="tm-song-titel">' + escapeHtml(s.title) + '</div>'
                 + '<div class="tm-song-artist">' + escapeHtml(s.artist) + '</div>'
                 + '<div class="tm-song-badges">' + badges(s.taenze) + '</div>';
 
-            // Fortschritt: nur wenn aktiv laufend (remainingSeconds != null).
-            if (s.duration && s.remainingSeconds != null && data.isPlaying) {
-                prog.dauer = s.duration;
-                prog.rest = s.remainingSeconds;
-                prog.laeuft = true;
-            } else {
-                // Pause/Stop: einfrieren (Balken NICHT zurücksetzen).
-                prog.laeuft = false;
+            // Songwechsel erkennen → Balken auf 0 zurücksetzen
+            var neueSongId = s.songId || (s.title + '|' + s.artist);
+            if (neueSongId !== bar.songId) {
+                bar.songId      = neueSongId;
+                bar.letzterWert = 0;
+                zeichneBalken(0);
             }
-            zeichneBalken();
-        }
 
-        function zeichneBalken() {
-            if (prog.dauer && prog.rest != null) {
-                var anteil = Math.max(0, Math.min(1, 1 - (prog.rest / prog.dauer)));
-                barEl.style.width = (anteil * 100).toFixed(1) + '%';
+            if (data.isPlaying && s.remainingSeconds != null && s.duration) {
+                // Spielend + Positionsdaten vorhanden → Animation starten/resync
+                bar.dauer          = s.duration;
+                bar.restBeiEmpfang = s.remainingSeconds;
+                bar.empfangenAm    = Date.now();
+                bar.laeuft         = true;
+                starteAnimation();
+            } else {
+                // Pause/Stop oder keine Positionsdaten → einfrieren, kein Reset
+                bar.laeuft = false;
+                if (container._tmRaf) { cancelAnimationFrame(container._tmRaf); }
+                zeichneBalken(bar.letzterWert);
             }
         }
 
         function renderKommende(data) {
             if (!zeigePlaylist || !kommendeEl) { return; }
 
-            // Alte Countdown-Timer aufräumen
             container._tmCountdowns.forEach(function (id) { clearInterval(id); });
             container._tmCountdowns = [];
 
@@ -160,10 +192,13 @@
                     li.appendChild(countdown);
 
                     if (data.isPlaying) {
+                        var empfangenAm = Date.now();
+                        var startSek = sek;
                         var id = setInterval(function () {
-                            sek--;
-                            countdown.textContent = formatCountdown(sek);
-                            if (sek <= 0) { clearInterval(id); }
+                            var vergangen = (Date.now() - empfangenAm) / 1000;
+                            var rest = Math.round(startSek - vergangen);
+                            countdown.textContent = formatCountdown(rest);
+                            if (rest <= 0) { clearInterval(id); }
                         }, 1000);
                         container._tmCountdowns.push(id);
                     }
@@ -198,15 +233,6 @@
                     }
                 });
         }
-
-        // Lokaler 1-Sek-Tick: zählt rest herunter, damit der Balken flüssig
-        // läuft statt nur bei jedem Poll zu springen.
-        container._tmTick = setInterval(function () {
-            if (prog.laeuft && prog.rest != null) {
-                prog.rest = Math.max(0, prog.rest - 1);
-                zeichneBalken();
-            }
-        }, 1000);
 
         holeDaten();
         container._tmPoll = setInterval(holeDaten, pollSek * 1000);

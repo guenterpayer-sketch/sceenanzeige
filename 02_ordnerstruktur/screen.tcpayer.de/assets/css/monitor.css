@@ -554,7 +554,6 @@ html, body {
     width: 0;
     background: #ad2121;
     border-radius: 5px;
-    transition: width 1s linear;
 }
 
 .tm-song-label {
