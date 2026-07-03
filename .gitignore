@@ -10,6 +10,9 @@
 config.local.php
 **/config.local.php
 
+# Vom CI/CD generierte Versionsdatei — nie einchecken
+02_ordnerstruktur/screen.tcpayer.de/version.php
+
 # OS-/Editor-Artefakte
 .DS_Store
 Thumbs.db
