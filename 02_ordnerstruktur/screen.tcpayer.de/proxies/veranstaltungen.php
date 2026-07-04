@@ -55,10 +55,14 @@ if (!is_array($json) || !isset($json['events'])) {
 
 $events = [];
 foreach ($json['events'] as $ev) {
-    // Bild: image ist false oder ein Objekt mit url
-    $bildUrl = null;
+    // Bild: image ist false oder ein Objekt mit url/width/height
+    $bildUrl    = null;
+    $bildBreite = null;
+    $bildHoehe  = null;
     if (!empty($ev['image']) && is_array($ev['image']) && !empty($ev['image']['url'])) {
-        $bildUrl = (string)$ev['image']['url'];
+        $bildUrl    = (string)$ev['image']['url'];
+        $bildBreite = isset($ev['image']['width'])  ? (int)$ev['image']['width']  : null;
+        $bildHoehe  = isset($ev['image']['height']) ? (int)$ev['image']['height'] : null;
     }
 
     // Venue-Name aus dem venue-Objekt (Feld "venue" enthält den Namen als String)
@@ -81,6 +85,8 @@ foreach ($json['events'] as $ev) {
         'start_date'   => (string)($ev['start_date'] ?? ''),
         'end_date'     => (string)($ev['end_date'] ?? ''),
         'bild_url'     => $bildUrl,
+        'bild_breite'  => $bildBreite,
+        'bild_hoehe'   => $bildHoehe,
         'venue'        => $venue,
         'beschreibung' => $beschreibung,
     ];

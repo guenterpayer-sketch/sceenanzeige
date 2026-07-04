@@ -2,9 +2,15 @@
  * modules/veranstaltung/frontend.js
  *
  * Lädt kommende Veranstaltungen von proxies/veranstaltungen.php
- * (WordPress "The Events Calendar" REST-API) und zeigt sie als
- * rotierende Slideshow mit Datum, Uhrzeit, Titel, Veranstaltungsort
- * und optionalem Bild.
+ * und zeigt sie als rotierende Slideshow.
+ *
+ * Adaptives Layout je Bildformat:
+ *   Hochkant (breite/hoehe < 0.85) → Bild links 40 %, Text rechts
+ *   Querformat/quadratisch          → Vollbild + Gradient-Overlay
+ *   Kein Bild                       → Nur Text, zentriert
+ *
+ * Bildmaße kommen aus dem Proxy (bild_breite/bild_hoehe).
+ * Fehlen sie, wird nach img.onload nachgemessen.
  */
 (function () {
     window.TanzschuleModule = window.TanzschuleModule || {};
@@ -21,14 +27,12 @@
         });
     }
 
-    // "2025-09-20 19:00:00" → Date-Objekt
     function parseDate(s) {
         if (!s) { return null; }
         var d = new Date(String(s).replace(' ', 'T'));
         return isNaN(d.getTime()) ? null : d;
     }
 
-    // Date → "Sa, 20. September 2025"
     function formatDatum(d) {
         if (!d) { return ''; }
         return WOCHENTAGE[d.getDay()]
@@ -36,22 +40,21 @@
             + MONATE[d.getMonth()] + ' ' + d.getFullYear();
     }
 
-    // Date → "19:00"
     function formatZeit(d) {
         if (!d) { return ''; }
-        var h = String(d.getHours()).padStart(2, '0');
-        var m = String(d.getMinutes()).padStart(2, '0');
-        return h + ':' + m;
+        return String(d.getHours()).padStart(2, '0')
+            + ':' + String(d.getMinutes()).padStart(2, '0');
+    }
+
+    // Bildorientierung aus Maßen; null = unbekannt
+    function orientierung(breite, hoehe) {
+        if (!breite || !hoehe) { return null; }
+        return (breite / hoehe < 0.85) ? 'portrait' : 'landscape';
     }
 
     function renderSlide(el, ev) {
         var start = parseDate(ev.start_date);
         var ende  = parseDate(ev.end_date);
-
-        var bildHtml = '';
-        if (ev.bild_url) {
-            bildHtml = '<div class="tm-va-bild"><img alt="" src="' + escapeHtml(ev.bild_url) + '"></div>';
-        }
 
         var datumStr = formatDatum(start);
         var zeitStr  = '';
@@ -64,17 +67,52 @@
             }
         }
 
-        var venueHtml = ev.venue
-            ? '<div class="tm-va-venue">' + escapeHtml(ev.venue) + '</div>'
-            : '';
+        var infoHtml =
+            '<div class="tm-va-datum">'   + escapeHtml(datumStr) + '</div>'
+            + '<div class="tm-va-uhrzeit">' + escapeHtml(zeitStr)  + '</div>'
+            + '<div class="tm-va-titel">'   + escapeHtml(ev.titel)  + '</div>';
 
-        el.innerHTML = bildHtml
-            + '<div class="tm-va-info' + (ev.bild_url ? '' : ' tm-va-info--keinbild') + '">'
-            + '<div class="tm-va-datum">' + escapeHtml(datumStr) + '</div>'
-            + '<div class="tm-va-uhrzeit">' + escapeHtml(zeitStr) + '</div>'
-            + '<div class="tm-va-titel">' + escapeHtml(ev.titel) + '</div>'
-            + venueHtml
-            + '</div>';
+        // Hilfsfunktion: Klassen-Variante setzen
+        function setVariant(variant) {
+            el.classList.remove('tm-va-slide--portrait', 'tm-va-slide--landscape', 'tm-va-slide--keinbild');
+            el.classList.add('tm-va-slide--' + variant);
+        }
+
+        if (!ev.bild_url) {
+            setVariant('keinbild');
+            el.innerHTML = '<div class="tm-va-info">' + infoHtml + '</div>';
+            return;
+        }
+
+        var bildHtml = '<div class="tm-va-bild"><img alt="" src="' + escapeHtml(ev.bild_url) + '"></div>';
+
+        function applyLayout(orient) {
+            setVariant(orient);
+            if (orient === 'portrait') {
+                el.innerHTML = bildHtml + '<div class="tm-va-info">' + infoHtml + '</div>';
+            } else {
+                el.innerHTML = bildHtml
+                    + '<div class="tm-va-overlay"></div>'
+                    + '<div class="tm-va-info">' + infoHtml + '</div>';
+            }
+        }
+
+        var o = orientierung(ev.bild_breite, ev.bild_hoehe);
+        if (o) {
+            applyLayout(o);
+            return;
+        }
+
+        // Maße unbekannt → Bild laden und nachmessen, bis dahin landscape als Fallback
+        applyLayout('landscape');
+        var img = el.querySelector('img');
+        if (img) {
+            img.onload = function () {
+                if (img.naturalWidth && img.naturalHeight) {
+                    applyLayout(orientierung(img.naturalWidth, img.naturalHeight) || 'landscape');
+                }
+            };
+        }
     }
 
     window.TanzschuleModule.veranstaltung = function (container, settings) {
