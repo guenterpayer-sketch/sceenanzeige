@@ -484,8 +484,8 @@ html, body {
 }
 
 .tm-song-heading {
-    font-size: 32px;
-    font-weight: 500;
+    font-size: 34px;
+    font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: #ad2121;
@@ -497,12 +497,18 @@ html, body {
     font-size: 18px;
 }
 
+.tm-song-aktuell {
+    border-left: 4px solid #ad2121;
+    padding-left: 16px;
+}
+
 .tm-song-titel {
-    font-size: 40px;
-    font-weight: 600;
+    font-size: 42px;
+    font-weight: 700;
     line-height: 1.15;
     letter-spacing: -0.02em;
     margin-bottom: 6px;
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7);
 }
 
 .tm-song-artist {
@@ -566,14 +572,23 @@ html, body {
     flex-shrink: 0;
 }
 
+.tm-song-kommende {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
 .tm-song-kommende-liste {
     list-style: none;
+    flex: 1;
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
 .tm-song-kommende-eintrag {
+    flex: 1;
     display: flex;
     align-items: center;
     padding: 14px 16px;
