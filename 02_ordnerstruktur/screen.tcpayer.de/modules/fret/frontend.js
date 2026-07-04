@@ -130,15 +130,29 @@
                 zeichneBalken(0);
             }
 
-            if (data.isPlaying && s.remainingSeconds != null && s.duration) {
-                // Spielend + Positionsdaten vorhanden → Animation starten/resync
-                bar.dauer          = s.duration;
-                bar.restBeiEmpfang = s.remainingSeconds;
-                bar.empfangenAm    = Date.now();
-                bar.laeuft         = true;
+            if (data.isPlaying && s.duration) {
+                bar.dauer = s.duration;
+                if (s.remainingSeconds != null) {
+                    // Primär: remainingSeconds + lokale Empfangszeit (exakt)
+                    bar.restBeiEmpfang = s.remainingSeconds;
+                    bar.empfangenAm    = Date.now();
+                } else if (s.startTime) {
+                    // Fallback: startTime + duration (UTC-Differenz)
+                    var startMs        = Date.parse(s.startTime);
+                    var elapsedSek     = (Date.now() - startMs) / 1000;
+                    bar.restBeiEmpfang = Math.max(0, s.duration - elapsedSek);
+                    bar.empfangenAm    = Date.now();
+                } else {
+                    // Keine Positionsdaten → einfrieren
+                    bar.laeuft = false;
+                    if (container._tmRaf) { cancelAnimationFrame(container._tmRaf); }
+                    zeichneBalken(bar.letzterWert);
+                    return;
+                }
+                bar.laeuft = true;
                 starteAnimation();
             } else {
-                // Pause/Stop oder keine Positionsdaten → einfrieren, kein Reset
+                // Pause/Stop → einfrieren, kein Reset
                 bar.laeuft = false;
                 if (container._tmRaf) { cancelAnimationFrame(container._tmRaf); }
                 zeichneBalken(bar.letzterWert);
