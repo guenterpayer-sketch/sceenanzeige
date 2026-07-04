@@ -169,6 +169,21 @@
             kommendeEl.innerHTML = '';
             if (liste.length === 0) { return; }
 
+            // Restzeit des aktuellen Songs als Basis für Countdown-Fallback
+            var restSekBasis = null;
+            if (data.aktuell) {
+                var akt = data.aktuell;
+                if (akt.remainingSeconds != null) {
+                    restSekBasis = akt.remainingSeconds;
+                } else if (akt.startTime && akt.duration) {
+                    var startMs    = Date.parse(akt.startTime);
+                    var elapsedSek = (Date.now() - startMs) / 1000;
+                    restSekBasis   = Math.max(0, akt.duration - elapsedSek);
+                }
+            }
+            // Akkumulator: wächst je Song um dessen Dauer
+            var akkumuliertSek = restSekBasis;
+
             var ul = document.createElement('ul');
             ul.className = 'tm-song-kommende-liste';
 
@@ -198,10 +213,15 @@
 
                 li.appendChild(info);
 
-                if (s.estimatedSecondsUntilStart != null) {
+                // API-Wert bevorzugen; sonst akkumulierter Fallback
+                var sek = s.estimatedSecondsUntilStart;
+                if (sek == null && akkumuliertSek != null) {
+                    sek = Math.round(akkumuliertSek);
+                }
+
+                if (sek != null) {
                     var countdown = document.createElement('div');
                     countdown.className = 'tm-song-k-countdown';
-                    var sek = s.estimatedSecondsUntilStart;
                     countdown.textContent = formatCountdown(sek);
                     li.appendChild(countdown);
 
@@ -219,6 +239,13 @@
                 }
 
                 ul.appendChild(li);
+
+                // Akkumulator für nächsten Eintrag weiterschieben
+                if (akkumuliertSek != null && s.duration) {
+                    akkumuliertSek += s.duration;
+                } else {
+                    akkumuliertSek = null; // Dauer unbekannt → kein weiterer Fallback
+                }
             });
 
             kommendeEl.appendChild(ul);

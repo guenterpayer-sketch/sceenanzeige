@@ -498,6 +498,8 @@ html, body {
 }
 
 .tm-song-aktuell {
+    flex: 0 0 33%;
+    overflow: hidden;
     border-left: 4px solid #ad2121;
     padding-left: 16px;
 }
@@ -509,6 +511,10 @@ html, body {
     letter-spacing: -0.02em;
     margin-bottom: 6px;
     text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .tm-song-artist {
