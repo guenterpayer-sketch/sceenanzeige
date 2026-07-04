@@ -500,6 +500,9 @@ html, body {
 .tm-song-aktuell {
     flex: 0 0 33%;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     border-left: 4px solid #ad2121;
     padding-left: 16px;
 }
@@ -594,7 +597,6 @@ html, body {
 }
 
 .tm-song-kommende-eintrag {
-    flex: 1;
     display: flex;
     align-items: center;
     padding: 14px 16px;
