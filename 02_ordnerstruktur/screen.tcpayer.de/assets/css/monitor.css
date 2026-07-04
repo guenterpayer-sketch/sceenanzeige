@@ -499,10 +499,10 @@ html, body {
 
 .tm-song-aktuell {
     flex: 0 0 33%;
+    min-height: 0;
     overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+    display: grid;
+    align-content: center;
     border-left: 4px solid #ad2121;
     padding-left: 16px;
 }
