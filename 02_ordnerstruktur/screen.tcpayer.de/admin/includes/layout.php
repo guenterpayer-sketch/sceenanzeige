@@ -64,6 +64,19 @@ function admin_header(string $titel, string $aktiv = ''): void
             </button>
         </form>
         <?php endif; ?>
+        <?php
+        $versionFile = __DIR__ . '/../../version.php';
+        if (file_exists($versionFile)) {
+            require_once $versionFile;
+        }
+        $versionStr  = defined('APP_VERSION')      ? APP_VERSION      : null;
+        $versionDate = defined('APP_VERSION_DATE')  ? APP_VERSION_DATE : null;
+        $versionEnv  = defined('APP_ENV')           ? APP_ENV          : null;
+        if ($versionStr): ?>
+        <span class="adm-nav-version<?= $versionEnv === 'staging' ? ' adm-nav-version--staging' : '' ?>">
+            <?= htmlspecialchars($versionStr) ?> · <?= htmlspecialchars($versionDate) ?><?= $versionEnv === 'staging' ? ' · STAGING' : '' ?>
+        </span>
+        <?php endif; ?>
         <a href="/admin/logout.php" class="adm-nav-logout">Abmelden</a>
     </nav>
 </header>

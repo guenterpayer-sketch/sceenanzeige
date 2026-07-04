@@ -118,10 +118,12 @@ function song_aufbereiten(array $s): array
 
     return [
         'position'                   => $s['position'] ?? 0,
+        'songId'                     => $s['songId'] ?? null,
         'title'                      => $s['title'] ?? '',
         'artist'                     => $s['artist'] ?? '',
         'taenze'                     => $taenze,
         'duration'                   => $s['duration'] ?? null,
+        'startTime'                  => $s['startTime'] ?? null,
         'remainingSeconds'           => $s['remainingSeconds'] ?? null,
         'estimatedSecondsUntilStart' => $s['estimatedSecondsUntilStart'] ?? null,
         'coverImageUrl'              => $s['coverImageUrl'] ?? null,
