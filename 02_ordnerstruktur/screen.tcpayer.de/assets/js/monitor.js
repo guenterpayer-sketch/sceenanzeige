@@ -228,8 +228,15 @@
             mod.inhalte.forEach(function (i) { summe += (i.dauer_sek > 0 ? i.dauer_sek : 10); });
             return summe;
         }
-        return (mod.einstellungen && mod.einstellungen.anzeige_dauer_sek > 0)
+        var dauerSek = (mod.einstellungen && mod.einstellungen.anzeige_dauer_sek > 0)
             ? mod.einstellungen.anzeige_dauer_sek : 30;
+        // veranstaltung: Events kommen aus externer API, nicht aus inhalte[] →
+        // Gesamtdauer = anzahl × anzeige_dauer_sek
+        if (mod.modul_typ === 'veranstaltung'
+                && mod.einstellungen && mod.einstellungen.anzahl > 0) {
+            return dauerSek * mod.einstellungen.anzahl;
+        }
+        return dauerSek;
     }
 
     /**
