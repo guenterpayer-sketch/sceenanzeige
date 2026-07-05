@@ -446,10 +446,9 @@ html, body {
     inset: 0;
     background: linear-gradient(
         to bottom,
-        rgba(0, 0, 0, 0.04) 0%,
-        rgba(0, 0, 0, 0.18) 45%,
-        rgba(0, 0, 0, 0.78) 55%,
-        rgba(0, 0, 0, 0.90) 100%
+        rgba(0, 0, 0, 0)    0%,
+        rgba(0, 0, 0, 0)   55%,
+        rgba(0, 0, 0, 0.88) 100%
     );
     z-index: 1;
 }
