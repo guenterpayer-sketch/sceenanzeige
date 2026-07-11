@@ -3,7 +3,7 @@
 > **Branch:** `claude/intelligent-cray-im1xte`  
 > Eine neue Session liest `CLAUDE.md` (Konzept) + diese Datei (Stand) und kann sofort weiterarbeiten.
 
-_Letzte Aktualisierung: Schritt 17 — Veranstaltungs-Modul adaptives Layout + Feinschliff._
+_Letzte Aktualisierung: Schritt 18 — Playlist-Tooltip, Veranstaltung Glow, Ankündigung Vollbild-Layout + Pill-Transparenz._
 
 ---
 
@@ -31,6 +31,7 @@ _Letzte Aktualisierung: Schritt 17 — Veranstaltungs-Modul adaptives Layout + F
 | 15 | CI/CD via GitHub Actions + Monitor-Domain + Testmon-Frontend | ✅ live |
 | 16 | FRET-Modul: Layout Variante D, Countdown-Fallback, rAF-Fortschrittsbalken, Admin-Versionsanzeige | ✅ live |
 | 17 | Modul `veranstaltung`: adaptives Layout (Hochkant/Querformat/Kein Bild), Zyklusdauer-Fix in `monitor.js` | ✅ live |
+| 18 | Playlist-Monitor-Tooltip, Veranstaltung Glow (DOM-Element), Ankündigung Vollbild-Layout + einstellbare Pill-Transparenz | ✅ live |
 
 ---
 
@@ -43,6 +44,21 @@ _Letzte Aktualisierung: Schritt 17 — Veranstaltungs-Modul adaptives Layout + F
 ---
 
 ## Was in den letzten Sessions erledigt wurde
+
+### Schritt 18 — Playlist-Tooltip, Veranstaltung Glow, Ankündigung Redesign (live ✅)
+
+| Datei | Was |
+|---|---|
+| `includes/Playlist.php` | `listAll()`: `GROUP_CONCAT`-Subquery liefert `monitor_namen` (kommasepariert); SEPARATOR-Quotes korrekt escaped (`\'`) |
+| `admin/playlists.php` | Monitor-Badge mit `data-monitore`-Attribut + Klasse `adm-monitore-badge--aktiv` bei ≥ 1 Monitor |
+| `assets/css/admin.css` | CSS-Tooltip via `::after` + `content: attr(data-monitore)` auf Hover |
+| `modules/veranstaltung/frontend.js` | Glow-Effekt als echtes DOM-Element `<div class="tm-va-bild-glow">` mit Inline-`background-image`; Landscape-Bild: `object-fit: contain` + Glow füllt Letterbox |
+| `assets/css/monitor.css` | `.tm-va-bild-glow`: `filter: blur(24px) brightness(0.72) saturate(1.3)`; Landscape + Portrait img: `object-fit: contain; z-index: 1` |
+| `modules/ankuendigung/module.json` | Neues Setting `pill_transparenz` (15/30/45 %, Standard 15 %); Setting `schrift_groesse` (36–96 px, Standard 60 px) |
+| `modules/ankuendigung/frontend.js` | Vollbild-Layout: `.tm-ank-bg` (Hintergrundbild, `object-fit: cover`) + Text-Pill mit konfigurierbarer `rgba(0,0,0,α)`; ohne Bild: nur Text zentriert |
+| `assets/css/monitor.css` | Ankündigung: `.tm-ank-mit-bild .tm-ank-bg` (absolut, `inset:0`), `.tm-ank-mit-bild .tm-ank-text` (Pill: `border-radius:16px`, `padding:24px 36px`, Hintergrund per Inline-Style) |
+
+---
 
 ### Schritt 17 — Modul `veranstaltung`: Adaptives Layout + Feinschliff (live ✅)
 
