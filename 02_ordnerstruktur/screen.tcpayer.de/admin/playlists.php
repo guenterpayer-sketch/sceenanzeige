@@ -84,7 +84,8 @@ admin_header('Playlists', 'playlists');
                 </span>
             </div>
             <div class="adm-kachel-badges">
-                <span class="adm-meta-badge" title="auf so vielen Monitoren eingeplant">🖥️ auf <?= (int)$p['anzahl_monitore'] ?> Monitor<?= (int)$p['anzahl_monitore'] === 1 ? '' : 'en' ?></span>
+                <span class="adm-meta-badge adm-monitore-badge<?= (int)$p['anzahl_monitore'] > 0 ? ' adm-monitore-badge--aktiv' : '' ?>"
+                      data-monitore="<?= htmlspecialchars($p['monitor_namen'] ?? '') ?>">🖥️ auf <?= (int)$p['anzahl_monitore'] ?> Monitor<?= (int)$p['anzahl_monitore'] === 1 ? '' : 'en' ?></span>
             </div>
             <div class="adm-kachel-body">
                 <div class="adm-kachel-name">

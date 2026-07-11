@@ -90,6 +90,10 @@
             setVariant(orient);
             if (orient === 'portrait') {
                 el.innerHTML = bildHtml + '<div class="tm-va-info">' + infoHtml + '</div>';
+                var bildDiv = el.querySelector('.tm-va-bild');
+                if (bildDiv) {
+                    bildDiv.style.setProperty('--va-bild-url', 'url("' + ev.bild_url.replace(/"/g, '\\"') + '")');
+                }
             } else {
                 el.innerHTML = bildHtml
                     + '<div class="tm-va-overlay"></div>'
