@@ -95,7 +95,7 @@ final class Playlist
                        l.header_sichtbar, l.footer_ticker,
                        (SELECT COUNT(*) FROM playlist_spalten_inhalte s WHERE s.playlist_id = p.id) AS anzahl_module,
                        (SELECT COUNT(DISTINCT z.monitor_id) FROM monitor_zeitplan z WHERE z.playlist_id = p.id) AS anzahl_monitore,
-                       (SELECT GROUP_CONCAT(m.name ORDER BY m.name SEPARATOR ', ')
+                       (SELECT GROUP_CONCAT(m.name ORDER BY m.name SEPARATOR \', \')
                         FROM monitor_zeitplan z2 JOIN monitore m ON m.id = z2.monitor_id
                         WHERE z2.playlist_id = p.id) AS monitor_namen
                 FROM playlists p
