@@ -78,19 +78,17 @@
             var bildUrl = eintrag.dateiname
                 ? uploadsBase + encodeURIComponent(eintrag.dateiname)
                 : null;
+            var glow = bildUrl
+                ? '<div class="tm-ank-glow" style="background-image:url(\''
+                    + bildUrl.replace(/\\/g, '\\\\').replace(/'/g, "\\'") + '\')"></div>'
+                : '';
             var bild = bildUrl
                 ? '<div class="tm-ank-bild"><img alt="" src="' + bildUrl + '"></div>'
                 : '';
             var text = eintrag.text_inhalt
                 ? '<div class="tm-ank-text">' + escapeHtml(eintrag.text_inhalt) + '</div>'
                 : '';
-            el.innerHTML = bild + text;
-            // Ambient-Glow: URL direkt auf dem Slide-Element setzen (::before bleibt im Container)
-            if (bildUrl) {
-                el.style.setProperty('--ank-bild-url', 'url("' + bildUrl.replace(/"/g, '\\"') + '")');
-            } else {
-                el.style.removeProperty('--ank-bild-url');
-            }
+            el.innerHTML = glow + bild + text;
         }
 
         var aktiver = layerA;

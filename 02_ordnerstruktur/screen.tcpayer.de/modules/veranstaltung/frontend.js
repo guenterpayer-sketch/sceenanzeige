@@ -84,7 +84,11 @@
             return;
         }
 
-        var bildHtml = '<div class="tm-va-bild"><img alt="" src="' + escapeHtml(ev.bild_url) + '"></div>';
+        var glowUrl = ev.bild_url.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        var bildHtmlLandscape = '<div class="tm-va-bild">'
+            + '<div class="tm-va-bild-glow" style="background-image:url(\'' + glowUrl + '\')"></div>'
+            + '<img alt="" src="' + escapeHtml(ev.bild_url) + '">'
+            + '</div>';
         var bildHtmlPortrait = '<div class="tm-va-bild">'
             + '<div class="tm-va-bild-glow" style="background-image:url(\''
             + ev.bild_url.replace(/\\/g, '\\\\').replace(/'/g, "\\'") + '\')"></div>'
@@ -96,7 +100,7 @@
             if (orient === 'portrait') {
                 el.innerHTML = bildHtmlPortrait + '<div class="tm-va-info">' + infoHtml + '</div>';
             } else {
-                el.innerHTML = bildHtml
+                el.innerHTML = bildHtmlLandscape
                     + '<div class="tm-va-overlay"></div>'
                     + '<div class="tm-va-info">' + infoHtml + '</div>';
             }

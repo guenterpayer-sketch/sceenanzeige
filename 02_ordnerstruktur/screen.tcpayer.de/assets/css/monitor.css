@@ -238,12 +238,10 @@ html, body {
     padding: 24px;
 }
 
-/* Ambient-Glow hinter Bild + Text — inset:-30px verhindert sichtbare Blur-Kanten/-Ecken */
-.tm-ank-slide::before {
-    content: '';
+/* Ambient-Glow: echtes DOM-Element, background-image via JS-Inline-Style */
+.tm-ank-glow {
     position: absolute;
     inset: -30px;
-    background-image: var(--ank-bild-url, none);
     background-size: cover;
     background-position: center;
     filter: blur(60px) brightness(0.38) saturate(1.5);
@@ -468,11 +466,14 @@ html, body {
 }
 
 .tm-va-slide--landscape .tm-va-bild img {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     object-position: center;
     display: block;
+    z-index: 1;
 }
 
 .tm-va-slide--landscape .tm-va-overlay {
