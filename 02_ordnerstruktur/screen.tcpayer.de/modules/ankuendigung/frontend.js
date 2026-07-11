@@ -75,14 +75,23 @@
         });
 
         function renderSlide(el, eintrag) {
-            var bild = eintrag.dateiname
-                ? '<div class="tm-ank-bild"><img alt="" src="'
-                    + uploadsBase + encodeURIComponent(eintrag.dateiname) + '"></div>'
+            var bildUrl = eintrag.dateiname
+                ? uploadsBase + encodeURIComponent(eintrag.dateiname)
+                : null;
+            var bild = bildUrl
+                ? '<div class="tm-ank-bild"><img alt="" src="' + bildUrl + '"></div>'
                 : '';
             var text = eintrag.text_inhalt
                 ? '<div class="tm-ank-text">' + escapeHtml(eintrag.text_inhalt) + '</div>'
                 : '';
             el.innerHTML = bild + text;
+            // Ambient-Glow: Bild-URL als CSS-Variable auf dem Wrapper setzen
+            if (bildUrl) {
+                var bildDiv = el.querySelector('.tm-ank-bild');
+                if (bildDiv) {
+                    bildDiv.style.setProperty('--ank-bild-url', 'url("' + bildUrl.replace(/"/g, '\\"') + '")');
+                }
+            }
         }
 
         var aktiver = layerA;

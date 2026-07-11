@@ -238,13 +238,32 @@ html, body {
     padding: 24px;
 }
 
+.tm-ank-bild {
+    position: relative;
+}
+
+/* Ambient-Glow: gleiche Bild-URL unscharf skaliert als Hintergrund (Spotify-Effekt) */
+.tm-ank-bild::before {
+    content: '';
+    position: absolute;
+    inset: -20%;
+    background-image: var(--ank-bild-url);
+    background-size: cover;
+    background-position: center;
+    filter: blur(28px) brightness(0.55) saturate(1.4);
+    z-index: 0;
+}
+
 .tm-ank-bild img {
+    position: relative;
+    z-index: 1;
     max-width: 100%;
     max-height: 55vh;
     object-fit: contain;
     display: block;
-    -webkit-mask-image: radial-gradient(ellipse at center, black 52%, transparent 88%);
-    mask-image: radial-gradient(ellipse at center, black 52%, transparent 88%);
+    /* Vignette: Kanten laufen weich in den Ambient-Glow aus */
+    -webkit-mask-image: radial-gradient(ellipse at center, black 58%, transparent 92%);
+    mask-image: radial-gradient(ellipse at center, black 58%, transparent 92%);
     -webkit-mask-size: 100% 100%;
     mask-size: 100% 100%;
 }
