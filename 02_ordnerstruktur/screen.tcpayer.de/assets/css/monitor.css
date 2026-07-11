@@ -257,7 +257,6 @@ html, body {
     position: relative;
     z-index: 1;
     color: #fff;
-    background: rgba(0, 0, 0, 0.15);
     border-radius: 16px;
     padding: 24px 36px;
     max-width: 80%;
