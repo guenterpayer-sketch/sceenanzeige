@@ -238,37 +238,39 @@ html, body {
     padding: 24px;
 }
 
-.tm-ank-bild {
-    position: relative;
-}
-
-/* Ambient-Glow: gleiche Bild-URL unscharf skaliert als Hintergrund (Spotify-Effekt) */
-.tm-ank-bild::before {
+/* Ambient-Glow hinter Bild + Text — bleibt durch .tm-ank-stage overflow:hidden im Container */
+.tm-ank-slide::before {
     content: '';
     position: absolute;
-    inset: -20%;
-    background-image: var(--ank-bild-url);
+    inset: 0;
+    transform: scale(1.12);
+    background-image: var(--ank-bild-url, none);
     background-size: cover;
     background-position: center;
-    filter: blur(28px) brightness(0.55) saturate(1.4);
+    filter: blur(40px) brightness(0.38) saturate(1.5);
     z-index: 0;
 }
 
-.tm-ank-bild img {
+.tm-ank-bild {
     position: relative;
     z-index: 1;
+}
+
+.tm-ank-bild img {
     max-width: 100%;
     max-height: 55vh;
     object-fit: contain;
     display: block;
-    /* Vignette: Kanten laufen weich in den Ambient-Glow aus */
-    -webkit-mask-image: radial-gradient(ellipse at center, black 58%, transparent 92%);
-    mask-image: radial-gradient(ellipse at center, black 58%, transparent 92%);
+    /* Vignette: Bildkanten laufen weich in den Ambient-Glow aus */
+    -webkit-mask-image: radial-gradient(ellipse at center, black 60%, transparent 92%);
+    mask-image: radial-gradient(ellipse at center, black 60%, transparent 92%);
     -webkit-mask-size: 100% 100%;
     mask-size: 100% 100%;
 }
 
 .tm-ank-text {
+    position: relative;
+    z-index: 1;
     font-size: 2em;
     font-weight: 600;
     line-height: 1.25;

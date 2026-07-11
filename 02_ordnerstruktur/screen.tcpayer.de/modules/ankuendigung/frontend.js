@@ -85,12 +85,11 @@
                 ? '<div class="tm-ank-text">' + escapeHtml(eintrag.text_inhalt) + '</div>'
                 : '';
             el.innerHTML = bild + text;
-            // Ambient-Glow: Bild-URL als CSS-Variable auf dem Wrapper setzen
+            // Ambient-Glow: URL direkt auf dem Slide-Element setzen (::before bleibt im Container)
             if (bildUrl) {
-                var bildDiv = el.querySelector('.tm-ank-bild');
-                if (bildDiv) {
-                    bildDiv.style.setProperty('--ank-bild-url', 'url("' + bildUrl.replace(/"/g, '\\"') + '")');
-                }
+                el.style.setProperty('--ank-bild-url', 'url("' + bildUrl.replace(/"/g, '\\"') + '")');
+            } else {
+                el.style.removeProperty('--ank-bild-url');
             }
         }
 
