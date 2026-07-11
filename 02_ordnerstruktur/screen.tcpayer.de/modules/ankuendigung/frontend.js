@@ -88,7 +88,6 @@
                 el.classList.add('tm-ank-mit-bild');
                 el.innerHTML =
                     '<div class="tm-ank-bg"><img alt="" src="' + bildUrl + '"></div>'
-                    + '<div class="tm-ank-overlay"></div>'
                     + textHtml;
             } else {
                 el.classList.remove('tm-ank-mit-bild');
