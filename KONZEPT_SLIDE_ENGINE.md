@@ -147,21 +147,26 @@ testen: allein in Spalte, kombiniert in Spalte, Playlist-Wechsel.
 
 ---
 
-## 6. Offene Fragen (vor Etappe 1 klären)
+## 6. Entschiedene Fragen (mit Nutzer geklärt, 07/2026)
 
-1. **Daten-Refresh langlebiger Slides:** Stundenplan-Slide steht ggf. lange
-   allein in einer Spalte → wann werden Kursdaten neu geholt? Heute löst das
-   der ~60-Sek.-Gesamtrefresh des Monitors — bleibt das so, oder bekommt der
-   Slide-Vertrag ein optionales `refreshSek`?
-2. **Übergangstyp pro Instanz:** `settings.uebergang` (fade/none) muss von der
-   Engine respektiert werden — pro Slide-Sequenz oder global?
-3. **Fehler-Slides:** Wenn `getSlides` fehlschlägt (API down), liefert das
-   Modul einen Fehler-Slide oder meldet es der Engine (die dann die Instanz
-   überspringt)?
-4. **Speicherort:** Engine in `monitor.js` integrieren oder als eigene Datei
-   `assets/js/slide-engine.js` (muss dann in `saalN/index.html` +
-   `playlist-preview.php` eingebunden werden — Cache-Verhalten beachten,
-   `module-loader.js` wird ohne Cache-Buster geladen)?
+1. **Daten-Refresh langlebiger Slides: wie heute.** Der ~60-Sek.-
+   Gesamtrefresh des Monitors bleibt zuständig; der Slide-Vertrag bekommt
+   **kein** `refreshSek`. Bewährtes Verhalten, keine zusätzliche
+   Engine-Komplexität.
+2. **Übergangstyp: pro Instanz.** `settings.uebergang` (fade/none) bleibt
+   Instanz-Einstellung wie heute; die Engine respektiert es je
+   Slide-Sequenz. Keine Migration bestehender Einstellungen nötig.
+3. **Fehlerfall: Fehler-Slide.** Wenn `getSlides` keine Daten bekommt
+   (API down), liefert das Modul einen Slide mit Hinweistext (wie heute,
+   z. B. „Stundenplan konnte nicht geladen werden") — Ausfälle sind am
+   Monitor sofort sichtbar.
+4. **Speicherort: in `monitor.js` integrieren** (klar gegliederte
+   Abschnitte), **keine** eigene Datei. Begründung: Die Live-Monitor-HTMLs
+   (`saal1–3`, `bar`) liegen nicht im Repo/CI — ein neues Script-Tag
+   müsste manuell per FTP in jede eingetragen werden (Fehlerrisiko).
+   In `monitor.js` erreicht die Engine alle Monitore automatisch beim
+   nächsten Deploy. Netto-Größe bleibt ~gleich (Engine +120 Zeilen,
+   `rotateModule`/`modulAnzeigeDauer`-Sonderfälle/`skaliereMod` −100).
 
 ---
 
