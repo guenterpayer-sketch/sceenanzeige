@@ -20,6 +20,30 @@
         { "value": "fade", "label": "Sanft überblenden" },
         { "value": "none", "label": "Kein Übergang (harter Schnitt)" }
       ]
+    },
+    {
+      "key": "pill_transparenz",
+      "type": "select",
+      "label": "Pill-Transparenz (Texthintergrund bei Bild)",
+      "default": "0.15",
+      "options": [
+        { "value": "0.15", "label": "Leicht (15 %)" },
+        { "value": "0.30", "label": "Mittel (30 %)" },
+        { "value": "0.45", "label": "Stark (45 %)" }
+      ]
+    },
+    {
+      "key": "schrift_groesse",
+      "type": "select",
+      "label": "Schriftgröße Text",
+      "default": "60",
+      "options": [
+        { "value": "36", "label": "Klein (36 px)" },
+        { "value": "48", "label": "Mittel (48 px)" },
+        { "value": "60", "label": "Groß (60 px)" },
+        { "value": "72", "label": "Sehr groß (72 px)" },
+        { "value": "96", "label": "Riesig (96 px)" }
+      ]
     }
   ]
 }
