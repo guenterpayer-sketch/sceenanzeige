@@ -3,7 +3,7 @@
 > **Branch:** `claude/intelligent-cray-im1xte`  
 > Eine neue Session liest `CLAUDE.md` (Konzept) + diese Datei (Stand) und kann sofort weiterarbeiten.
 
-_Letzte Aktualisierung: Schritt 18 — Playlist-Tooltip, Veranstaltung Glow, Ankündigung Vollbild-Layout + Pill-Transparenz._
+_Letzte Aktualisierung: Schritt 19 — Modul-Übergänge (Overlay-Dissolve + Settle-Phase); Konzept Slide-Engine dokumentiert (Schritt 20)._
 
 ---
 
@@ -32,11 +32,16 @@ _Letzte Aktualisierung: Schritt 18 — Playlist-Tooltip, Veranstaltung Glow, Ank
 | 16 | FRET-Modul: Layout Variante D, Countdown-Fallback, rAF-Fortschrittsbalken, Admin-Versionsanzeige | ✅ live |
 | 17 | Modul `veranstaltung`: adaptives Layout (Hochkant/Querformat/Kein Bild), Zyklusdauer-Fix in `monitor.js` | ✅ live |
 | 18 | Playlist-Monitor-Tooltip, Veranstaltung Glow (DOM-Element), Ankündigung Vollbild-Layout + einstellbare Pill-Transparenz | ✅ live |
+| 19 | Modul-Übergänge: Overlay-Dissolve (deckende Container) + Settle-Phase + Rotation-Freeze in `rotateModule`; Layer-Transition-Fixes `bild`/`ankuendigung` | 🧪 auf Staging, Test ausstehend |
+| 20 | Slide-Engine: Trennung Inhalt/Präsentation (`KONZEPT_SLIDE_ENGINE.md`) | 📋 Konzept dokumentiert |
 
 ---
 
 ## Offene Punkte
 
+- **Schritt 19 testen:** Auf `testmon.spass-am-tanzen.de` prüfen: Modul-Wechsel Bild↔Ankündigung↔Stundenplan in einer Spalte — weiche Dissolves, kein Durchscheinen, kein Pop, kein einblendender „Lade…"-Text
+- **`veranstaltung/frontend.js`:** trägt noch das alte Transition-Muster (innere Layer-Transition vor erstem Render) — durch Settle-Phase maskiert; verschwindet endgültig mit der Slide-Engine (Schritt 20)
+- **Slide-Engine (Schritt 20):** Konzept in `KONZEPT_SLIDE_ENGINE.md`; offene Fragen dort in Abschnitt 6 vor Etappe 1 klären
 - **FRET Fortschrittsbalken:** FRET-API liefert `remainingSeconds` immer `null` → `startTime`-Fallback greift; serverseitiges FRET-Problem, kein Code-Fehler
 - **SETTLE_MS = 800:** Heuristik für Off-screen-Pre-render; bei sehr langsamer NC-API ggf. auf 1000–1200ms erhöhen
 - **Branch-Protection:** `main` in GitHub-Settings → Branches → Add ruleset schützen (noch nicht eingerichtet)
@@ -44,6 +49,24 @@ _Letzte Aktualisierung: Schritt 18 — Playlist-Tooltip, Veranstaltung Glow, Ank
 ---
 
 ## Was in den letzten Sessions erledigt wurde
+
+### Schritt 19 — Modul-Übergänge: Overlay-Dissolve + Settle-Phase (Staging 🧪)
+
+**Problemkette (drei Ursachen, nacheinander gefunden):**
+1. Innere Layer-Transitions in `bild`/`ankuendigung` kollidierten mit dem äußeren Container-Fade → multiplikative Opacity (0.5 × 0.5 = 0.25) → wirkte wie harter Schnitt. Fix: Transition erst per rAF nach dem ersten Render.
+2. Simultanes Kreuzblenden (alt 1→0, neu 0→1) ließ den dunklen Hintergrund durchscheinen („Dip to Black"). Fix: Overlay-Fade — alt bleibt sichtbar, neu blendet darüber ein.
+3. Overlay allein: alter Inhalt blieb sichtbar stehen (Text) bzw. schien durch Letterbox/halbtransparente Flächen und poppte am Ende weg. Fix: deckender Container-Hintergrund + Settle-Phase.
+
+| Datei | Was |
+|---|---|
+| `assets/js/monitor.js` | `rotateModule`: `MODUL_SETTLE_MS = 800` (Pre-Render unsichtbar, dann Fade — analog Playlist-`SETTLE_MS`); Overlay-Dissolve (alter Container bleibt `opacity:1`, wird nach Fade entfernt); beim Wechselstart nur `_tmTimeout` des alten Containers einfrieren (Live-Intervalle + Video-Player laufen weiter, volles Cleanup erst beim Entfernen) |
+| `assets/css/monitor.css` | `.tm-modul-container { background: #0a0a0a }` — deckend (= Seitenhintergrund): kein Durchscheinen des alten Moduls durch Letterbox-Ränder oder halbtransparente Stundenplan-Karten, kein Pop beim Entfernen |
+| `modules/bild/frontend.js` | Innere Layer-Transition erst per rAF nach dem ersten Render (Muster aus `ankuendigung`, Schritt 18) |
+| `KONZEPT_SLIDE_ENGINE.md` | **Neu:** Architektur-Konzept Schritt 20 — Module liefern nur Slides, Engine besitzt Präsentation; Vertrag, Modul-Mapping, 3-Etappen-Migrationsplan, offene Fragen |
+
+**Merkregel für alle Module:** Innere `opacity`-Transitions niemals vor dem ersten Render setzen — immer erst per `requestAnimationFrame` danach.
+
+---
 
 ### Schritt 18 — Playlist-Tooltip, Veranstaltung Glow, Ankündigung Redesign (live ✅)
 
