@@ -57,9 +57,10 @@
             img.onerror = function () {
                 console.error('[bild-modul] Bild konnte nicht geladen werden:', img.src);
             };
-            if (useFade && inhalte.length > 1) {
-                img.style.transition = 'opacity ' + fadeDauerMs + 'ms ease';
-            }
+            // Transition bewusst NICHT hier setzen — erst nach dem ersten Render via rAF.
+            // Grund: rotateModule blendet den äußeren Container von opacity:0→1 ein;
+            // würde der innere Layer gleichzeitig 0→1 transitieren, multiplizieren sich
+            // beide Opacities (0.5 × 0.5 = 0.25) → "Dip to Black" / harter Schnitt.
         });
 
         let aktiverLayer = layerA;
@@ -78,6 +79,15 @@
                 aktiverLayer.style.opacity = '1';
                 inaktiverLayer.style.opacity = '0';
                 ersterDurchlauf = false;
+                // Transition erst nach dem ersten Render aktivieren — gleiche Strategie
+                // wie ankuendigung/frontend.js, damit der äußere rotateModule-Crossfade
+                // nicht mit der inneren Layer-Transition überlagert wird.
+                if (useFade && inhalte.length > 1) {
+                    requestAnimationFrame(function () {
+                        layerA.style.transition = 'opacity ' + fadeDauerMs + 'ms ease';
+                        layerB.style.transition = 'opacity ' + fadeDauerMs + 'ms ease';
+                    });
+                }
             } else {
                 // Neues Bild im (aktuell unsichtbaren) anderen Layer vorladen,
                 // dann beide gleichzeitig kreuzen lassen: alt -> 0, neu -> 1.
