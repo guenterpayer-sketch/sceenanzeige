@@ -70,11 +70,6 @@
 
         var layerA = container.querySelector('.tm-ank-layer-a');
         var layerB = container.querySelector('.tm-ank-layer-b');
-        [layerA, layerB].forEach(function (el) {
-            if (useFade) {
-                el.style.transition = 'opacity 600ms ease';
-            }
-        });
 
         function renderSlide(el, eintrag) {
             var bildUrl = eintrag.dateiname
@@ -116,6 +111,15 @@
                 aktiver.style.opacity = '1';
                 inaktiver.style.opacity = '0';
                 ersterDurchlauf = false;
+                // Transition erst nach dem ersten Render aktivieren, damit der
+                // äußere rotateModule-Crossfade (container opacity) nicht durch
+                // die innere Layer-Transition überlagert wird (multiplikative Opacity).
+                if (useFade) {
+                    requestAnimationFrame(function () {
+                        layerA.style.transition = 'opacity 600ms ease';
+                        layerB.style.transition = 'opacity 600ms ease';
+                    });
+                }
             } else {
                 renderSlide(inaktiver, eintrag);
                 inaktiver.style.opacity = '1';

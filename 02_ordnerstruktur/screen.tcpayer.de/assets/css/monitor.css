@@ -122,10 +122,20 @@ html, body {
     container-type: inline-size; /* Container Queries für Inhalte */
 }
 
-/* Einzelne Modul-Instanz füllt die Spalte */
+/* Einzelne Modul-Instanz füllt die Spalte.
+   Deckender Hintergrund (= Seitenhintergrund): macht den Overlay-Fade in
+   rotateModule zum echten Dissolve — kein Durchscheinen des alten Moduls
+   durch Letterbox-Ränder oder halbtransparente Flächen (z.B. Stundenplan-
+   Karten), kein sichtbarer Pop beim Entfernen des alten Containers. */
 .tm-modul-container {
     position: absolute;
     inset: 0;
+    background: #0a0a0a;
+    /* Eigener Stacking-Context: innere z-index-Werte (z.B. tm-ank-text,
+       tm-va-bild) können nicht über den nachfolgenden (einblendenden)
+       Container hinausragen — sonst bleibt z.B. der Ankündigungs-Text
+       während des Dissolves über dem neuen Modul sichtbar. */
+    isolation: isolate;
 }
 
 /* ── Footer / Ticker ─────────────────────────────────────────────────────── */

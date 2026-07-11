@@ -265,6 +265,7 @@
         scaleFactor = scaleFactor || 1;
         var index = 0;
         var FADE_MS = 1500;
+        var MODUL_SETTLE_MS = 800; // Pre-render-Zeit analog SETTLE_MS beim Playlist-Wechsel
 
         spalteEl.style.position = 'relative';
 
@@ -283,20 +284,37 @@
             renderModulInContainer(newContainer, skaliereMod(mod, scaleFactor));
 
             if (oldContainer) {
-                requestAnimationFrame(function () {
+                // Slide-Rotation des alten Moduls einfrieren, damit es während
+                // Settle + Fade nicht weiterschaltet. Live-Intervalle (Uhr-Tick,
+                // FRET-Poll, Video-Player) laufen bewusst weiter — vollständiges
+                // Cleanup erst beim Entfernen.
+                if (oldContainer._tmTimeout) {
+                    clearTimeout(oldContainer._tmTimeout);
+                    oldContainer._tmTimeout = null;
+                }
+
+                // Settle-Phase: neuer Container rendert unsichtbar vor (Fetch,
+                // Bilder laden), erst danach startet der Fade — analog zum
+                // Playlist-Wechsel. Verhindert einblendende "Lade…"-Texte und
+                // mitten im Fade reinploppende Bilder.
+                setTimeout(function () {
+                    if (!newContainer.isConnected) { return; }
+                    // Overlay-Dissolve: neuer Container (deckender Hintergrund via
+                    // CSS .tm-modul-container) blendet ÜBER den alten ein; der alte
+                    // bleibt bei opacity:1 und wird nach dem Fade unsichtbar entfernt.
+                    newContainer.style.transition = 'opacity ' + FADE_MS + 'ms ease';
                     requestAnimationFrame(function () {
-                        newContainer.style.transition = 'opacity ' + FADE_MS + 'ms ease';
-                        newContainer.style.opacity = '1';
-                        oldContainer.style.transition = 'opacity ' + FADE_MS + 'ms ease';
-                        oldContainer.style.opacity = '0';
-                        setTimeout(function () {
-                            if (oldContainer.parentNode) {
-                                cleanupModulContainer(oldContainer);
-                                oldContainer.parentNode.removeChild(oldContainer);
-                            }
-                        }, FADE_MS + 50);
+                        requestAnimationFrame(function () {
+                            newContainer.style.opacity = '1';
+                        });
                     });
-                });
+                    setTimeout(function () {
+                        if (oldContainer.parentNode) {
+                            cleanupModulContainer(oldContainer);
+                            oldContainer.parentNode.removeChild(oldContainer);
+                        }
+                    }, FADE_MS + 100);
+                }, MODUL_SETTLE_MS);
             } else {
                 // Erster Render: direkt einblenden, kein Crossfade
                 newContainer.style.opacity = '1';
