@@ -283,12 +283,13 @@
             renderModulInContainer(newContainer, skaliereMod(mod, scaleFactor));
 
             if (oldContainer) {
+                // Overlay-Crossfade: neuer Container blendet über den alten ein.
+                // oldContainer bleibt bei opacity:1 — kein "Dip to Black" durch
+                // multiplikativen Opacity-Effekt wenn Hintergrund durchscheint.
                 requestAnimationFrame(function () {
                     requestAnimationFrame(function () {
                         newContainer.style.transition = 'opacity ' + FADE_MS + 'ms ease';
                         newContainer.style.opacity = '1';
-                        oldContainer.style.transition = 'opacity ' + FADE_MS + 'ms ease';
-                        oldContainer.style.opacity = '0';
                         setTimeout(function () {
                             if (oldContainer.parentNode) {
                                 cleanupModulContainer(oldContainer);
