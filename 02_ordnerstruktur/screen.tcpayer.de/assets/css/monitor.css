@@ -238,16 +238,15 @@ html, body {
     padding: 24px;
 }
 
-/* Ambient-Glow hinter Bild + Text — bleibt durch .tm-ank-stage overflow:hidden im Container */
+/* Ambient-Glow hinter Bild + Text — inset:-30px verhindert sichtbare Blur-Kanten/-Ecken */
 .tm-ank-slide::before {
     content: '';
     position: absolute;
-    inset: 0;
-    transform: scale(1.12);
+    inset: -30px;
     background-image: var(--ank-bild-url, none);
     background-size: cover;
     background-position: center;
-    filter: blur(40px) brightness(0.38) saturate(1.5);
+    filter: blur(60px) brightness(0.38) saturate(1.5);
     z-index: 0;
 }
 
@@ -424,15 +423,13 @@ html, body {
     overflow: hidden;
 }
 
-/* Blurred ambient background — URL kommt via JS als CSS-Custom-Property */
-.tm-va-slide--portrait .tm-va-bild::before {
-    content: '';
+/* Ambient-Glow: echtes DOM-Element, background-image via JS-Inline-Style */
+.tm-va-bild-glow {
     position: absolute;
-    inset: -8%;
-    background-image: var(--va-bild-url);
+    inset: 0;
     background-size: cover;
     background-position: center;
-    filter: blur(22px) brightness(0.75) saturate(1.3);
+    filter: blur(24px) brightness(0.72) saturate(1.3);
     z-index: 0;
 }
 

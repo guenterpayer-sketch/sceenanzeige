@@ -85,15 +85,16 @@
         }
 
         var bildHtml = '<div class="tm-va-bild"><img alt="" src="' + escapeHtml(ev.bild_url) + '"></div>';
+        var bildHtmlPortrait = '<div class="tm-va-bild">'
+            + '<div class="tm-va-bild-glow" style="background-image:url(\''
+            + ev.bild_url.replace(/\\/g, '\\\\').replace(/'/g, "\\'") + '\')"></div>'
+            + '<img alt="" src="' + escapeHtml(ev.bild_url) + '">'
+            + '</div>';
 
         function applyLayout(orient) {
             setVariant(orient);
             if (orient === 'portrait') {
-                el.innerHTML = bildHtml + '<div class="tm-va-info">' + infoHtml + '</div>';
-                var bildDiv = el.querySelector('.tm-va-bild');
-                if (bildDiv) {
-                    bildDiv.style.setProperty('--va-bild-url', 'url("' + ev.bild_url.replace(/"/g, '\\"') + '")');
-                }
+                el.innerHTML = bildHtmlPortrait + '<div class="tm-va-info">' + infoHtml + '</div>';
             } else {
                 el.innerHTML = bildHtml
                     + '<div class="tm-va-overlay"></div>'
