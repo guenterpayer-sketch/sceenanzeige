@@ -57,7 +57,8 @@
         }
 
         var uploadsBase = (window.UPLOADS_URL || 'https://screen.tcpayer.de/uploads') + '/';
-        var useFade = settings.uebergang !== 'none';
+        var useFade     = settings.uebergang !== 'none';
+        var schriftPx   = parseInt(settings.schrift_groesse, 10) || 60;
 
         container.style.position = container.style.position || 'relative';
         container.innerHTML =
@@ -78,17 +79,21 @@
             var bildUrl = eintrag.dateiname
                 ? uploadsBase + encodeURIComponent(eintrag.dateiname)
                 : null;
-            var glow = bildUrl
-                ? '<div class="tm-ank-glow" style="background-image:url(\''
-                    + bildUrl.replace(/\\/g, '\\\\').replace(/'/g, "\\'") + '\')"></div>'
+            var textHtml = eintrag.text_inhalt
+                ? '<div class="tm-ank-text" style="font-size:' + schriftPx + 'px">'
+                    + escapeHtml(eintrag.text_inhalt) + '</div>'
                 : '';
-            var bild = bildUrl
-                ? '<div class="tm-ank-bild"><img alt="" src="' + bildUrl + '"></div>'
-                : '';
-            var text = eintrag.text_inhalt
-                ? '<div class="tm-ank-text">' + escapeHtml(eintrag.text_inhalt) + '</div>'
-                : '';
-            el.innerHTML = glow + bild + text;
+
+            if (bildUrl) {
+                el.classList.add('tm-ank-mit-bild');
+                el.innerHTML =
+                    '<div class="tm-ank-bg"><img alt="" src="' + bildUrl + '"></div>'
+                    + '<div class="tm-ank-overlay"></div>'
+                    + textHtml;
+            } else {
+                el.classList.remove('tm-ank-mit-bild');
+                el.innerHTML = textHtml;
+            }
         }
 
         var aktiver = layerA;

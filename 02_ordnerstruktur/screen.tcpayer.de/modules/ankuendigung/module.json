@@ -20,6 +20,19 @@
         { "value": "fade", "label": "Sanft überblenden" },
         { "value": "none", "label": "Kein Übergang (harter Schnitt)" }
       ]
+    },
+    {
+      "key": "schrift_groesse",
+      "type": "select",
+      "label": "Schriftgröße Text",
+      "default": "60",
+      "options": [
+        { "value": "36", "label": "Klein (36 px)" },
+        { "value": "48", "label": "Mittel (48 px)" },
+        { "value": "60", "label": "Groß (60 px)" },
+        { "value": "72", "label": "Sehr groß (72 px)" },
+        { "value": "96", "label": "Riesig (96 px)" }
+      ]
     }
   ]
 }
