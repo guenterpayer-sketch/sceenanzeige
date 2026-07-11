@@ -1,8 +1,8 @@
 # Konzept: Slide-Engine — Trennung von Inhalt und Präsentation
 
-> **Status:** Konzept (Schritt 20, geplant). Noch nicht begonnen.
-> **Voraussetzung:** Der Übergangs-Bugfix aus Schritt 19 (Overlay-Dissolve +
-> Settle-Phase in `rotateModule`) ist live getestet und stabil.
+> **Status:** Etappe 1 (Engine + Adapter) umgesetzt — Staging-Test ausstehend.
+> Etappe 2 (Rotierer portieren) und Etappe 3 (Rest + Aufräumen) offen.
+> **Voraussetzung war:** Übergangs-Bugfix Schritt 19 (live bestätigt ✅).
 
 ---
 
@@ -129,11 +129,23 @@ Codepfad** — es gibt keine zwei Übergangssysteme mehr.
 
 ## 5. Migrationsplan (kein Big Bang)
 
-**Etappe 1 — Engine + Adapter:**
-Engine in `monitor.js` (oder eigene `slide-engine.js`) bauen. Alt-Module
-(Funktions-Signatur `function(container, settings, inhalte)`) werden per
-Adapter als „1 Slide, der sich selbst verwaltet" gewrappt → alles läuft
-unverändert weiter. Staging-Test.
+**Etappe 1 — Engine + Adapter: ✅ umgesetzt (Staging-Test ausstehend)**
+Engine in `monitor.js` gebaut: `adapterDescriptor` (Alt-Modul → 1
+selbstverwalteter Slide), `slideDescriptor` (getSlides-Slide → Descriptor),
+`sammleModulSlides`/`sammleSpaltenSlides` (asynchrone Sammlung in stabiler
+Reihenfolge), `spieleSlides` (Anzeige-Loop mit Settle + Overlay-Dissolve,
+ersetzt `rotateModule`; Einzel-Slide-Spalten laufen durch denselben Pfad).
+`destroyContainer` als zentraler Cleanup-Wrapper (Descriptor-`destroy` oder
+low-level `cleanupModulContainer`). `module-loader.js`: neue Methode
+`TanzschuleLoader.lade(modulId, cb)` liefert die rohe Registrierung;
+`onerror` ruft den Callback trotzdem (eine defekte Modul-Datei blockiert
+keine Spalte mehr). `meldetEnde`-Pfad ist implementiert (`slide.onEnde` +
+15-Min-Sicherheits-Timeout), wird aber erst ab Etappe 2/3 real genutzt.
+Playlist-Timer bleibt die synchrone Schätzung via `modulAnzeigeDauer`.
+**Hinweis für Etappe 2:** `TanzschuleLoader.render()` (genutzt von
+`playlist-preview.php`) kann nur Alt-Stil-Module rendern — beim Portieren
+der ersten Module muss die Vorschau mitgezogen werden (Engine-Zugriff oder
+Mini-Player im Loader).
 
 **Etappe 2 — Die drei Rotierer portieren:**
 `bild`, `ankuendigung`, `veranstaltung` auf `getSlides` umstellen — größter
