@@ -1,8 +1,8 @@
 # Konzept: Slide-Engine — Trennung von Inhalt und Präsentation
 
-> **Status:** Etappe 1 ✅ · Etappe 2 ✅ (Staging bestätigt) · Etappe 3
-> (alle Module portiert, Adapter entfernt, Uhr-Analog + Hintergrundbild)
-> umgesetzt — Staging-Test ausstehend.
+> **Status:** Alle Etappen ✅ auf Staging getestet und bestätigt — Slide-
+> Engine vollständig, alle 7 Module portiert, Adapter entfernt, Uhr-Analog +
+> Hintergrundbild. Bereit für Live-Merge.
 > **Voraussetzung war:** Übergangs-Bugfix Schritt 19 (live bestätigt ✅).
 
 ---

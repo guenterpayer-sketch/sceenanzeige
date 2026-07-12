@@ -3,7 +3,7 @@
 > **Branch:** `claude/intelligent-cray-im1xte`  
 > Eine neue Session liest `CLAUDE.md` (Konzept) + diese Datei (Stand) und kann sofort weiterarbeiten.
 
-_Letzte Aktualisierung: Schritt 20, Etappe 3 — alle 7 Module auf `getSlides`, Adapter entfernt; Uhr: Analog-Zifferblatt + Hintergrundbild/Pill; neuer Setting-Typ `mediathek_bild`._
+_Letzte Aktualisierung: Schritt 20/21 auf Staging getestet ✅ — Slide-Engine (alle 7 Module, Adapter raus), Uhr Analog + Hintergrundbild/Pill, Setting-Typ `mediathek_bild` (Picker-Fix für Module ohne Inhalte). Bereit für Live-Merge._
 
 ---
 
@@ -33,19 +33,14 @@ _Letzte Aktualisierung: Schritt 20, Etappe 3 — alle 7 Module auf `getSlides`, 
 | 17 | Modul `veranstaltung`: adaptives Layout (Hochkant/Querformat/Kein Bild), Zyklusdauer-Fix in `monitor.js` | ✅ live |
 | 18 | Playlist-Monitor-Tooltip, Veranstaltung Glow (DOM-Element), Ankündigung Vollbild-Layout + einstellbare Pill-Transparenz | ✅ live |
 | 19 | Modul-Übergänge: Overlay-Dissolve (deckende Container) + Settle-Phase + Rotation-Freeze + `isolation:isolate` gegen z-index-Leak | ✅ live |
-| 20 | Slide-Engine: Trennung Inhalt/Präsentation (`KONZEPT_SLIDE_ENGINE.md`) | 🧪 Etappe 1 ✅ · Etappe 2 ✅ · Etappe 3 auf Staging, Test ausstehend |
-| 21 | Uhr-Modul: Analog-Zifferblatt (SVG, Ziffern 12/3/6/9, roter Sekundenzeiger) + Hintergrundbild mit Transparenz-Pill; Setting-Typ `mediathek_bild` | 🧪 auf Staging, Test ausstehend |
+| 20 | Slide-Engine: Trennung Inhalt/Präsentation (`KONZEPT_SLIDE_ENGINE.md`) | ✅ Staging getestet (alle 3 Etappen), bereit für Live-Merge |
+| 21 | Uhr-Modul: Analog-Zifferblatt (SVG, Ziffern 12/3/6/9, roter Sekundenzeiger) + Hintergrundbild mit Transparenz-Pill; Setting-Typ `mediathek_bild` | ✅ Staging getestet, bereit für Live-Merge |
 
 ---
 
 ## Offene Punkte
 
-- **Schritt 20 / Etappe 3 + Schritt 21 testen** (`testmon` + Playlist-Vorschau):
-  - `stundenplan`: rendert wie vorher (Kartenhöhen!), kein „Lade…"-Einblenden mehr
-  - `fret`: Song, Fortschrittsbalken, Countdown-Warteliste wie vorher
-  - `video`: Weiterschaltung nach Videoende (Datei + YouTube + PeerTube); einzelnes Video allein in Spalte loopt; Video kombiniert mit anderen Modulen
-  - `uhrzeit` digital: unverändert; **analog**: Zifferblatt, roter Sekundenzeiger, Datum darunter; mit Hintergrundbild: Pill 15/30/45 %
-  - Instanz-Editor Uhr: „Bild wählen"-Picker (neuer Setting-Typ `mediathek_bild`)
+- **Live-Merge ausstehend:** Schritt 19–21 sind auf Staging getestet und laufen auf `claude/nifty-johnson-3q6u7g`. Merge auf `main` deployt sie auf `screen.tcpayer.de` (Live).
 - **`modulAnzeigeDauer` bleibt:** synchrone Dauer-Schätzung (Playlist-Timer + Spalten-Skalierung) — die Sonderfälle sind bewusst NICHT entfernt, da die Slide-Sammlung asynchron ist
 - **FRET Fortschrittsbalken:** FRET-API liefert `remainingSeconds` immer `null` → `startTime`-Fallback greift; serverseitiges FRET-Problem, kein Code-Fehler
 - **SETTLE_MS = 800:** Heuristik für Off-screen-Pre-render; bei sehr langsamer NC-API ggf. auf 1000–1200ms erhöhen
@@ -55,7 +50,7 @@ _Letzte Aktualisierung: Schritt 20, Etappe 3 — alle 7 Module auf `getSlides`, 
 
 ## Was in den letzten Sessions erledigt wurde
 
-### Schritt 20, Etappe 3 + Schritt 21 — Rest portiert, Adapter raus, Uhr-Ausbau (Staging 🧪)
+### Schritt 20, Etappe 3 + Schritt 21 — Rest portiert, Adapter raus, Uhr-Ausbau (✅ Staging getestet)
 
 | Datei | Was |
 |---|---|
