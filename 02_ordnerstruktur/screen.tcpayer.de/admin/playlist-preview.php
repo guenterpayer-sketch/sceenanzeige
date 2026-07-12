@@ -98,7 +98,7 @@ $previewJson  = json_encode($previewData, JSON_UNESCAPED_UNICODE);
 <head>
 <meta charset="UTF-8">
 <title>Vorschau: <?= $playlistName ?></title>
-<link rel="stylesheet" href="/assets/css/monitor.css">
+<link rel="stylesheet" href="/assets/css/monitor.css?v=<?= @filemtime(__DIR__ . '/../assets/css/monitor.css') ?: time() ?>">
 </head>
 <body>
 
@@ -123,8 +123,8 @@ window.UPLOADS_URL  = '/uploads';
 window.TM_ENGINE_ONLY = true; // monitor.js liefert nur die Slide-Engine, kein Polling
 var PREVIEW = <?= $previewJson ?>;
 </script>
-<script src="/assets/js/module-loader.js"></script>
-<script src="/assets/js/monitor.js"></script>
+<script src="/assets/js/module-loader.js?v=<?= @filemtime(__DIR__ . '/../assets/js/module-loader.js') ?: time() ?>"></script>
+<script src="/assets/js/monitor.js?v=<?= @filemtime(__DIR__ . '/../assets/js/monitor.js') ?: time() ?>"></script>
 <script>
 (function () {
     var WOCHENTAGE = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];

@@ -36,4 +36,12 @@ Options -Indexes
 # ----------------------------------------------------------------------------
 <IfModule mod_headers.c>
     Header set Access-Control-Allow-Origin "*"
+
+    # JS/CSS immer beim Server rückfragen (Cache-Revalidierung via ETag →
+    # billige 304er). Verhindert, dass Monitore/Browser nach einem Deploy
+    # mit veraltetem monitor.js / module-loader.js / monitor.css laufen —
+    # die Monitor-HTMLs laden diese Dateien ohne Cache-Buster.
+    <FilesMatch "\.(js|css)$">
+        Header set Cache-Control "no-cache"
+    </FilesMatch>
 </IfModule>
