@@ -292,7 +292,7 @@ FRET-Polling 5–10 Sek., Ticker unabhängig.
 | 15 | CI/CD via GitHub Actions + Monitor-Domain (vollständig statt Subdomain) + Testmon-Frontend | ✅ live |
 | 16 | FRET-Modul Verbesserungen: Fortschrittsbalken (rAF + startTime-Fallback), Countdown-Fallback (akkumulierte Lieddauer), Layout Variante D, Admin-Versionsanzeige | ✅ Staging getestet, bereit für Live-Merge |
 | 19 | Modul-Übergänge: Overlay-Dissolve (deckende `.tm-modul-container` + `isolation:isolate`) + `MODUL_SETTLE_MS` + Rotation-Freeze; innere Layer-Transition-Fixes in `bild` + `ankuendigung` | ✅ live |
-| 20 | Slide-Engine: Module liefern nur Inhalt, Engine besitzt Präsentation (Konzept + Stand: `KONZEPT_SLIDE_ENGINE.md`) | 🧪 Etappe 1 (Engine + Adapter) auf Staging |
+| 20 | Slide-Engine: Module liefern nur Inhalt, Engine besitzt Präsentation (Konzept + Stand: `KONZEPT_SLIDE_ENGINE.md`) | 🧪 Etappe 1 ✅ · Etappe 2 (bild/ankuendigung/veranstaltung + Vorschau) auf Staging |
 
 ---
 

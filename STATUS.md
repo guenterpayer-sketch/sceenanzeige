@@ -3,7 +3,7 @@
 > **Branch:** `claude/intelligent-cray-im1xte`  
 > Eine neue Session liest `CLAUDE.md` (Konzept) + diese Datei (Stand) und kann sofort weiterarbeiten.
 
-_Letzte Aktualisierung: Schritt 20, Etappe 1 — Slide-Engine (Engine + Adapter) in `monitor.js`; alle Module laufen unverändert über den Adapter._
+_Letzte Aktualisierung: Schritt 20, Etappe 2 — `bild`/`ankuendigung`/`veranstaltung` auf `getSlides` portiert; Playlist-Vorschau nutzt die Engine._
 
 ---
 
@@ -33,15 +33,14 @@ _Letzte Aktualisierung: Schritt 20, Etappe 1 — Slide-Engine (Engine + Adapter)
 | 17 | Modul `veranstaltung`: adaptives Layout (Hochkant/Querformat/Kein Bild), Zyklusdauer-Fix in `monitor.js` | ✅ live |
 | 18 | Playlist-Monitor-Tooltip, Veranstaltung Glow (DOM-Element), Ankündigung Vollbild-Layout + einstellbare Pill-Transparenz | ✅ live |
 | 19 | Modul-Übergänge: Overlay-Dissolve (deckende Container) + Settle-Phase + Rotation-Freeze + `isolation:isolate` gegen z-index-Leak | ✅ live |
-| 20 | Slide-Engine: Trennung Inhalt/Präsentation (`KONZEPT_SLIDE_ENGINE.md`) | 🧪 Etappe 1 auf Staging, Test ausstehend |
+| 20 | Slide-Engine: Trennung Inhalt/Präsentation (`KONZEPT_SLIDE_ENGINE.md`) | 🧪 Etappe 1 ✅ · Etappe 2 auf Staging, Test ausstehend |
 
 ---
 
 ## Offene Punkte
 
-- **Schritt 20 / Etappe 1 testen:** Auf `testmon.spass-am-tanzen.de` prüfen, dass sich **nichts** sichtbar verändert hat (Erfolgskriterium des Refactorings): alle Module rendern wie vorher, Modul-Wechsel mit weichem Dissolve, Spalten-Synchronisation, Playlist-Wechsel, Ticker
-- **Etappe 2 (nach Etappe-1-Test):** `bild`, `ankuendigung`, `veranstaltung` auf `getSlides` portieren; dabei `TanzschuleLoader.render()` / `playlist-preview.php` mitziehen (kann bisher nur Alt-Stil-Module)
-- **`veranstaltung/frontend.js`:** trägt noch das alte Transition-Muster (innere Layer-Transition vor erstem Render) — durch Settle-Phase maskiert; verschwindet endgültig mit Etappe 2
+- **Schritt 20 / Etappe 2 testen** (`testmon` + Playlist-Vorschau im Admin): `bild`/`ankuendigung`/`veranstaltung` allein und kombiniert in Spalten; Übergänge innerhalb einer Instanz laufen jetzt einheitlich über die Engine (Settle 800 ms + Dissolve 1500 ms statt der alten 600-ms-Fades bei ankuendigung/veranstaltung) — bewusste Vereinheitlichung; `uebergang: none` = harter Schnitt; Veranstaltungs-Events müssen nach jeder Rotationsrunde frisch sein
+- **Etappe 3 (nach Etappe-2-Test):** `stundenplan`, `uhrzeit`, `fret`, `video` portieren; Adapter + `modulAnzeigeDauer`-Sonderfälle + ungenutzte Stage-/Layer-CSS (`tm-bild-stage`, `tm-ank-stage`, `tm-va-stage`) entfernen
 - **FRET Fortschrittsbalken:** FRET-API liefert `remainingSeconds` immer `null` → `startTime`-Fallback greift; serverseitiges FRET-Problem, kein Code-Fehler
 - **SETTLE_MS = 800:** Heuristik für Off-screen-Pre-render; bei sehr langsamer NC-API ggf. auf 1000–1200ms erhöhen
 - **Branch-Protection:** `main` in GitHub-Settings → Branches → Add ruleset schützen (noch nicht eingerichtet)
@@ -50,7 +49,21 @@ _Letzte Aktualisierung: Schritt 20, Etappe 1 — Slide-Engine (Engine + Adapter)
 
 ## Was in den letzten Sessions erledigt wurde
 
-### Schritt 20, Etappe 1 — Slide-Engine: Engine + Adapter (Staging 🧪)
+### Schritt 20, Etappe 2 — Rotierer auf getSlides + Vorschau auf Engine (Staging 🧪)
+
+| Datei | Was |
+|---|---|
+| `modules/bild/frontend.js` | Rewrite: `getSlides` — ein Slide pro Bild (111→64 Zeilen); Bilder laden beim Sammeln vor |
+| `modules/ankuendigung/frontend.js` | Rewrite: `getSlides` — ein Slide pro Ankündigung; `istAktiv`-Filter bleibt; A/B-Layer weg |
+| `modules/veranstaltung/frontend.js` | `getSlides` mit Fetch (Settle wartet automatisch auf Daten); Fehler-/Leer-Slide; A/B-Layer + altes Transition-Muster weg |
+| `assets/js/monitor.js` | Engine: `uebergang` je Slide (`none` = harter Schnitt nach Settle); Zyklus-Refresh `neuSammeln` (jede Rotationsrunde frische Slides — erhält veranstaltung-Aktualität); Export `window.TanzschuleEngine.renderSpalten` + `TM_ENGINE_ONLY`-Guard |
+| `admin/playlist-preview.php` | Eigene (duplizierte) Rotations-Logik entfernt — lädt `monitor.js` mit `TM_ENGINE_ONLY = true` und ruft `TanzschuleEngine.renderSpalten` |
+
+**Sichtbare Änderung (gewollt):** Slide-Wechsel innerhalb einer Instanz laufen jetzt einheitlich über die Engine — Settle 800 ms + Dissolve 1500 ms (vorher modul-eigene 600-ms-Fades bei ankuendigung/veranstaltung). Zykluslängen unverändert.
+
+---
+
+### Schritt 20, Etappe 1 — Slide-Engine: Engine + Adapter (✅ Staging bestätigt)
 
 Umbau des Rendering-Kerns nach `KONZEPT_SLIDE_ENGINE.md` (dort auch die
 vier entschiedenen Design-Fragen). **Kein Modul wurde angefasst** — alle 7

@@ -1,7 +1,8 @@
 # Konzept: Slide-Engine — Trennung von Inhalt und Präsentation
 
-> **Status:** Etappe 1 (Engine + Adapter) umgesetzt — Staging-Test ausstehend.
-> Etappe 2 (Rotierer portieren) und Etappe 3 (Rest + Aufräumen) offen.
+> **Status:** Etappe 1 ✅ (Staging bestätigt). Etappe 2 (Rotierer portiert +
+> Vorschau auf Engine) umgesetzt — Staging-Test ausstehend.
+> Etappe 3 (Rest portieren + Aufräumen) offen.
 > **Voraussetzung war:** Übergangs-Bugfix Schritt 19 (live bestätigt ✅).
 
 ---
@@ -147,10 +148,26 @@ Playlist-Timer bleibt die synchrone Schätzung via `modulAnzeigeDauer`.
 der ersten Module muss die Vorschau mitgezogen werden (Engine-Zugriff oder
 Mini-Player im Loader).
 
-**Etappe 2 — Die drei Rotierer portieren:**
-`bild`, `ankuendigung`, `veranstaltung` auf `getSlides` umstellen — größter
-Gewinn, die duplizierte Rotations-Logik verschwindet. Jedes Modul einzeln
-testen: allein in Spalte, kombiniert in Spalte, Playlist-Wechsel.
+**Etappe 2 — Die drei Rotierer portieren: ✅ umgesetzt (Staging-Test ausstehend)**
+`bild`, `ankuendigung`, `veranstaltung` liefern nur noch Slides via
+`getSlides` — die 3× duplizierte Rotations-/Transitions-Logik ist gelöscht
+(bild 111→64, ankuendigung 141→100, veranstaltung: Fetch in `getSlides`,
+A/B-Layer entfallen). Engine-Erweiterungen dabei:
+- **`uebergang` je Slide** (`'fade'`/`'none'`): Instanz-Einstellung „Kein
+  Übergang" → harter Schnitt nach der Settle-Phase (Entscheidung Nr. 2).
+- **Zyklus-Refresh (`neuSammeln`):** nach jeder vollen Rotationsrunde
+  sammelt die Engine die Slides der Spalte asynchron neu → erhält das
+  bisherige Verhalten „jede Runde rendert/fetcht frisch" (veranstaltung-
+  Events bleiben aktuell); bis dahin läuft die alte Sequenz weiter.
+  Einzel-Slide-Spalten refreshen wie bisher nur über den Monitor-Zyklus.
+- **Engine-Export:** `window.TanzschuleEngine.renderSpalten`;
+  `window.TM_ENGINE_ONLY = true` (vor monitor.js gesetzt) unterbindet den
+  Monitor-Betrieb (kein Polling) — genutzt von `admin/playlist-preview.php`,
+  deren eigene (duplizierte) Rotations-Logik ersatzlos entfallen ist.
+**Sichtbare Vereinheitlichung:** Übergänge innerhalb einer Instanz laufen
+jetzt über die Engine (Settle 800 ms + Dissolve 1500 ms) statt der alten
+modul-eigenen A/B-Fades (600 ms bei ankuendigung/veranstaltung) — alle
+Wechsel fühlen sich gleich an; Zykluslängen bleiben unverändert.
 
 **Etappe 3 — Rest portieren, aufräumen:**
 `stundenplan`, `uhrzeit`, `fret`, `video` umstellen; Adapter entfernen;

@@ -120,9 +120,11 @@ $previewJson  = json_encode($previewData, JSON_UNESCAPED_UNICODE);
 <script>
 window.BACKEND_BASE = '';
 window.UPLOADS_URL  = '/uploads';
+window.TM_ENGINE_ONLY = true; // monitor.js liefert nur die Slide-Engine, kein Polling
 var PREVIEW = <?= $previewJson ?>;
 </script>
 <script src="/assets/js/module-loader.js"></script>
+<script src="/assets/js/monitor.js"></script>
 <script>
 (function () {
     var WOCHENTAGE = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
@@ -232,46 +234,10 @@ var PREVIEW = <?= $previewJson ?>;
     }
     mainEl.appendChild(layoutEl);
 
-    // Module je Spalte rendern (mit Rotation bei mehreren Instanzen)
-    var spalten = pl.spalten || {};
-    for (var col = 1; col <= anzahl; col++) {
-        var spalteNode = layoutEl.querySelector('[data-spalte="' + col + '"]');
-        if (!spalteNode) { continue; }
-        var mods = spalten[col] || spalten[String(col)] || [];
-        if (mods.length === 0) { continue; }
-
-        (function (node, mods) {
-            var index = 0;
-            function zeigeNaechstes() {
-                var mod = mods[index];
-                index = (index + 1) % mods.length;
-                var existing = node.querySelector('.tm-modul-container');
-                if (existing) {
-                    ['_tmTimeout','_tmInterval','_tmPoll','_tmTick'].forEach(function (k) {
-                        if (existing[k]) { clearTimeout(existing[k]); existing[k] = null; }
-                    });
-                }
-                node.innerHTML = '';
-                var container = document.createElement('div');
-                container.className = 'tm-modul-container';
-                node.appendChild(container);
-                window.TanzschuleLoader.render(mod.modul_typ, container, mod.einstellungen || {}, mod.inhalte || []);
-
-                if (mods.length > 1) {
-                    var dauerSek = 30;
-                    if (mod.inhalte && mod.inhalte.length > 0) {
-                        var sum = 0;
-                        mod.inhalte.forEach(function (i) { sum += (i.dauer_sek > 0 ? i.dauer_sek : 10); });
-                        dauerSek = sum;
-                    } else if (mod.einstellungen && mod.einstellungen.anzeige_dauer_sek > 0) {
-                        dauerSek = mod.einstellungen.anzeige_dauer_sek;
-                    }
-                    setTimeout(zeigeNaechstes, dauerSek * 1000);
-                }
-            }
-            zeigeNaechstes();
-        })(spalteNode, mods);
-    }
+    // Module je Spalte rendern — über dieselbe Slide-Engine wie die Monitore
+    // (monitor.js mit TM_ENGINE_ONLY): identisches Settle-/Dissolve-Verhalten,
+    // Spalten-Synchronisation und Unterstützung für getSlides-Module.
+    window.TanzschuleEngine.renderSpalten(layoutEl, pl);
 })();
 </script>
 

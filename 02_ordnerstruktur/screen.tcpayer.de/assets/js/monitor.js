@@ -309,6 +309,7 @@
         return {
             dauerSek:   modulAnzeigeDauer(mod) * factor,
             meldetEnde: false,
+            uebergang:  'fade',
             mount: function (el) {
                 renderModulInContainer(el, skaliereMod(mod, factor));
             },
@@ -331,6 +332,7 @@
         return {
             dauerSek:   (slide.dauerSek > 0 ? slide.dauerSek : 10) * factor,
             meldetEnde: !!slide.meldetEnde,
+            uebergang:  slide.uebergang === 'none' ? 'none' : 'fade',
             slide:      slide,
             mount: function (el) {
                 if (slide.el) { el.appendChild(slide.el); }
@@ -384,10 +386,17 @@
 
     /**
      * Anzeige-Loop einer Spalte: mountet die Slides nacheinander mit
-     * Settle-Phase + Overlay-Dissolve. Bei nur einem Slide: einmal mounten,
-     * keine Rotation (Slide darf innen leben — Uhr, FRET, Stundenplan).
+     * Settle-Phase + Overlay-Dissolve (bzw. hartem Schnitt bei
+     * uebergang:'none'). Bei nur einem Slide: einmal mounten, keine
+     * Rotation (Slide darf innen leben — Uhr, FRET, Stundenplan).
+     *
+     * neuSammeln (optional): wird nach jeder vollen Rotationsrunde
+     * aufgerufen und liefert frische Descriptors — erhält das bisherige
+     * Verhalten, dass Module pro Runde neu rendern/fetchen (z.B.
+     * veranstaltung). Bis die neuen Slides da sind, läuft die alte
+     * Sequenz weiter.
      */
-    function spieleSlides(spalteEl, descriptors) {
+    function spieleSlides(spalteEl, descriptors, neuSammeln) {
         var index = 0;
         spalteEl.style.position = 'relative';
 
@@ -395,6 +404,16 @@
             if (!spalteEl.isConnected) { return; }
             var desc = descriptors[index];
             index = (index + 1) % descriptors.length;
+
+            // Runde abgeschlossen → Slides asynchron neu sammeln (Daten-Refresh)
+            if (index === 0 && descriptors.length > 1 && typeof neuSammeln === 'function') {
+                neuSammeln(function (neue) {
+                    if (neue && neue.length > 0 && spalteEl.isConnected) {
+                        descriptors = neue;
+                        if (index >= descriptors.length) { index = 0; }
+                    }
+                });
+            }
 
             var oldContainer = spalteEl.querySelector('.tm-modul-container');
             var oldDesc      = oldContainer ? oldContainer._tmDescriptor : null;
@@ -434,11 +453,26 @@
                 }
 
                 // Settle-Phase: neuer Container rendert unsichtbar vor (Fetch,
-                // Bilder laden), erst danach startet der Fade — analog zum
+                // Bilder laden), erst danach startet der Wechsel — analog zum
                 // Playlist-Wechsel. Verhindert einblendende "Lade…"-Texte und
                 // mitten im Fade reinploppende Bilder.
                 setTimeout(function () {
                     if (!newContainer.isConnected) { return; }
+
+                    var entferneAlt = function () {
+                        if (oldContainer.parentNode) {
+                            destroyContainer(oldContainer);
+                            oldContainer.parentNode.removeChild(oldContainer);
+                        }
+                    };
+
+                    if (desc.uebergang === 'none') {
+                        // Instanz-Einstellung "Kein Übergang": harter Schnitt
+                        newContainer.style.opacity = '1';
+                        entferneAlt();
+                        return;
+                    }
+
                     // Overlay-Dissolve: neuer Container (deckender Hintergrund via
                     // CSS .tm-modul-container) blendet ÜBER den alten ein; der alte
                     // bleibt bei opacity:1 und wird nach dem Fade unsichtbar entfernt.
@@ -448,12 +482,7 @@
                             newContainer.style.opacity = '1';
                         });
                     });
-                    setTimeout(function () {
-                        if (oldContainer.parentNode) {
-                            destroyContainer(oldContainer);
-                            oldContainer.parentNode.removeChild(oldContainer);
-                        }
-                    }, FADE_MS + 100);
+                    setTimeout(entferneAlt, FADE_MS + 100);
                 }, MODUL_SETTLE_MS);
             } else {
                 // Erster Render: direkt einblenden, kein Crossfade
@@ -494,7 +523,9 @@
                 if (!spalteEl || spaltenMods.length === 0) { return; }
                 sammleSpaltenSlides(spaltenMods, factor, function (descriptors) {
                     if (!spalteEl.isConnected || descriptors.length === 0) { return; }
-                    spieleSlides(spalteEl, descriptors);
+                    spieleSlides(spalteEl, descriptors, function (fertigNeu) {
+                        sammleSpaltenSlides(spaltenMods, factor, fertigNeu);
+                    });
                 });
             })(
                 layoutEl.querySelector('[data-spalte="' + i + '"]'),
@@ -726,6 +757,19 @@
                     fetchUndRender(subdomain);
                 }, REFRESH_MS);
             });
+    }
+
+    // ── Engine-Export ─────────────────────────────────────────────────────────
+    // Für admin/playlist-preview.php: nutzt dieselbe Engine wie die Monitore.
+    // Mit window.TM_ENGINE_ONLY = true (VOR dem Laden dieser Datei gesetzt)
+    // wird nur die Engine bereitgestellt — kein Monitor-Betrieb (kein Polling).
+
+    window.TanzschuleEngine = {
+        renderSpalten: renderSpalten
+    };
+
+    if (window.TM_ENGINE_ONLY === true) {
+        return;
     }
 
     // ── Init ──────────────────────────────────────────────────────────────────

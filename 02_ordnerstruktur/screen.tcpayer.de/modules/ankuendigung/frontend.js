@@ -1,9 +1,9 @@
 /**
  * modules/ankuendigung/frontend.js
  *
- * Rotiert durch die Unter-Inhalte (einzelne Ankündigungen) einer
- * "ankuendigung"-Modul-Instanz. Jeder Eintrag besteht aus Text und einem
- * optionalen Bild und kann eine eigene Anzeigedauer haben.
+ * Slide-Engine-Modul (Etappe 2, siehe KONZEPT_SLIDE_ENGINE.md):
+ * liefert nur noch Inhalt — ein Slide pro Ankündigung (Text + optionales
+ * Bild). Rotation, Überblendung, Timer und Cleanup besitzt die Engine.
  *
  * "inhalte" kommt vom Backend als Array von Objekten (Spalten aus
  * modul_instanz_inhalte):
@@ -13,9 +13,6 @@
  * auch hier im Frontend angewandt:
  *   - aktiv == 0  -> Eintrag wird übersprungen
  *   - gueltig_bis < heute -> abgelaufener Eintrag wird übersprungen
- *
- * Konvention (siehe module-loader.js):
- *   window.TanzschuleModule.ankuendigung = function(container, settings, inhalte)
  */
 (function () {
     window.TanzschuleModule = window.TanzschuleModule || {};
@@ -42,100 +39,58 @@
         return true;
     }
 
-    window.TanzschuleModule.ankuendigung = function (container, settings, inhalte) {
-        settings = settings || {};
-        inhalte = (inhalte || []).filter(istAktiv);
-        container.classList.add('tm-modul-ankuendigung');
+    window.TanzschuleModule.ankuendigung = {
+        getSlides: function (settings, inhalte, fertig) {
+            settings = settings || {};
+            inhalte  = (inhalte || []).filter(istAktiv);
 
-        if (container._tmTimeout) {
-            clearTimeout(container._tmTimeout);
-        }
+            var uploadsBase = (window.UPLOADS_URL || 'https://screen.tcpayer.de/uploads') + '/';
+            var uebergang   = settings.uebergang === 'none' ? 'none' : 'fade';
+            var schriftPx   = parseInt(settings.schrift_groesse, 10) || 60;
+            var pillAlpha   = parseFloat(settings.pill_transparenz) || 0.15;
 
-        if (inhalte.length === 0) {
-            container.innerHTML = '<div class="tm-ank-leer">Keine Ankündigungen</div>';
-            return;
-        }
-
-        var uploadsBase   = (window.UPLOADS_URL || 'https://screen.tcpayer.de/uploads') + '/';
-        var useFade       = settings.uebergang !== 'none';
-        var schriftPx     = parseInt(settings.schrift_groesse, 10) || 60;
-        var pillAlpha     = parseFloat(settings.pill_transparenz) || 0.15;
-
-        container.style.position = container.style.position || 'relative';
-        container.innerHTML =
-            '<div class="tm-ank-stage" style="position:relative;width:100%;height:100%;overflow:hidden;">'
-            + '<div class="tm-ank-slide tm-ank-layer-a" style="position:absolute;inset:0;opacity:0;"></div>'
-            + '<div class="tm-ank-slide tm-ank-layer-b" style="position:absolute;inset:0;opacity:0;"></div>'
-            + '</div>';
-
-        var layerA = container.querySelector('.tm-ank-layer-a');
-        var layerB = container.querySelector('.tm-ank-layer-b');
-
-        function renderSlide(el, eintrag) {
-            var bildUrl = eintrag.dateiname
-                ? uploadsBase + encodeURIComponent(eintrag.dateiname)
-                : null;
-            var textHtml = eintrag.text_inhalt
-                ? '<div class="tm-ank-text" style="font-size:' + schriftPx + 'px">'
-                    + escapeHtml(eintrag.text_inhalt) + '</div>'
-                : '';
-            var textMitBildHtml = eintrag.text_inhalt
-                ? '<div class="tm-ank-text" style="font-size:' + schriftPx + 'px;background:rgba(0,0,0,' + pillAlpha + ')">'
-                    + escapeHtml(eintrag.text_inhalt) + '</div>'
-                : '';
-
-            if (bildUrl) {
-                el.classList.add('tm-ank-mit-bild');
-                el.innerHTML =
-                    '<div class="tm-ank-bg"><img alt="" src="' + bildUrl + '"></div>'
-                    + textMitBildHtml;
-            } else {
-                el.classList.remove('tm-ank-mit-bild');
-                el.innerHTML = textHtml;
+            if (inhalte.length === 0) {
+                var leer = document.createElement('div');
+                leer.className = 'tm-modul-ankuendigung';
+                leer.style.cssText = 'width:100%;height:100%;';
+                leer.innerHTML = '<div class="tm-ank-leer">Keine Ankündigungen</div>';
+                fertig([{ el: leer, dauerSek: 30 }]);
+                return;
             }
-        }
 
-        var aktiver = layerA;
-        var inaktiver = layerB;
-        var index = 0;
-        var ersterDurchlauf = true;
+            fertig(inhalte.map(function (eintrag) {
+                var el = document.createElement('div');
+                el.style.cssText = 'position:relative;width:100%;height:100%;overflow:hidden;';
 
-        function zeigeNaechste() {
-            var eintrag = inhalte[index];
-            var dauerSek = (eintrag.dauer_sek && eintrag.dauer_sek > 0)
-                ? eintrag.dauer_sek
-                : (settings.intervall_sek || 12);
+                var bildUrl = eintrag.dateiname
+                    ? uploadsBase + encodeURIComponent(eintrag.dateiname)
+                    : null;
 
-            if (ersterDurchlauf || !useFade) {
-                renderSlide(aktiver, eintrag);
-                aktiver.style.opacity = '1';
-                inaktiver.style.opacity = '0';
-                ersterDurchlauf = false;
-                // Transition erst nach dem ersten Render aktivieren, damit der
-                // äußere rotateModule-Crossfade (container opacity) nicht durch
-                // die innere Layer-Transition überlagert wird (multiplikative Opacity).
-                if (useFade) {
-                    requestAnimationFrame(function () {
-                        layerA.style.transition = 'opacity 600ms ease';
-                        layerB.style.transition = 'opacity 600ms ease';
-                    });
+                if (bildUrl) {
+                    el.className = 'tm-modul-ankuendigung tm-ank-slide tm-ank-mit-bild';
+                    el.innerHTML =
+                        '<div class="tm-ank-bg"><img alt="" src="' + bildUrl + '"></div>'
+                        + (eintrag.text_inhalt
+                            ? '<div class="tm-ank-text" style="font-size:' + schriftPx
+                                + 'px;background:rgba(0,0,0,' + pillAlpha + ')">'
+                                + escapeHtml(eintrag.text_inhalt) + '</div>'
+                            : '');
+                } else {
+                    el.className = 'tm-modul-ankuendigung tm-ank-slide';
+                    el.innerHTML = eintrag.text_inhalt
+                        ? '<div class="tm-ank-text" style="font-size:' + schriftPx + 'px">'
+                            + escapeHtml(eintrag.text_inhalt) + '</div>'
+                        : '';
                 }
-            } else {
-                renderSlide(inaktiver, eintrag);
-                inaktiver.style.opacity = '1';
-                aktiver.style.opacity = '0';
-                var tmp = aktiver;
-                aktiver = inaktiver;
-                inaktiver = tmp;
-            }
 
-            index = (index + 1) % inhalte.length;
-            // Bei nur einem Eintrag nicht endlos neu rendern.
-            if (inhalte.length > 1) {
-                container._tmTimeout = setTimeout(zeigeNaechste, dauerSek * 1000);
-            }
+                return {
+                    el:        el,
+                    dauerSek:  (eintrag.dauer_sek && eintrag.dauer_sek > 0)
+                        ? eintrag.dauer_sek
+                        : (settings.intervall_sek || 12),
+                    uebergang: uebergang
+                };
+            }));
         }
-
-        zeigeNaechste();
     };
 })();
