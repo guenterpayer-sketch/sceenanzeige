@@ -37,6 +37,9 @@
         script.onerror = function () {
             geladeneModule[modulId] = null;
             console.error('Konnte frontend.js für Modul "' + modulId + '" nicht laden.');
+            // Aufrufer trotzdem informieren (Registrierung fehlt dann einfach),
+            // damit z.B. die Slide-Engine nicht auf eine ganze Spalte wartet.
+            callback();
         };
         document.head.appendChild(script);
     }
@@ -52,12 +55,32 @@
         render: function (modulId, container, settings, inhalte, basisUrl) {
             basisUrl = basisUrl || window.BACKEND_BASE || '';
             ladeSkript(modulId, basisUrl, function () {
-                const fn = window.TanzschuleModule && window.TanzschuleModule[modulId];
-                if (typeof fn !== 'function') {
-                    console.error('Modul "' + modulId + '" hat keine Render-Funktion registriert.');
+                const def = window.TanzschuleModule && window.TanzschuleModule[modulId];
+                if (typeof def !== 'function') {
+                    console.error('Modul "' + modulId + '" hat keine Render-Funktion registriert.'
+                        + (def && typeof def.getSlides === 'function'
+                            ? ' (Slide-Engine-Modul — Präsentation übernimmt die Engine in monitor.js)'
+                            : ''));
                     return;
                 }
-                fn(container, settings || {}, inhalte || []);
+                def(container, settings || {}, inhalte || []);
+            });
+        },
+
+        /**
+         * Lädt das Modul-Script (falls nötig) und liefert die rohe
+         * Registrierung an den Callback: eine Funktion (Alt-Stil) oder ein
+         * Objekt mit getSlides (Slide-Engine, siehe KONZEPT_SLIDE_ENGINE.md).
+         * Bei Ladefehler wird der Callback mit undefined aufgerufen.
+         *
+         * @param {string}   modulId
+         * @param {function} callback  callback(registrierung)
+         * @param {string}   [basisUrl]
+         */
+        lade: function (modulId, callback, basisUrl) {
+            basisUrl = basisUrl || window.BACKEND_BASE || '';
+            ladeSkript(modulId, basisUrl, function () {
+                callback(window.TanzschuleModule && window.TanzschuleModule[modulId]);
             });
         }
     };

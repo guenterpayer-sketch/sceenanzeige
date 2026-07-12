@@ -140,6 +140,22 @@ final class ModuleRegistry
                 $out .= '</select>';
                 break;
 
+            case 'mediathek_bild':
+                // Bild aus der Mediathek als Instanz-Einstellung (z.B. Uhr-
+                // Hintergrund). Gespeichert wird der Dateiname (String, leer =
+                // kein Bild); JS in instanz.php bindet den vorhandenen
+                // Mediathek-Picker an und pflegt die Vorschau.
+                $val = htmlspecialchars((string)($value ?? ''));
+                $out .= '<div class="adm-setting-bild" data-setting-bild="' . $key . '">';
+                $out .= '<input type="hidden" name="' . $name . '" id="f_' . $key . '" value="' . $val . '">';
+                $out .= '<img class="adm-setting-bild-vorschau" alt=""'
+                    . ($val !== '' ? ' src="/uploads/' . rawurlencode((string)$value) . '"' : ' hidden') . '>';
+                $out .= '<button type="button" class="adm-btn adm-setting-bild-waehlen">Bild wählen</button> ';
+                $out .= '<button type="button" class="adm-btn adm-btn-grau adm-setting-bild-entfernen"'
+                    . ($val === '' ? ' hidden' : '') . '>Bild entfernen</button>';
+                $out .= '</div>';
+                break;
+
             case 'textarea':
                 $val = htmlspecialchars((string)($value ?? ''));
                 $out .= '<textarea id="f_' . $key . '" name="' . $name . '">' . $val . '</textarea>';

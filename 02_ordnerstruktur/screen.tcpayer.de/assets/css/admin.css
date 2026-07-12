@@ -889,3 +889,17 @@ a.adm-kachel-link:hover { background: #fbeaea; }
     align-items: center;
     margin-bottom: 16px;
 }
+
+/* ── mediathek_bild-Einstellungsfeld (z.B. Uhr-Hintergrund) ─────────────── */
+
+.adm-setting-bild {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.adm-setting-bild-vorschau {
+    height: 56px;
+    border-radius: 6px;
+    display: block;
+}

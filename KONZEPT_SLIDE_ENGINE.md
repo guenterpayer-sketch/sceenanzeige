@@ -1,8 +1,9 @@
 # Konzept: Slide-Engine — Trennung von Inhalt und Präsentation
 
-> **Status:** Konzept (Schritt 20, geplant). Noch nicht begonnen.
-> **Voraussetzung:** Der Übergangs-Bugfix aus Schritt 19 (Overlay-Dissolve +
-> Settle-Phase in `rotateModule`) ist live getestet und stabil.
+> **Status:** Alle Etappen ✅ auf Staging getestet und bestätigt — Slide-
+> Engine vollständig, alle 7 Module portiert, Adapter entfernt, Uhr-Analog +
+> Hintergrundbild. Bereit für Live-Merge.
+> **Voraussetzung war:** Übergangs-Bugfix Schritt 19 (live bestätigt ✅).
 
 ---
 
@@ -129,39 +130,85 @@ Codepfad** — es gibt keine zwei Übergangssysteme mehr.
 
 ## 5. Migrationsplan (kein Big Bang)
 
-**Etappe 1 — Engine + Adapter:**
-Engine in `monitor.js` (oder eigene `slide-engine.js`) bauen. Alt-Module
-(Funktions-Signatur `function(container, settings, inhalte)`) werden per
-Adapter als „1 Slide, der sich selbst verwaltet" gewrappt → alles läuft
-unverändert weiter. Staging-Test.
+**Etappe 1 — Engine + Adapter: ✅ umgesetzt (Staging-Test ausstehend)**
+Engine in `monitor.js` gebaut: `adapterDescriptor` (Alt-Modul → 1
+selbstverwalteter Slide), `slideDescriptor` (getSlides-Slide → Descriptor),
+`sammleModulSlides`/`sammleSpaltenSlides` (asynchrone Sammlung in stabiler
+Reihenfolge), `spieleSlides` (Anzeige-Loop mit Settle + Overlay-Dissolve,
+ersetzt `rotateModule`; Einzel-Slide-Spalten laufen durch denselben Pfad).
+`destroyContainer` als zentraler Cleanup-Wrapper (Descriptor-`destroy` oder
+low-level `cleanupModulContainer`). `module-loader.js`: neue Methode
+`TanzschuleLoader.lade(modulId, cb)` liefert die rohe Registrierung;
+`onerror` ruft den Callback trotzdem (eine defekte Modul-Datei blockiert
+keine Spalte mehr). `meldetEnde`-Pfad ist implementiert (`slide.onEnde` +
+15-Min-Sicherheits-Timeout), wird aber erst ab Etappe 2/3 real genutzt.
+Playlist-Timer bleibt die synchrone Schätzung via `modulAnzeigeDauer`.
+**Hinweis für Etappe 2:** `TanzschuleLoader.render()` (genutzt von
+`playlist-preview.php`) kann nur Alt-Stil-Module rendern — beim Portieren
+der ersten Module muss die Vorschau mitgezogen werden (Engine-Zugriff oder
+Mini-Player im Loader).
 
-**Etappe 2 — Die drei Rotierer portieren:**
-`bild`, `ankuendigung`, `veranstaltung` auf `getSlides` umstellen — größter
-Gewinn, die duplizierte Rotations-Logik verschwindet. Jedes Modul einzeln
-testen: allein in Spalte, kombiniert in Spalte, Playlist-Wechsel.
+**Etappe 2 — Die drei Rotierer portieren: ✅ umgesetzt (Staging-Test ausstehend)**
+`bild`, `ankuendigung`, `veranstaltung` liefern nur noch Slides via
+`getSlides` — die 3× duplizierte Rotations-/Transitions-Logik ist gelöscht
+(bild 111→64, ankuendigung 141→100, veranstaltung: Fetch in `getSlides`,
+A/B-Layer entfallen). Engine-Erweiterungen dabei:
+- **`uebergang` je Slide** (`'fade'`/`'none'`): Instanz-Einstellung „Kein
+  Übergang" → harter Schnitt nach der Settle-Phase (Entscheidung Nr. 2).
+- **Zyklus-Refresh (`neuSammeln`):** nach jeder vollen Rotationsrunde
+  sammelt die Engine die Slides der Spalte asynchron neu → erhält das
+  bisherige Verhalten „jede Runde rendert/fetcht frisch" (veranstaltung-
+  Events bleiben aktuell); bis dahin läuft die alte Sequenz weiter.
+  Einzel-Slide-Spalten refreshen wie bisher nur über den Monitor-Zyklus.
+- **Engine-Export:** `window.TanzschuleEngine.renderSpalten`;
+  `window.TM_ENGINE_ONLY = true` (vor monitor.js gesetzt) unterbindet den
+  Monitor-Betrieb (kein Polling) — genutzt von `admin/playlist-preview.php`,
+  deren eigene (duplizierte) Rotations-Logik ersatzlos entfallen ist.
+**Sichtbare Vereinheitlichung:** Übergänge innerhalb einer Instanz laufen
+jetzt über die Engine (Settle 800 ms + Dissolve 1500 ms) statt der alten
+modul-eigenen A/B-Fades (600 ms bei ankuendigung/veranstaltung) — alle
+Wechsel fühlen sich gleich an; Zykluslängen bleiben unverändert.
 
-**Etappe 3 — Rest portieren, aufräumen:**
-`stundenplan`, `uhrzeit`, `fret`, `video` umstellen; Adapter entfernen;
-`modulAnzeigeDauer`/`skaliereMod`-Sonderfälle entfernen;
-`playlist-preview.php` auf die Engine umstellen.
+**Etappe 3 — Rest portieren, aufräumen: ✅ umgesetzt (Staging-Test ausstehend)**
+`stundenplan`, `uhrzeit`, `fret`, `video` auf `getSlides` portiert; Adapter
+(`adapterDescriptor`, `renderModulInContainer`, `skaliereMod`) entfernt —
+Module ohne `getSlides` werden jetzt mit Konsolen-Fehler übersprungen.
+Vertrag um **`onMount(containerEl)`** erweitert: Hook nach dem Einhängen
+ins DOM — nötig für Player-Start (video, lazy: beim Sammeln darf noch kein
+Video laden/spielen) und Höhenmessung (stundenplan-Karten).
+**`meldetEnde`-Semantik:** ruft die Engine `slide.onEnde` (Rotation);
+ist onEnde NICHT gesetzt (einziger Slide → keine Rotation), loopt das
+Video-Modul selbst (Neustart) — entspricht dem Altverhalten.
+**`modulAnzeigeDauer` bleibt bewusst erhalten** (inkl. veranstaltung-
+Sonderfall): die synchrone Schätzung wird weiterhin für Playlist-Timer +
+Spalten-Skalierungsfaktor gebraucht, weil die Slide-Sammlung asynchron ist.
+Nebenbei: Uhr-Modul bekam Analog-Darstellung (SVG-Zifferblatt) + optionales
+Mediathek-Hintergrundbild mit Transparenz-Pill; dafür neuer Setting-Typ
+`mediathek_bild` (ModuleRegistry + eigener Picker in instanz.php).
+Tote Stage-/Layer-CSS-Blöcke entfernt.
 
 ---
 
-## 6. Offene Fragen (vor Etappe 1 klären)
+## 6. Entschiedene Fragen (mit Nutzer geklärt, 07/2026)
 
-1. **Daten-Refresh langlebiger Slides:** Stundenplan-Slide steht ggf. lange
-   allein in einer Spalte → wann werden Kursdaten neu geholt? Heute löst das
-   der ~60-Sek.-Gesamtrefresh des Monitors — bleibt das so, oder bekommt der
-   Slide-Vertrag ein optionales `refreshSek`?
-2. **Übergangstyp pro Instanz:** `settings.uebergang` (fade/none) muss von der
-   Engine respektiert werden — pro Slide-Sequenz oder global?
-3. **Fehler-Slides:** Wenn `getSlides` fehlschlägt (API down), liefert das
-   Modul einen Fehler-Slide oder meldet es der Engine (die dann die Instanz
-   überspringt)?
-4. **Speicherort:** Engine in `monitor.js` integrieren oder als eigene Datei
-   `assets/js/slide-engine.js` (muss dann in `saalN/index.html` +
-   `playlist-preview.php` eingebunden werden — Cache-Verhalten beachten,
-   `module-loader.js` wird ohne Cache-Buster geladen)?
+1. **Daten-Refresh langlebiger Slides: wie heute.** Der ~60-Sek.-
+   Gesamtrefresh des Monitors bleibt zuständig; der Slide-Vertrag bekommt
+   **kein** `refreshSek`. Bewährtes Verhalten, keine zusätzliche
+   Engine-Komplexität.
+2. **Übergangstyp: pro Instanz.** `settings.uebergang` (fade/none) bleibt
+   Instanz-Einstellung wie heute; die Engine respektiert es je
+   Slide-Sequenz. Keine Migration bestehender Einstellungen nötig.
+3. **Fehlerfall: Fehler-Slide.** Wenn `getSlides` keine Daten bekommt
+   (API down), liefert das Modul einen Slide mit Hinweistext (wie heute,
+   z. B. „Stundenplan konnte nicht geladen werden") — Ausfälle sind am
+   Monitor sofort sichtbar.
+4. **Speicherort: in `monitor.js` integrieren** (klar gegliederte
+   Abschnitte), **keine** eigene Datei. Begründung: Die Live-Monitor-HTMLs
+   (`saal1–3`, `bar`) liegen nicht im Repo/CI — ein neues Script-Tag
+   müsste manuell per FTP in jede eingetragen werden (Fehlerrisiko).
+   In `monitor.js` erreicht die Engine alle Monitore automatisch beim
+   nächsten Deploy. Netto-Größe bleibt ~gleich (Engine +120 Zeilen,
+   `rotateModule`/`modulAnzeigeDauer`-Sonderfälle/`skaliereMod` −100).
 
 ---
 

@@ -1,8 +1,11 @@
 /**
  * modules/veranstaltung/frontend.js
  *
- * Lädt kommende Veranstaltungen von proxies/veranstaltungen.php
- * und zeigt sie als rotierende Slideshow.
+ * Slide-Engine-Modul (Etappe 2, siehe KONZEPT_SLIDE_ENGINE.md):
+ * lädt kommende Veranstaltungen von proxies/veranstaltungen.php und
+ * liefert einen Slide pro Event. Rotation, Überblendung, Timer und
+ * Cleanup besitzt die Engine; der Fetch passiert in getSlides — die
+ * Settle-Phase der Engine wartet damit automatisch auf die Daten.
  *
  * Adaptives Layout je Bildformat:
  *   Hochkant (breite/hoehe < 0.85) → Bild links 40 %, Text rechts
@@ -124,87 +127,53 @@
         }
     }
 
-    window.TanzschuleModule.veranstaltung = function (container, settings) {
-        settings = settings || {};
-        container.classList.add('tm-modul-veranstaltung');
+    window.TanzschuleModule.veranstaltung = {
+        getSlides: function (settings, inhalte, fertig) {
+            settings = settings || {};
 
-        if (container._tmTimeout) {
-            clearTimeout(container._tmTimeout);
-            container._tmTimeout = null;
+            var basis     = window.BACKEND_BASE || '';
+            var anzahl    = (settings.anzahl != null) ? parseInt(settings.anzahl, 10) : 5;
+            var dauerSek  = (settings.anzeige_dauer_sek > 0) ? parseInt(settings.anzeige_dauer_sek, 10) : 10;
+            var uebergang = settings.uebergang === 'none' ? 'none' : 'fade';
+
+            // Status-/Fehler-Slide (Design-Entscheidung: Ausfälle sind am
+            // Monitor sichtbar, keine stumm übersprungene Instanz)
+            function statusSlide(text, istFehler) {
+                var el = document.createElement('div');
+                el.className = 'tm-modul-veranstaltung';
+                el.style.cssText = 'width:100%;height:100%;';
+                el.innerHTML = '<div class="' + (istFehler ? 'tm-va-status tm-va-fehler' : 'tm-va-leer') + '">'
+                    + escapeHtml(text) + '</div>';
+                return { el: el, dauerSek: dauerSek };
+            }
+
+            var url = basis + '/proxies/veranstaltungen.php?anzahl=' + anzahl;
+
+            fetch(url, { cache: 'no-store' })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.error) {
+                        fertig([statusSlide(data.error, true)]);
+                        return;
+                    }
+
+                    var events = data.events || [];
+                    if (events.length === 0) {
+                        fertig([statusSlide('Keine kommenden Veranstaltungen', false)]);
+                        return;
+                    }
+
+                    fertig(events.map(function (ev) {
+                        var el = document.createElement('div');
+                        el.className = 'tm-modul-veranstaltung tm-va-slide';
+                        el.style.cssText = 'position:relative;width:100%;height:100%;overflow:hidden;';
+                        renderSlide(el, ev);
+                        return { el: el, dauerSek: dauerSek, uebergang: uebergang };
+                    }));
+                })
+                .catch(function () {
+                    fertig([statusSlide('Veranstaltungen konnten nicht geladen werden.', true)]);
+                });
         }
-
-        var basis    = window.BACKEND_BASE || '';
-        var anzahl   = (settings.anzahl != null) ? parseInt(settings.anzahl, 10) : 5;
-        var dauerSek = (settings.anzeige_dauer_sek > 0) ? parseInt(settings.anzeige_dauer_sek, 10) : 10;
-        var useFade  = settings.uebergang !== 'none';
-
-        container.innerHTML = '<div class="tm-va-status">Lade Veranstaltungen…</div>';
-
-        var url = basis + '/proxies/veranstaltungen.php?anzahl=' + anzahl;
-
-        fetch(url, { cache: 'no-store' })
-            .then(function (r) { return r.json(); })
-            .then(function (data) {
-                if (data.error) {
-                    container.innerHTML = '<div class="tm-va-status tm-va-fehler">'
-                        + escapeHtml(data.error) + '</div>';
-                    return;
-                }
-
-                var events = data.events || [];
-                if (events.length === 0) {
-                    container.innerHTML = '<div class="tm-va-leer">Keine kommenden Veranstaltungen</div>';
-                    return;
-                }
-
-                container.style.position = container.style.position || 'relative';
-                container.innerHTML =
-                    '<div class="tm-va-stage">'
-                    + '<div class="tm-va-slide tm-va-layer-a" style="position:absolute;inset:0;opacity:0;"></div>'
-                    + '<div class="tm-va-slide tm-va-layer-b" style="position:absolute;inset:0;opacity:0;"></div>'
-                    + '</div>';
-
-                var layerA = container.querySelector('.tm-va-layer-a');
-                var layerB = container.querySelector('.tm-va-layer-b');
-
-                if (useFade) {
-                    layerA.style.transition = 'opacity 600ms ease';
-                    layerB.style.transition = 'opacity 600ms ease';
-                }
-
-                var aktiver   = layerA;
-                var inaktiver = layerB;
-                var index     = 0;
-                var erster    = true;
-
-                function zeigeNaechste() {
-                    var ev = events[index];
-
-                    if (erster || !useFade) {
-                        renderSlide(aktiver, ev);
-                        aktiver.style.opacity   = '1';
-                        inaktiver.style.opacity = '0';
-                        erster = false;
-                    } else {
-                        renderSlide(inaktiver, ev);
-                        inaktiver.style.opacity = '1';
-                        aktiver.style.opacity   = '0';
-                        var tmp = aktiver;
-                        aktiver   = inaktiver;
-                        inaktiver = tmp;
-                    }
-
-                    index = (index + 1) % events.length;
-                    if (events.length > 1) {
-                        container._tmTimeout = setTimeout(zeigeNaechste, dauerSek * 1000);
-                    }
-                }
-
-                zeigeNaechste();
-            })
-            .catch(function () {
-                container.innerHTML = '<div class="tm-va-status tm-va-fehler">'
-                    + 'Veranstaltungen konnten nicht geladen werden.</div>';
-            });
     };
 })();

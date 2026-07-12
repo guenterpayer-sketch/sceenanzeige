@@ -3,7 +3,7 @@
 > **Branch:** `claude/intelligent-cray-im1xte`  
 > Eine neue Session liest `CLAUDE.md` (Konzept) + diese Datei (Stand) und kann sofort weiterarbeiten.
 
-_Letzte Aktualisierung: Schritt 19 — Modul-Übergänge (Overlay-Dissolve + Settle-Phase); Konzept Slide-Engine dokumentiert (Schritt 20)._
+_Letzte Aktualisierung: Schritt 20/21 auf Staging getestet ✅ — Slide-Engine (alle 7 Module, Adapter raus), Uhr Analog + Hintergrundbild/Pill, Setting-Typ `mediathek_bild` (Picker-Fix für Module ohne Inhalte). Bereit für Live-Merge._
 
 ---
 
@@ -32,16 +32,16 @@ _Letzte Aktualisierung: Schritt 19 — Modul-Übergänge (Overlay-Dissolve + Set
 | 16 | FRET-Modul: Layout Variante D, Countdown-Fallback, rAF-Fortschrittsbalken, Admin-Versionsanzeige | ✅ live |
 | 17 | Modul `veranstaltung`: adaptives Layout (Hochkant/Querformat/Kein Bild), Zyklusdauer-Fix in `monitor.js` | ✅ live |
 | 18 | Playlist-Monitor-Tooltip, Veranstaltung Glow (DOM-Element), Ankündigung Vollbild-Layout + einstellbare Pill-Transparenz | ✅ live |
-| 19 | Modul-Übergänge: Overlay-Dissolve (deckende Container) + Settle-Phase + Rotation-Freeze in `rotateModule`; Layer-Transition-Fixes `bild`/`ankuendigung` | 🧪 auf Staging, Test ausstehend |
-| 20 | Slide-Engine: Trennung Inhalt/Präsentation (`KONZEPT_SLIDE_ENGINE.md`) | 📋 Konzept dokumentiert |
+| 19 | Modul-Übergänge: Overlay-Dissolve (deckende Container) + Settle-Phase + Rotation-Freeze + `isolation:isolate` gegen z-index-Leak | ✅ live |
+| 20 | Slide-Engine: Trennung Inhalt/Präsentation (`KONZEPT_SLIDE_ENGINE.md`) | ✅ Staging getestet (alle 3 Etappen), bereit für Live-Merge |
+| 21 | Uhr-Modul: Analog-Zifferblatt (SVG, Ziffern 12/3/6/9, roter Sekundenzeiger) + Hintergrundbild mit Transparenz-Pill; Setting-Typ `mediathek_bild` | ✅ Staging getestet, bereit für Live-Merge |
 
 ---
 
 ## Offene Punkte
 
-- **Schritt 19 testen:** Auf `testmon.spass-am-tanzen.de` prüfen: Modul-Wechsel Bild↔Ankündigung↔Stundenplan in einer Spalte — weiche Dissolves, kein Durchscheinen, kein Pop, kein einblendender „Lade…"-Text
-- **`veranstaltung/frontend.js`:** trägt noch das alte Transition-Muster (innere Layer-Transition vor erstem Render) — durch Settle-Phase maskiert; verschwindet endgültig mit der Slide-Engine (Schritt 20)
-- **Slide-Engine (Schritt 20):** Konzept in `KONZEPT_SLIDE_ENGINE.md`; offene Fragen dort in Abschnitt 6 vor Etappe 1 klären
+- **Live-Merge ausstehend:** Schritt 19–21 sind auf Staging getestet und laufen auf `claude/nifty-johnson-3q6u7g`. Merge auf `main` deployt sie auf `screen.tcpayer.de` (Live).
+- **`modulAnzeigeDauer` bleibt:** synchrone Dauer-Schätzung (Playlist-Timer + Spalten-Skalierung) — die Sonderfälle sind bewusst NICHT entfernt, da die Slide-Sammlung asynchron ist
 - **FRET Fortschrittsbalken:** FRET-API liefert `remainingSeconds` immer `null` → `startTime`-Fallback greift; serverseitiges FRET-Problem, kein Code-Fehler
 - **SETTLE_MS = 800:** Heuristik für Off-screen-Pre-render; bei sehr langsamer NC-API ggf. auf 1000–1200ms erhöhen
 - **Branch-Protection:** `main` in GitHub-Settings → Branches → Add ruleset schützen (noch nicht eingerichtet)
@@ -50,7 +50,52 @@ _Letzte Aktualisierung: Schritt 19 — Modul-Übergänge (Overlay-Dissolve + Set
 
 ## Was in den letzten Sessions erledigt wurde
 
-### Schritt 19 — Modul-Übergänge: Overlay-Dissolve + Settle-Phase (Staging 🧪)
+### Schritt 20, Etappe 3 + Schritt 21 — Rest portiert, Adapter raus, Uhr-Ausbau (✅ Staging getestet)
+
+| Datei | Was |
+|---|---|
+| `assets/js/monitor.js` | Vertrag um `onMount(containerEl)` erweitert (Hook nach DOM-Einhängen); Adapter (`adapterDescriptor`/`renderModulInContainer`/`skaliereMod`) entfernt — Module ohne `getSlides` werden übersprungen; `modulAnzeigeDauer` bleibt als synchrone Schätzung |
+| `modules/stundenplan/frontend.js` | `getSlides` mit Fetch; Kartenhöhen-Messung im `onMount` |
+| `modules/fret/frontend.js` | `getSlides`; Poll/rAF/Countdowns lokal, `destroy` räumt alles |
+| `modules/video/frontend.js` | Ein Slide pro Video, `meldetEnde`; Player-Aufbau lazy im `onMount`; ohne `onEnde` (Einzel-Slide) loopt das Video selbst; `destroy` zerstört Player/Listener |
+| `modules/uhrzeit/frontend.js` | `getSlides`; **Analog-Darstellung** (SVG: Ziffern 12/3/6/9, Striche, Sekundenzeiger `#ad2121`, rote Nabe, Datum darunter); optionales **Hintergrundbild** + Pill (`rgba(0,0,0,α)`, 15/30/45 %) |
+| `modules/uhrzeit/module.json` | Settings `darstellung` (digital/analog), `hintergrund_bild` (mediathek_bild), `pill_transparenz` |
+| `includes/ModuleRegistry.php` | Neuer Setting-Typ `mediathek_bild` (Hidden-Feld mit Dateiname + Vorschau + Wählen/Entfernen-Buttons) |
+| `admin/instanz.php` | Eigenständiger Bild-Picker für `mediathek_bild`-Settings (`setting-bild-overlay`, unabhängig vom Inhalte-Picker, auch für Module ohne Inhalte) |
+| `assets/css/monitor.css` | Uhr: `.tm-uhr-bg`/`.tm-uhr-inhalt`/`.tm-uhr-pill`/`.tm-uhr-svg` (skaliert via `cqw`); tote Stage-/Layer-Blöcke entfernt |
+| `assets/css/admin.css` | `.adm-setting-bild` + Vorschau-Thumbnail |
+
+---
+
+### Schritt 20, Etappe 2 — Rotierer auf getSlides + Vorschau auf Engine (✅ Staging bestätigt)
+
+| Datei | Was |
+|---|---|
+| `modules/bild/frontend.js` | Rewrite: `getSlides` — ein Slide pro Bild (111→64 Zeilen); Bilder laden beim Sammeln vor |
+| `modules/ankuendigung/frontend.js` | Rewrite: `getSlides` — ein Slide pro Ankündigung; `istAktiv`-Filter bleibt; A/B-Layer weg |
+| `modules/veranstaltung/frontend.js` | `getSlides` mit Fetch (Settle wartet automatisch auf Daten); Fehler-/Leer-Slide; A/B-Layer + altes Transition-Muster weg |
+| `assets/js/monitor.js` | Engine: `uebergang` je Slide (`none` = harter Schnitt nach Settle); Zyklus-Refresh `neuSammeln` (jede Rotationsrunde frische Slides — erhält veranstaltung-Aktualität); Export `window.TanzschuleEngine.renderSpalten` + `TM_ENGINE_ONLY`-Guard |
+| `admin/playlist-preview.php` | Eigene (duplizierte) Rotations-Logik entfernt — lädt `monitor.js` mit `TM_ENGINE_ONLY = true` und ruft `TanzschuleEngine.renderSpalten` |
+
+**Sichtbare Änderung (gewollt):** Slide-Wechsel innerhalb einer Instanz laufen jetzt einheitlich über die Engine — Settle 800 ms + Dissolve 1500 ms (vorher modul-eigene 600-ms-Fades bei ankuendigung/veranstaltung). Zykluslängen unverändert.
+
+---
+
+### Schritt 20, Etappe 1 — Slide-Engine: Engine + Adapter (✅ Staging bestätigt)
+
+Umbau des Rendering-Kerns nach `KONZEPT_SLIDE_ENGINE.md` (dort auch die
+vier entschiedenen Design-Fragen). **Kein Modul wurde angefasst** — alle 7
+laufen über den Adapter unverändert weiter. Erfolgskriterium des
+Staging-Tests: keinerlei sichtbare Veränderung.
+
+| Datei | Was |
+|---|---|
+| `assets/js/monitor.js` | Slide-Engine: `adapterDescriptor` (Alt-Modul → 1 selbstverwalteter Slide), `slideDescriptor` (getSlides-Slides, ab Etappe 2), `sammleModulSlides`/`sammleSpaltenSlides` (async, stabile Reihenfolge), `spieleSlides` (ersetzt `rotateModule`; Einzel- und Multi-Slide-Spalten über denselben Pfad; `meldetEnde` via `slide.onEnde` + 15-Min-Timeout), `destroyContainer` (zentraler Cleanup-Wrapper) |
+| `assets/js/module-loader.js` | Neu: `TanzschuleLoader.lade(modulId, cb)` liefert rohe Registrierung (Funktion = Alt-Stil, Objekt mit `getSlides` = Engine-Stil); `onerror` ruft Callback trotzdem → defektes Modul-Script blockiert keine Spalte |
+
+---
+
+### Schritt 19 — Modul-Übergänge: Overlay-Dissolve + Settle-Phase (live ✅)
 
 **Problemkette (drei Ursachen, nacheinander gefunden):**
 1. Innere Layer-Transitions in `bild`/`ankuendigung` kollidierten mit dem äußeren Container-Fade → multiplikative Opacity (0.5 × 0.5 = 0.25) → wirkte wie harter Schnitt. Fix: Transition erst per rAF nach dem ersten Render.

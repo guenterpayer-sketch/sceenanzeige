@@ -61,8 +61,24 @@
         }
     }
 
+    /**
+     * Räumt einen Modul-Container vollständig ab — über den Slide-Descriptor
+     * der Engine (falls vorhanden), sonst direkt low-level.
+     * _tmDescriptor wird vor dem destroy-Aufruf genullt, damit der Adapter
+     * (dessen destroy cleanupModulContainer ruft) keine Rekursion erzeugt.
+     */
+    function destroyContainer(container) {
+        var desc = container._tmDescriptor;
+        container._tmDescriptor = null;
+        if (desc && typeof desc.destroy === 'function') {
+            try { desc.destroy(container); } catch (e) { /* ignore */ }
+        } else {
+            cleanupModulContainer(container);
+        }
+    }
+
     function cleanupAlles() {
-        document.querySelectorAll('.tm-modul-container').forEach(cleanupModulContainer);
+        document.querySelectorAll('.tm-modul-container').forEach(destroyContainer);
         _rotationTimeouts.forEach(clearTimeout);
         _rotationTimeouts = [];
         if (_playlistRotTimer) { clearTimeout(_playlistRotTimer); _playlistRotTimer = null; }
@@ -211,16 +227,31 @@
         return layoutEl;
     }
 
-    // ── Module in Spalten rendern ─────────────────────────────────────────────
+    // ── Slide-Engine ──────────────────────────────────────────────────────────
+    //
+    // Trennung von Inhalt und Präsentation (siehe KONZEPT_SLIDE_ENGINE.md):
+    // Die Engine besitzt alle Übergänge, Timer und das Cleanup — Module
+    // liefern nur Inhalt:
+    //
+    //   window.TanzschuleModule.<id> = { getSlides: fn }
+    //     getSlides(settings, inhalte, fertig) → fertig([slide, …]) mit
+    //     slide = { el, dauerSek, uebergang, meldetEnde, onMount, destroy }
+    //
+    //   el         fertiges DOM-Element (100% × 100%); darf innen leben
+    //   dauerSek   Anzeigedauer (Schätzwert bei meldetEnde)
+    //   uebergang  'fade' (Standard) | 'none' (harter Schnitt)
+    //   meldetEnde true → Slide ruft slide.onEnde() wenn fertig (Video);
+    //              ist onEnde nicht gesetzt (Einzel-Slide), loopt das Modul selbst
+    //   onMount    optional: wird nach dem Einhängen ins DOM gerufen —
+    //              für Setup, das ein lebendes DOM braucht (Player-Start,
+    //              Höhen messen)
+    //   destroy    optional: Intervalle/Player/Listener abbauen
+    //
+    // Interner Slide-Descriptor der Engine ergänzt mount(el)/freeze(el).
 
-    function renderModulInContainer(container, mod) {
-        window.TanzschuleLoader.render(
-            mod.modul_typ,
-            container,
-            mod.einstellungen || {},
-            mod.inhalte || []
-        );
-    }
+    var FADE_MS                = 1500;          // Slide-/Modul-Überblendung
+    var MODUL_SETTLE_MS        = 800;           // Pre-render unsichtbar, analog Playlist-SETTLE_MS
+    var MELDET_ENDE_TIMEOUT_MS = 15 * 60 * 1000; // Sicherheits-Timeout für meldetEnde-Slides
 
     function modulAnzeigeDauer(mod) {
         if (mod.inhalte && mod.inhalte.length > 0) {
@@ -240,65 +271,157 @@
     }
 
     /**
-     * Gibt eine skalierte Kopie eines Moduls zurück.
-     * Skaliert werden: jedes inhalte[].dauer_sek sowie einstellungen.anzeige_dauer_sek.
-     * Die Originaldaten werden nicht verändert.
+     * Wrappt einen Modul-Slide aus getSlides in einen Engine-Descriptor.
      */
-    function skaliereMod(mod, factor) {
-        if (factor === 1) { return mod; }
-        var result = { modul_typ: mod.modul_typ, einstellungen: mod.einstellungen, inhalte: mod.inhalte };
-        if (mod.inhalte && mod.inhalte.length > 0) {
-            result.inhalte = mod.inhalte.map(function (item) {
-                var d = item.dauer_sek > 0 ? item.dauer_sek : 10;
-                return Object.assign({}, item, { dauer_sek: d * factor });
-            });
-        }
-        if (mod.einstellungen && mod.einstellungen.anzeige_dauer_sek > 0) {
-            result.einstellungen = Object.assign({}, mod.einstellungen, {
-                anzeige_dauer_sek: mod.einstellungen.anzeige_dauer_sek * factor
-            });
-        }
-        return result;
+    function slideDescriptor(slide, factor) {
+        return {
+            dauerSek:   (slide.dauerSek > 0 ? slide.dauerSek : 10) * factor,
+            meldetEnde: !!slide.meldetEnde,
+            uebergang:  slide.uebergang === 'none' ? 'none' : 'fade',
+            slide:      slide,
+            mount: function (el) {
+                if (slide.el) { el.appendChild(slide.el); }
+                if (typeof slide.onMount === 'function') {
+                    try { slide.onMount(el); } catch (e) { console.error('[engine] onMount-Fehler:', e); }
+                }
+            },
+            freeze: function () { /* Engine besitzt alle Timer — nichts zu tun */ },
+            destroy: function () {
+                if (typeof slide.destroy === 'function') {
+                    try { slide.destroy(); } catch (e) { /* ignore */ }
+                }
+            }
+        };
     }
 
-    function rotateModule(spalteEl, module, scaleFactor) {
-        scaleFactor = scaleFactor || 1;
-        var index = 0;
-        var FADE_MS = 1500;
-        var MODUL_SETTLE_MS = 800; // Pre-render-Zeit analog SETTLE_MS beim Playlist-Wechsel
+    /**
+     * Sammelt die Slide-Descriptors einer Modul-Instanz (asynchron wegen
+     * Script-Laden bzw. getSlides-Fetches). fertig(descriptors[]).
+     */
+    function sammleModulSlides(mod, factor, fertig) {
+        window.TanzschuleLoader.lade(mod.modul_typ, function (def) {
+            if (def && typeof def.getSlides === 'function') {
+                def.getSlides(mod.einstellungen || {}, mod.inhalte || [], function (slides) {
+                    fertig((slides || []).map(function (s) {
+                        return slideDescriptor(s, factor);
+                    }));
+                });
+            } else {
+                // Ladefehler oder Modul ohne getSlides → Instanz überspringen,
+                // die restlichen Module der Spalte laufen weiter.
+                console.error('[engine] Modul "' + mod.modul_typ + '" liefert keine Slides — übersprungen.');
+                fertig([]);
+            }
+        });
+    }
 
+    /**
+     * Sammelt die Slides aller Modul-Instanzen einer Spalte in stabiler
+     * Reihenfolge und liefert die verkettete Sequenz.
+     */
+    function sammleSpaltenSlides(mods, factor, fertig) {
+        var ergebnisse = new Array(mods.length);
+        var offen = mods.length;
+        mods.forEach(function (mod, i) {
+            sammleModulSlides(mod, factor, function (descs) {
+                ergebnisse[i] = descs;
+                offen--;
+                if (offen === 0) {
+                    fertig(Array.prototype.concat.apply([], ergebnisse));
+                }
+            });
+        });
+    }
+
+    /**
+     * Anzeige-Loop einer Spalte: mountet die Slides nacheinander mit
+     * Settle-Phase + Overlay-Dissolve (bzw. hartem Schnitt bei
+     * uebergang:'none'). Bei nur einem Slide: einmal mounten, keine
+     * Rotation (Slide darf innen leben — Uhr, FRET, Stundenplan).
+     *
+     * neuSammeln (optional): wird nach jeder vollen Rotationsrunde
+     * aufgerufen und liefert frische Descriptors — erhält das bisherige
+     * Verhalten, dass Module pro Runde neu rendern/fetchen (z.B.
+     * veranstaltung). Bis die neuen Slides da sind, läuft die alte
+     * Sequenz weiter.
+     */
+    function spieleSlides(spalteEl, descriptors, neuSammeln) {
+        var index = 0;
         spalteEl.style.position = 'relative';
 
-        function zeigeNaechstes() {
+        function zeigeNaechsten() {
             if (!spalteEl.isConnected) { return; }
-            var mod      = module[index];
-            var dauerSek = modulAnzeigeDauer(mod) * scaleFactor;
-            index = (index + 1) % module.length;
+            var desc = descriptors[index];
+            index = (index + 1) % descriptors.length;
+
+            // Runde abgeschlossen → Slides asynchron neu sammeln (Daten-Refresh)
+            if (index === 0 && descriptors.length > 1 && typeof neuSammeln === 'function') {
+                neuSammeln(function (neue) {
+                    if (neue && neue.length > 0 && spalteEl.isConnected) {
+                        descriptors = neue;
+                        if (index >= descriptors.length) { index = 0; }
+                    }
+                });
+            }
 
             var oldContainer = spalteEl.querySelector('.tm-modul-container');
+            var oldDesc      = oldContainer ? oldContainer._tmDescriptor : null;
 
             var newContainer = document.createElement('div');
             newContainer.className = 'tm-modul-container';
+            newContainer._tmDescriptor = desc;
             newContainer.style.cssText = 'position:absolute;top:0;left:0;right:0;bottom:0;opacity:0;';
+
+            // Weiterschaltung planen (nur bei mehreren Slides)
+            if (descriptors.length > 1) {
+                if (desc.meldetEnde && desc.slide) {
+                    var weiterGerufen = false;
+                    var weiter = function () {
+                        if (weiterGerufen) { return; }
+                        weiterGerufen = true;
+                        zeigeNaechsten();
+                    };
+                    desc.slide.onEnde = weiter;
+                    var tSafety = setTimeout(weiter, MELDET_ENDE_TIMEOUT_MS);
+                    _rotationTimeouts.push(tSafety);
+                } else {
+                    var t = setTimeout(zeigeNaechsten, desc.dauerSek * 1000);
+                    _rotationTimeouts.push(t);
+                }
+            }
+
             spalteEl.appendChild(newContainer);
-            renderModulInContainer(newContainer, skaliereMod(mod, scaleFactor));
+            desc.mount(newContainer);
 
             if (oldContainer) {
-                // Slide-Rotation des alten Moduls einfrieren, damit es während
-                // Settle + Fade nicht weiterschaltet. Live-Intervalle (Uhr-Tick,
-                // FRET-Poll, Video-Player) laufen bewusst weiter — vollständiges
-                // Cleanup erst beim Entfernen.
-                if (oldContainer._tmTimeout) {
+                // Wechselstart: interne Weiterschaltung des alten Slides stoppen.
+                if (oldDesc) { oldDesc.freeze(oldContainer); }
+                else if (oldContainer._tmTimeout) {
                     clearTimeout(oldContainer._tmTimeout);
                     oldContainer._tmTimeout = null;
                 }
 
                 // Settle-Phase: neuer Container rendert unsichtbar vor (Fetch,
-                // Bilder laden), erst danach startet der Fade — analog zum
+                // Bilder laden), erst danach startet der Wechsel — analog zum
                 // Playlist-Wechsel. Verhindert einblendende "Lade…"-Texte und
                 // mitten im Fade reinploppende Bilder.
                 setTimeout(function () {
                     if (!newContainer.isConnected) { return; }
+
+                    var entferneAlt = function () {
+                        if (oldContainer.parentNode) {
+                            destroyContainer(oldContainer);
+                            oldContainer.parentNode.removeChild(oldContainer);
+                        }
+                    };
+
+                    if (desc.uebergang === 'none') {
+                        // Instanz-Einstellung "Kein Übergang": harter Schnitt
+                        newContainer.style.opacity = '1';
+                        entferneAlt();
+                        return;
+                    }
+
                     // Overlay-Dissolve: neuer Container (deckender Hintergrund via
                     // CSS .tm-modul-container) blendet ÜBER den alten ein; der alte
                     // bleibt bei opacity:1 und wird nach dem Fade unsichtbar entfernt.
@@ -308,30 +431,24 @@
                             newContainer.style.opacity = '1';
                         });
                     });
-                    setTimeout(function () {
-                        if (oldContainer.parentNode) {
-                            cleanupModulContainer(oldContainer);
-                            oldContainer.parentNode.removeChild(oldContainer);
-                        }
-                    }, FADE_MS + 100);
+                    setTimeout(entferneAlt, FADE_MS + 100);
                 }, MODUL_SETTLE_MS);
             } else {
                 // Erster Render: direkt einblenden, kein Crossfade
                 newContainer.style.opacity = '1';
             }
-
-            var t = setTimeout(zeigeNaechstes, dauerSek * 1000);
-            _rotationTimeouts.push(t);
         }
 
-        zeigeNaechstes();
+        zeigeNaechsten();
     }
 
     /**
      * Rendert alle Spalten einer Playlist mit proportionaler Skalierung:
      * Die längste Spalte bestimmt den Zyklus; kürzere Spalten werden so
      * gestreckt, dass alle gleichzeitig enden.
-     * Gibt die maximale Zyklusdauer in ms zurück (für den Playlist-Timer).
+     * Gibt die maximale Zyklusdauer in ms zurück (für den Playlist-Timer) —
+     * synchron geschätzt via modulAnzeigeDauer; die tatsächlichen
+     * Slide-Dauern werden auf dieselbe Zyklusdauer skaliert.
      */
     function renderSpalten(layoutEl, playlist) {
         var spalten = playlist.spalten || {};
@@ -349,24 +466,21 @@
             if (zyklusMs > maxCycleMs) { maxCycleMs = zyklusMs; }
         }
 
-        // 2. Spalten mit Skalierungsfaktor rendern
+        // 2. Slides je Spalte sammeln und abspielen
         for (i = 1; i <= anzahl; i++) {
-            var spalteEl = layoutEl.querySelector('[data-spalte="' + i + '"]');
-            if (!spalteEl) { continue; }
-
-            mods = spalten[i] || spalten[String(i)] || [];
-            if (mods.length === 0) { continue; }
-
-            var factor = (zyklenMs[i] > 0) ? maxCycleMs / zyklenMs[i] : 1;
-
-            if (mods.length === 1) {
-                var container = document.createElement('div');
-                container.className = 'tm-modul-container';
-                spalteEl.appendChild(container);
-                renderModulInContainer(container, skaliereMod(mods[0], factor));
-            } else {
-                rotateModule(spalteEl, mods, factor);
-            }
+            (function (spalteEl, spaltenMods, factor) {
+                if (!spalteEl || spaltenMods.length === 0) { return; }
+                sammleSpaltenSlides(spaltenMods, factor, function (descriptors) {
+                    if (!spalteEl.isConnected || descriptors.length === 0) { return; }
+                    spieleSlides(spalteEl, descriptors, function (fertigNeu) {
+                        sammleSpaltenSlides(spaltenMods, factor, fertigNeu);
+                    });
+                });
+            })(
+                layoutEl.querySelector('[data-spalte="' + i + '"]'),
+                spalten[i] || spalten[String(i)] || [],
+                (zyklenMs[i] > 0) ? maxCycleMs / zyklenMs[i] : 1
+            );
         }
 
         return maxCycleMs;
@@ -446,7 +560,7 @@
                             setTimeout(function () {
                                 if (oldLayout.parentNode) {
                                     oldLayout.querySelectorAll('.tm-modul-container')
-                                        .forEach(cleanupModulContainer);
+                                        .forEach(destroyContainer);
                                     oldLayout.parentNode.removeChild(oldLayout);
                                 }
                             }, CROSSFADE_MS + 50);
@@ -592,6 +706,19 @@
                     fetchUndRender(subdomain);
                 }, REFRESH_MS);
             });
+    }
+
+    // ── Engine-Export ─────────────────────────────────────────────────────────
+    // Für admin/playlist-preview.php: nutzt dieselbe Engine wie die Monitore.
+    // Mit window.TM_ENGINE_ONLY = true (VOR dem Laden dieser Datei gesetzt)
+    // wird nur die Engine bereitgestellt — kein Monitor-Betrieb (kein Polling).
+
+    window.TanzschuleEngine = {
+        renderSpalten: renderSpalten
+    };
+
+    if (window.TM_ENGINE_ONLY === true) {
+        return;
     }
 
     // ── Init ──────────────────────────────────────────────────────────────────
