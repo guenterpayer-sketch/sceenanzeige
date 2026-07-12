@@ -1,26 +1,24 @@
 /**
  * modules/video/frontend.js
  *
- * Rotiert durch die Unter-Inhalte (einzelne Videos) einer "video"-Modul-
- * Instanz. Zwei Eintragstypen pro Eintrag (siehe admin/instanz.php):
- *   - eigene Datei:  video_dateiname gesetzt -> normales <video>-Element
+ * Slide-Engine-Modul (Etappe 3, siehe KONZEPT_SLIDE_ENGINE.md):
+ * liefert einen Slide pro Video-Eintrag. Zwei Eintragstypen:
+ *   - eigene Datei:  video_dateiname gesetzt -> natives <video>-Element
  *   - Embed-Link:    video_embed_url gesetzt -> YouTube IFrame API oder
  *                     PeerTube-Embed (Typ wird aus der URL erkannt)
  *
- * "inhalte" kommt vom Backend als Array von Objekten:
- *   { id, video_dateiname, video_embed_url, dauer_sek, gueltig_bis, aktiv }
+ * meldetEnde: die Weiterschaltung ist event-getrieben ("ended"-Event bzw.
+ * Player-API), nicht timer-basiert — dauer_sek bleibt nur Schätzwert für
+ * die Spalten-Synchronisation. Meldet der Slide sein Ende und die Engine
+ * hat KEINEN onEnde gesetzt (einziger Slide der Spalte → keine Rotation),
+ * startet das Video von vorn (Loop) — entspricht dem bisherigen Verhalten.
  *
- * Weiterschaltung NICHT per festem Timer, sondern event-getrieben über das
- * "ended"-Event (native <video> bzw. YouTube IFrame API / PeerTube Embed
- * API) - das vermeidet die Unvorhersehbarkeit durch YouTube-Pre-Roll-Werbung
- * (das Video schaltet erst weiter, wenn wirklich zu Ende). dauer_sek dient
- * nur als grober Schätzwert für die Spalten-Synchronisation in monitor.js
- * (skaliereMod/modulAnzeigeDauer), NICHT für die tatsächliche Weiterschaltung.
+ * Player-Aufbau erst im onMount-Hook (lazy): beim Sammeln der Slides darf
+ * noch kein Video laden/spielen. destroy() räumt Player, Listener und
+ * Sicherheits-Timeout ab.
  *
- * SICHERHEITS-TIMEOUT: hardcodiert 15 Minuten, falls "ended" nie kommt
- * (defektes Embed, hängender Stream o.ä.).
- *
- * Immer stumm (Browser-Autoplay-Pflicht) - kein Nutzer-Schalter.
+ * SICHERHEITS-TIMEOUT: 15 Minuten, falls "ended" nie kommt (defektes
+ * Embed, hängender Stream o.ä.). Immer stumm (Browser-Autoplay-Pflicht).
  */
 (function () {
     window.TanzschuleModule = window.TanzschuleModule || {};
@@ -71,63 +69,79 @@
         return ytApiPromise;
     }
 
-    window.TanzschuleModule.video = function (container, settings, inhalte) {
-        settings = settings || {};
-        inhalte = (inhalte || []).filter(istAktiv).filter(function (i) {
-            return !!i.video_dateiname || !!i.video_embed_url;
-        });
-        container.classList.add('tm-modul-video');
+    /**
+     * Baut den Slide für einen Eintrag. Player entsteht erst in onMount;
+     * ende() ruft slide.onEnde (Rotation) oder startet neu (Einzel-Slide).
+     */
+    function baueVideoSlide(eintrag, uploadsBase) {
+        var el = document.createElement('div');
+        el.className = 'tm-modul-video';
+        el.style.cssText = 'width:100%;height:100%;';
 
-        function aufraeumen() {
-            if (container._tmTimeout) { clearTimeout(container._tmTimeout); container._tmTimeout = null; }
-            if (container._tmYtPlayer) {
-                try { container._tmYtPlayer.destroy(); } catch (e) { /* ignore */ }
-                container._tmYtPlayer = null;
+        var slide = {
+            el:         el,
+            dauerSek:   (eintrag.dauer_sek && eintrag.dauer_sek > 0) ? eintrag.dauer_sek : 10,
+            meldetEnde: true
+        };
+
+        // Lokaler Player-Zustand
+        var videoEl     = null;
+        var ytPlayer    = null;
+        var ptListener  = null;
+        var safety      = null;
+        var beendet     = false; // onEnde nur einmal an die Engine melden
+
+        function starteSafety() {
+            if (safety) { clearTimeout(safety); }
+            safety = setTimeout(ende, SICHERHEITS_TIMEOUT_MS);
+        }
+
+        function neustart() {
+            // Einzel-Slide ohne Engine-Rotation → Video loopen (wie bisher:
+            // das Modul rotierte intern auf denselben Eintrag zurück).
+            if (videoEl) {
+                try { videoEl.currentTime = 0; videoEl.play(); } catch (e) { /* ignore */ }
+            } else if (ytPlayer) {
+                try { ytPlayer.seekTo(0, true); ytPlayer.playVideo(); } catch (e) { /* ignore */ }
+            } else {
+                var iframe = el.querySelector('iframe');
+                if (iframe) { iframe.src = iframe.src; } // PeerTube: neu laden
             }
-            if (container._tmPeertubeListener) {
-                window.removeEventListener('message', container._tmPeertubeListener);
-                container._tmPeertubeListener = null;
+            starteSafety();
+        }
+
+        function ende() {
+            if (safety) { clearTimeout(safety); safety = null; }
+            if (typeof slide.onEnde === 'function') {
+                if (!beendet) {
+                    beendet = true;
+                    slide.onEnde();
+                }
+            } else {
+                neustart();
             }
         }
-        aufraeumen();
 
-        if (inhalte.length === 0) {
-            container.innerHTML = '<div class="tm-video-leer">Keine Videos vorhanden</div>';
-            return;
-        }
-
-        var uploadsBase = (window.UPLOADS_URL || 'https://screen.tcpayer.de/uploads') + '/';
-        var index = 0;
-
-        function weiter() {
-            index = (index + 1) % inhalte.length;
-            zeigeNaechstes();
-        }
-
-        function starteSicherheitsTimeout() {
-            container._tmTimeout = setTimeout(weiter, SICHERHEITS_TIMEOUT_MS);
-        }
-
-        function zeigeEigeneDatei(eintrag) {
-            container.innerHTML =
+        function zeigeEigeneDatei() {
+            el.innerHTML =
                 '<video class="tm-video-player" style="width:100%;height:100%;object-fit:contain;background:#000;" autoplay muted playsinline></video>';
-            var v = container.querySelector('.tm-video-player');
-            v.src = uploadsBase + encodeURIComponent(eintrag.video_dateiname);
-            v.addEventListener('ended', weiter, { once: true });
-            v.addEventListener('error', function () {
-                console.error('[video-modul] Datei konnte nicht abgespielt werden:', v.src);
-                weiter();
+            videoEl = el.querySelector('.tm-video-player');
+            videoEl.src = uploadsBase + encodeURIComponent(eintrag.video_dateiname);
+            videoEl.addEventListener('ended', ende);
+            videoEl.addEventListener('error', function () {
+                console.error('[video-modul] Datei konnte nicht abgespielt werden:', videoEl.src);
+                ende();
             }, { once: true });
-            v.play().catch(function () { /* Autoplay-Policy: muted sollte ausreichen */ });
-            starteSicherheitsTimeout();
+            videoEl.play().catch(function () { /* Autoplay-Policy: muted sollte ausreichen */ });
+            starteSafety();
         }
 
         function zeigeYoutube(id) {
-            container.innerHTML = '<div class="tm-video-yt" style="width:100%;height:100%;"></div>';
-            var ziel = container.querySelector('.tm-video-yt');
+            el.innerHTML = '<div class="tm-video-yt" style="width:100%;height:100%;"></div>';
+            var ziel = el.querySelector('.tm-video-yt');
             ladeYoutubeApi().then(function () {
-                if (!container.isConnected) { return; }
-                container._tmYtPlayer = new YT.Player(ziel, {
+                if (!el.isConnected) { return; }
+                ytPlayer = new YT.Player(ziel, {
                     width: '100%',
                     height: '100%',
                     videoId: id,
@@ -135,48 +149,43 @@
                     events: {
                         onReady: function (e) { e.target.mute(); e.target.playVideo(); },
                         onStateChange: function (e) {
-                            if (e.data === YT.PlayerState.ENDED) { weiter(); }
+                            if (e.data === YT.PlayerState.ENDED) { ende(); }
                         },
                         onError: function () {
                             console.error('[video-modul] YouTube-Fehler bei Video', id);
-                            weiter();
+                            ende();
                         }
                     }
                 });
             });
-            starteSicherheitsTimeout();
+            starteSafety();
         }
 
         function zeigePeertube(url) {
             var trenner = url.indexOf('?') === -1 ? '?' : '&';
             var src = url + trenner + 'autoplay=1&muted=1&controls=0&peertubeLink=0';
-            container.innerHTML =
+            el.innerHTML =
                 '<iframe class="tm-video-pt" src="' + src.replace(/"/g, '&quot;') + '" ' +
                 'style="width:100%;height:100%;border:0;" allow="autoplay" sandbox="allow-scripts allow-same-origin allow-presentation"></iframe>';
 
             // PeerTube-Embed-API kommuniziert per postMessage; Player meldet
             // u.a. { type: 'playbackStatusUpdate', data: { type: 'ended' } }.
-            container._tmPeertubeListener = function (e) {
+            ptListener = function (e) {
                 var msg = e.data;
                 if (!msg || typeof msg !== 'object') { return; }
                 if (msg.type === 'playbackStatusUpdate' && msg.data && msg.data.type === 'ended') {
-                    weiter();
+                    ende();
                 }
             };
-            window.addEventListener('message', container._tmPeertubeListener);
-            starteSicherheitsTimeout();
+            window.addEventListener('message', ptListener);
+            starteSafety();
         }
 
-        function zeigeNaechstes() {
-            aufraeumen();
-            if (!container.isConnected) { return; }
-            var eintrag = inhalte[index];
-
+        slide.onMount = function () {
             if (eintrag.video_dateiname) {
-                zeigeEigeneDatei(eintrag);
+                zeigeEigeneDatei();
                 return;
             }
-
             var typ = erkenneEmbedTyp(eintrag.video_embed_url);
             if (typ === 'youtube') {
                 var id = youtubeId(eintrag.video_embed_url);
@@ -185,11 +194,49 @@
                 zeigePeertube(eintrag.video_embed_url);
                 return;
             }
-
             console.error('[video-modul] Unbekannter/ungültiger Embed-Link:', eintrag.video_embed_url);
-            weiter();
-        }
+            ende();
+        };
 
-        zeigeNaechstes();
+        slide.destroy = function () {
+            if (safety) { clearTimeout(safety); safety = null; }
+            if (ytPlayer) {
+                try { ytPlayer.destroy(); } catch (e) { /* ignore */ }
+                ytPlayer = null;
+            }
+            if (ptListener) {
+                window.removeEventListener('message', ptListener);
+                ptListener = null;
+            }
+            if (videoEl) {
+                try { videoEl.pause(); videoEl.removeAttribute('src'); videoEl.load(); } catch (e) { /* ignore */ }
+                videoEl = null;
+            }
+        };
+
+        return slide;
+    }
+
+    window.TanzschuleModule.video = {
+        getSlides: function (settings, inhalte, fertig) {
+            inhalte = (inhalte || []).filter(istAktiv).filter(function (i) {
+                return !!i.video_dateiname || !!i.video_embed_url;
+            });
+
+            if (inhalte.length === 0) {
+                var leer = document.createElement('div');
+                leer.className = 'tm-modul-video';
+                leer.style.cssText = 'width:100%;height:100%;';
+                leer.innerHTML = '<div class="tm-video-leer">Keine Videos vorhanden</div>';
+                fertig([{ el: leer, dauerSek: 30 }]);
+                return;
+            }
+
+            var uploadsBase = (window.UPLOADS_URL || 'https://screen.tcpayer.de/uploads') + '/';
+
+            fertig(inhalte.map(function (eintrag) {
+                return baueVideoSlide(eintrag, uploadsBase);
+            }));
+        }
     };
 })();

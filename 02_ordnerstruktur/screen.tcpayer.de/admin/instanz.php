@@ -47,6 +47,13 @@ $meta       = ModuleRegistry::load($modulTyp);
 $hasInhalte = !empty($meta['has_inhalte']);
 $istNeu     = ($instanz === null);
 
+// Hat das Modul ein Einstellungs-Feld vom Typ mediathek_bild (z.B. Uhr-
+// Hintergrund)? Dann eigenen, leichtgewichtigen Bild-Picker einbinden.
+$hatSettingBild = false;
+foreach (($meta['settings'] ?? []) as $sbFeld) {
+    if (($sbFeld['type'] ?? '') === 'mediathek_bild') { $hatSettingBild = true; break; }
+}
+
 // Vorbelegung
 $werteName          = $instanz['name'] ?? '';
 $werteAktiv         = $istNeu ? true : (bool)$instanz['aktiv'];
@@ -276,6 +283,91 @@ admin_header(($istNeu ? 'Neue ' : '') . $meta['label'] . '-Instanz', 'bibliothek
         </div>
     </div>
 </div>
+<?php endif; ?>
+
+<?php if ($hatSettingBild): ?>
+<!-- Bild-Picker für mediathek_bild-Einstellungsfelder (unabhängig vom Inhalte-Picker) -->
+<div id="setting-bild-overlay" class="adm-overlay" hidden>
+    <div class="adm-dialog adm-dialog-breit">
+        <h3>Bild aus der Mediathek wählen</h3>
+        <div class="adm-picker-filter">
+            <input type="search" id="setting-bild-suche" placeholder="Suchen …">
+        </div>
+        <div id="setting-bild-galerie" class="adm-picker-galerie"></div>
+        <div class="adm-dialog-aktionen">
+            <button type="button" id="setting-bild-abbrechen" class="adm-btn-grau">Abbrechen</button>
+        </div>
+    </div>
+</div>
+<script>
+(function () {
+    var overlay  = document.getElementById('setting-bild-overlay');
+    var galerie  = document.getElementById('setting-bild-galerie');
+    var suche    = document.getElementById('setting-bild-suche');
+    var zielWrap = null;
+    var timer    = null;
+
+    function esc(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+
+    function schliesse() { overlay.hidden = true; zielWrap = null; }
+
+    function lade() {
+        var p = new URLSearchParams();
+        if (suche.value.trim()) { p.set('q', suche.value.trim()); }
+        galerie.innerHTML = '<p class="adm-leer">Lade …</p>';
+        fetch('api/mediathek-list.php?' + p.toString())
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!data.ok || !data.bilder || data.bilder.length === 0) {
+                    galerie.innerHTML = '<p class="adm-leer">Keine Bilder.</p>';
+                    return;
+                }
+                galerie.innerHTML = '';
+                data.bilder.forEach(function (b) {
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'adm-picker-bild';
+                    btn.innerHTML = '<img src="' + esc(b.url) + '" alt="" loading="lazy">'
+                        + '<span>' + esc(b.original_name || b.dateiname) + '</span>';
+                    btn.addEventListener('click', function () {
+                        if (!zielWrap) { return; }
+                        zielWrap.querySelector('input[type="hidden"]').value = b.dateiname;
+                        var img = zielWrap.querySelector('.adm-setting-bild-vorschau');
+                        img.src = b.url;
+                        img.hidden = false;
+                        zielWrap.querySelector('.adm-setting-bild-entfernen').hidden = false;
+                        schliesse();
+                    });
+                    galerie.appendChild(btn);
+                });
+            })
+            .catch(function () { galerie.innerHTML = '<p class="adm-leer">Netzwerkfehler.</p>'; });
+    }
+
+    document.getElementById('setting-bild-abbrechen').addEventListener('click', schliesse);
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) { schliesse(); } });
+    suche.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(lade, 250); });
+
+    document.querySelectorAll('.adm-setting-bild').forEach(function (wrap) {
+        wrap.querySelector('.adm-setting-bild-waehlen').addEventListener('click', function () {
+            zielWrap = wrap;
+            overlay.hidden = false;
+            lade();
+        });
+        wrap.querySelector('.adm-setting-bild-entfernen').addEventListener('click', function () {
+            wrap.querySelector('input[type="hidden"]').value = '';
+            var img = wrap.querySelector('.adm-setting-bild-vorschau');
+            img.hidden = true;
+            img.removeAttribute('src');
+            wrap.querySelector('.adm-setting-bild-entfernen').hidden = true;
+        });
+    });
+})();
+</script>
 <?php endif; ?>
 
 <script>

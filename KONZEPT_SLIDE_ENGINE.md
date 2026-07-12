@@ -1,8 +1,8 @@
 # Konzept: Slide-Engine — Trennung von Inhalt und Präsentation
 
-> **Status:** Etappe 1 ✅ (Staging bestätigt). Etappe 2 (Rotierer portiert +
-> Vorschau auf Engine) umgesetzt — Staging-Test ausstehend.
-> Etappe 3 (Rest portieren + Aufräumen) offen.
+> **Status:** Etappe 1 ✅ · Etappe 2 ✅ (Staging bestätigt) · Etappe 3
+> (alle Module portiert, Adapter entfernt, Uhr-Analog + Hintergrundbild)
+> umgesetzt — Staging-Test ausstehend.
 > **Voraussetzung war:** Übergangs-Bugfix Schritt 19 (live bestätigt ✅).
 
 ---
@@ -169,10 +169,23 @@ jetzt über die Engine (Settle 800 ms + Dissolve 1500 ms) statt der alten
 modul-eigenen A/B-Fades (600 ms bei ankuendigung/veranstaltung) — alle
 Wechsel fühlen sich gleich an; Zykluslängen bleiben unverändert.
 
-**Etappe 3 — Rest portieren, aufräumen:**
-`stundenplan`, `uhrzeit`, `fret`, `video` umstellen; Adapter entfernen;
-`modulAnzeigeDauer`/`skaliereMod`-Sonderfälle entfernen;
-`playlist-preview.php` auf die Engine umstellen.
+**Etappe 3 — Rest portieren, aufräumen: ✅ umgesetzt (Staging-Test ausstehend)**
+`stundenplan`, `uhrzeit`, `fret`, `video` auf `getSlides` portiert; Adapter
+(`adapterDescriptor`, `renderModulInContainer`, `skaliereMod`) entfernt —
+Module ohne `getSlides` werden jetzt mit Konsolen-Fehler übersprungen.
+Vertrag um **`onMount(containerEl)`** erweitert: Hook nach dem Einhängen
+ins DOM — nötig für Player-Start (video, lazy: beim Sammeln darf noch kein
+Video laden/spielen) und Höhenmessung (stundenplan-Karten).
+**`meldetEnde`-Semantik:** ruft die Engine `slide.onEnde` (Rotation);
+ist onEnde NICHT gesetzt (einziger Slide → keine Rotation), loopt das
+Video-Modul selbst (Neustart) — entspricht dem Altverhalten.
+**`modulAnzeigeDauer` bleibt bewusst erhalten** (inkl. veranstaltung-
+Sonderfall): die synchrone Schätzung wird weiterhin für Playlist-Timer +
+Spalten-Skalierungsfaktor gebraucht, weil die Slide-Sammlung asynchron ist.
+Nebenbei: Uhr-Modul bekam Analog-Darstellung (SVG-Zifferblatt) + optionales
+Mediathek-Hintergrundbild mit Transparenz-Pill; dafür neuer Setting-Typ
+`mediathek_bild` (ModuleRegistry + eigener Picker in instanz.php).
+Tote Stage-/Layer-CSS-Blöcke entfernt.
 
 ---
 

@@ -192,27 +192,54 @@ html, body {
     font-variant-numeric: tabular-nums;
 }
 
+/* Hintergrundbild (mediathek_bild-Setting) + Pill — Muster wie Ankündigung */
+.tm-uhr-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+}
+
+.tm-uhr-bg img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+}
+
+.tm-uhr-inhalt {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    max-width: 90%;
+}
+
+.tm-uhr-pill {
+    border-radius: 16px;
+    padding: 32px 48px;
+    color: #fff;
+}
+
+/* Analog-Zifferblatt: skaliert mit der Spaltenbreite (cqw dank
+   container-type auf .tm-spalte), gedeckelt über die Monitorhöhe */
+.tm-uhr-svg {
+    width: min(70cqw, 44vh, 480px);
+    height: auto;
+    display: block;
+}
+
+.tm-uhr--analog .tm-uhrzeit-datum {
+    margin-top: 16px;
+}
+
 /* ── Module: bild ────────────────────────────────────────────────────────── */
 
 .tm-modul-bild {
     width: 100%;
     height: 100%;
-}
-
-.tm-bild-stage {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-}
-
-.tm-bild-img {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: block;
 }
 
 .tm-bild-leer {
@@ -229,13 +256,6 @@ html, body {
 .tm-modul-ankuendigung {
     width: 100%;
     height: 100%;
-}
-
-.tm-ank-stage {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
 }
 
 .tm-ank-slide {
@@ -403,14 +423,7 @@ html, body {
     height: 100%;
 }
 
-.tm-va-stage {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-}
-
-/* Basis-Slide: positioniert absolut via JS-Inline-Style */
+/* Basis-Slide: Größe/Position via JS-Inline-Style (Slide-Engine) */
 .tm-va-slide {
     overflow: hidden;
 }

@@ -231,36 +231,27 @@
     //
     // Trennung von Inhalt und Präsentation (siehe KONZEPT_SLIDE_ENGINE.md):
     // Die Engine besitzt alle Übergänge, Timer und das Cleanup — Module
-    // liefern nur Inhalt. Zwei Modul-Stile werden unterstützt:
+    // liefern nur Inhalt:
     //
-    //   Neu (ab Etappe 2):  window.TanzschuleModule.<id> = { getSlides: fn }
+    //   window.TanzschuleModule.<id> = { getSlides: fn }
     //     getSlides(settings, inhalte, fertig) → fertig([slide, …]) mit
-    //     slide = { el, dauerSek, meldetEnde, destroy }
+    //     slide = { el, dauerSek, uebergang, meldetEnde, onMount, destroy }
     //
-    //   Alt (Adapter):  window.TanzschuleModule.<id> = function (container,
-    //     settings, inhalte) — wird als EIN Slide gewrappt, der sich selbst
-    //     verwaltet (rendert + rotiert intern wie bisher).
+    //   el         fertiges DOM-Element (100% × 100%); darf innen leben
+    //   dauerSek   Anzeigedauer (Schätzwert bei meldetEnde)
+    //   uebergang  'fade' (Standard) | 'none' (harter Schnitt)
+    //   meldetEnde true → Slide ruft slide.onEnde() wenn fertig (Video);
+    //              ist onEnde nicht gesetzt (Einzel-Slide), loopt das Modul selbst
+    //   onMount    optional: wird nach dem Einhängen ins DOM gerufen —
+    //              für Setup, das ein lebendes DOM braucht (Player-Start,
+    //              Höhen messen)
+    //   destroy    optional: Intervalle/Player/Listener abbauen
     //
-    // Interner Slide-Descriptor der Engine:
-    //   dauerSek     Anzeigedauer in Sekunden (bereits spalten-skaliert)
-    //   meldetEnde   true → Slide meldet Ende selbst via slide.onEnde()
-    //   mount(el)    Inhalt in den frischen .tm-modul-container rendern
-    //   freeze(el)   Wechselstart: interne Weiterschaltung stoppen;
-    //                Live-Intervalle laufen bis destroy weiter
-    //   destroy(el)  vollständiges Cleanup beim Entfernen
+    // Interner Slide-Descriptor der Engine ergänzt mount(el)/freeze(el).
 
     var FADE_MS                = 1500;          // Slide-/Modul-Überblendung
     var MODUL_SETTLE_MS        = 800;           // Pre-render unsichtbar, analog Playlist-SETTLE_MS
     var MELDET_ENDE_TIMEOUT_MS = 15 * 60 * 1000; // Sicherheits-Timeout für meldetEnde-Slides
-
-    function renderModulInContainer(container, mod) {
-        window.TanzschuleLoader.render(
-            mod.modul_typ,
-            container,
-            mod.einstellungen || {},
-            mod.inhalte || []
-        );
-    }
 
     function modulAnzeigeDauer(mod) {
         if (mod.inhalte && mod.inhalte.length > 0) {
@@ -280,53 +271,7 @@
     }
 
     /**
-     * Gibt eine skalierte Kopie eines Moduls zurück.
-     * Skaliert werden: jedes inhalte[].dauer_sek sowie einstellungen.anzeige_dauer_sek.
-     * Die Originaldaten werden nicht verändert.
-     */
-    function skaliereMod(mod, factor) {
-        if (factor === 1) { return mod; }
-        var result = { modul_typ: mod.modul_typ, einstellungen: mod.einstellungen, inhalte: mod.inhalte };
-        if (mod.inhalte && mod.inhalte.length > 0) {
-            result.inhalte = mod.inhalte.map(function (item) {
-                var d = item.dauer_sek > 0 ? item.dauer_sek : 10;
-                return Object.assign({}, item, { dauer_sek: d * factor });
-            });
-        }
-        if (mod.einstellungen && mod.einstellungen.anzeige_dauer_sek > 0) {
-            result.einstellungen = Object.assign({}, mod.einstellungen, {
-                anzeige_dauer_sek: mod.einstellungen.anzeige_dauer_sek * factor
-            });
-        }
-        return result;
-    }
-
-    /**
-     * Adapter: wrappt ein Alt-Stil-Modul als EINEN Slide-Descriptor, der
-     * sich selbst verwaltet (rendert + rotiert intern wie bisher).
-     */
-    function adapterDescriptor(mod, factor) {
-        return {
-            dauerSek:   modulAnzeigeDauer(mod) * factor,
-            meldetEnde: false,
-            uebergang:  'fade',
-            mount: function (el) {
-                renderModulInContainer(el, skaliereMod(mod, factor));
-            },
-            freeze: function (el) {
-                // Interne Slide-Rotation des Alt-Moduls stoppen; Live-Intervalle
-                // (Uhr-Tick, FRET-Poll, Video-Player) laufen bis destroy weiter.
-                if (el._tmTimeout) { clearTimeout(el._tmTimeout); el._tmTimeout = null; }
-            },
-            destroy: function (el) {
-                cleanupModulContainer(el);
-            }
-        };
-    }
-
-    /**
-     * Wrappt einen Modul-Slide ({el, dauerSek, meldetEnde, destroy}) aus
-     * getSlides in einen Engine-Descriptor. (Genutzt ab Etappe 2.)
+     * Wrappt einen Modul-Slide aus getSlides in einen Engine-Descriptor.
      */
     function slideDescriptor(slide, factor) {
         return {
@@ -336,6 +281,9 @@
             slide:      slide,
             mount: function (el) {
                 if (slide.el) { el.appendChild(slide.el); }
+                if (typeof slide.onMount === 'function') {
+                    try { slide.onMount(el); } catch (e) { console.error('[engine] onMount-Fehler:', e); }
+                }
             },
             freeze: function () { /* Engine besitzt alle Timer — nichts zu tun */ },
             destroy: function () {
@@ -359,9 +307,10 @@
                     }));
                 });
             } else {
-                // Alt-Stil oder Ladefehler → Adapter (zeigt ggf. den
-                // Fehlerzustand des Moduls, wie bisher).
-                fertig([adapterDescriptor(mod, factor)]);
+                // Ladefehler oder Modul ohne getSlides → Instanz überspringen,
+                // die restlichen Module der Spalte laufen weiter.
+                console.error('[engine] Modul "' + mod.modul_typ + '" liefert keine Slides — übersprungen.');
+                fertig([]);
             }
         });
     }

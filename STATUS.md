@@ -3,7 +3,7 @@
 > **Branch:** `claude/intelligent-cray-im1xte`  
 > Eine neue Session liest `CLAUDE.md` (Konzept) + diese Datei (Stand) und kann sofort weiterarbeiten.
 
-_Letzte Aktualisierung: Schritt 20, Etappe 2 — `bild`/`ankuendigung`/`veranstaltung` auf `getSlides` portiert; Playlist-Vorschau nutzt die Engine._
+_Letzte Aktualisierung: Schritt 20, Etappe 3 — alle 7 Module auf `getSlides`, Adapter entfernt; Uhr: Analog-Zifferblatt + Hintergrundbild/Pill; neuer Setting-Typ `mediathek_bild`._
 
 ---
 
@@ -33,14 +33,21 @@ _Letzte Aktualisierung: Schritt 20, Etappe 2 — `bild`/`ankuendigung`/`veransta
 | 17 | Modul `veranstaltung`: adaptives Layout (Hochkant/Querformat/Kein Bild), Zyklusdauer-Fix in `monitor.js` | ✅ live |
 | 18 | Playlist-Monitor-Tooltip, Veranstaltung Glow (DOM-Element), Ankündigung Vollbild-Layout + einstellbare Pill-Transparenz | ✅ live |
 | 19 | Modul-Übergänge: Overlay-Dissolve (deckende Container) + Settle-Phase + Rotation-Freeze + `isolation:isolate` gegen z-index-Leak | ✅ live |
-| 20 | Slide-Engine: Trennung Inhalt/Präsentation (`KONZEPT_SLIDE_ENGINE.md`) | 🧪 Etappe 1 ✅ · Etappe 2 auf Staging, Test ausstehend |
+| 20 | Slide-Engine: Trennung Inhalt/Präsentation (`KONZEPT_SLIDE_ENGINE.md`) | 🧪 Etappe 1 ✅ · Etappe 2 ✅ · Etappe 3 auf Staging, Test ausstehend |
+| 21 | Uhr-Modul: Analog-Zifferblatt (SVG, Ziffern 12/3/6/9, roter Sekundenzeiger) + Hintergrundbild mit Transparenz-Pill; Setting-Typ `mediathek_bild` | 🧪 auf Staging, Test ausstehend |
 
 ---
 
 ## Offene Punkte
 
-- **Schritt 20 / Etappe 2 testen** (`testmon` + Playlist-Vorschau im Admin): `bild`/`ankuendigung`/`veranstaltung` allein und kombiniert in Spalten; Übergänge innerhalb einer Instanz laufen jetzt einheitlich über die Engine (Settle 800 ms + Dissolve 1500 ms statt der alten 600-ms-Fades bei ankuendigung/veranstaltung) — bewusste Vereinheitlichung; `uebergang: none` = harter Schnitt; Veranstaltungs-Events müssen nach jeder Rotationsrunde frisch sein
-- **Etappe 3 (nach Etappe-2-Test):** `stundenplan`, `uhrzeit`, `fret`, `video` portieren; Adapter + `modulAnzeigeDauer`-Sonderfälle + ungenutzte Stage-/Layer-CSS (`tm-bild-stage`, `tm-ank-stage`, `tm-va-stage`) entfernen
+- **Schritt 20 / Etappe 3 + Schritt 21 testen** (`testmon` + Playlist-Vorschau):
+  - `stundenplan`: rendert wie vorher (Kartenhöhen!), kein „Lade…"-Einblenden mehr
+  - `fret`: Song, Fortschrittsbalken, Countdown-Warteliste wie vorher
+  - `video`: Weiterschaltung nach Videoende (Datei + YouTube + PeerTube); einzelnes Video allein in Spalte loopt; Video kombiniert mit anderen Modulen
+  - `uhrzeit` digital: unverändert; **analog**: Zifferblatt, roter Sekundenzeiger, Datum darunter; mit Hintergrundbild: Pill 15/30/45 %
+  - Instanz-Editor Uhr: „Bild wählen"-Picker (neuer Setting-Typ `mediathek_bild`)
+- **`modulAnzeigeDauer` bleibt:** synchrone Dauer-Schätzung (Playlist-Timer + Spalten-Skalierung) — die Sonderfälle sind bewusst NICHT entfernt, da die Slide-Sammlung asynchron ist
+- **`test-module3.php`/`test-module4.php`:** Alt-Testseiten nutzen `TanzschuleLoader.render()` — funktionieren seit der Portierung nicht mehr (Konsolen-Hinweis); bei Gelegenheit löschen
 - **FRET Fortschrittsbalken:** FRET-API liefert `remainingSeconds` immer `null` → `startTime`-Fallback greift; serverseitiges FRET-Problem, kein Code-Fehler
 - **SETTLE_MS = 800:** Heuristik für Off-screen-Pre-render; bei sehr langsamer NC-API ggf. auf 1000–1200ms erhöhen
 - **Branch-Protection:** `main` in GitHub-Settings → Branches → Add ruleset schützen (noch nicht eingerichtet)
@@ -49,7 +56,24 @@ _Letzte Aktualisierung: Schritt 20, Etappe 2 — `bild`/`ankuendigung`/`veransta
 
 ## Was in den letzten Sessions erledigt wurde
 
-### Schritt 20, Etappe 2 — Rotierer auf getSlides + Vorschau auf Engine (Staging 🧪)
+### Schritt 20, Etappe 3 + Schritt 21 — Rest portiert, Adapter raus, Uhr-Ausbau (Staging 🧪)
+
+| Datei | Was |
+|---|---|
+| `assets/js/monitor.js` | Vertrag um `onMount(containerEl)` erweitert (Hook nach DOM-Einhängen); Adapter (`adapterDescriptor`/`renderModulInContainer`/`skaliereMod`) entfernt — Module ohne `getSlides` werden übersprungen; `modulAnzeigeDauer` bleibt als synchrone Schätzung |
+| `modules/stundenplan/frontend.js` | `getSlides` mit Fetch; Kartenhöhen-Messung im `onMount` |
+| `modules/fret/frontend.js` | `getSlides`; Poll/rAF/Countdowns lokal, `destroy` räumt alles |
+| `modules/video/frontend.js` | Ein Slide pro Video, `meldetEnde`; Player-Aufbau lazy im `onMount`; ohne `onEnde` (Einzel-Slide) loopt das Video selbst; `destroy` zerstört Player/Listener |
+| `modules/uhrzeit/frontend.js` | `getSlides`; **Analog-Darstellung** (SVG: Ziffern 12/3/6/9, Striche, Sekundenzeiger `#ad2121`, rote Nabe, Datum darunter); optionales **Hintergrundbild** + Pill (`rgba(0,0,0,α)`, 15/30/45 %) |
+| `modules/uhrzeit/module.json` | Settings `darstellung` (digital/analog), `hintergrund_bild` (mediathek_bild), `pill_transparenz` |
+| `includes/ModuleRegistry.php` | Neuer Setting-Typ `mediathek_bild` (Hidden-Feld mit Dateiname + Vorschau + Wählen/Entfernen-Buttons) |
+| `admin/instanz.php` | Eigenständiger Bild-Picker für `mediathek_bild`-Settings (`setting-bild-overlay`, unabhängig vom Inhalte-Picker, auch für Module ohne Inhalte) |
+| `assets/css/monitor.css` | Uhr: `.tm-uhr-bg`/`.tm-uhr-inhalt`/`.tm-uhr-pill`/`.tm-uhr-svg` (skaliert via `cqw`); tote Stage-/Layer-Blöcke entfernt |
+| `assets/css/admin.css` | `.adm-setting-bild` + Vorschau-Thumbnail |
+
+---
+
+### Schritt 20, Etappe 2 — Rotierer auf getSlides + Vorschau auf Engine (✅ Staging bestätigt)
 
 | Datei | Was |
 |---|---|

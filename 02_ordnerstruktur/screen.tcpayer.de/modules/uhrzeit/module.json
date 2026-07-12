@@ -5,17 +5,52 @@
   "has_proxy": false,
   "has_inhalte": false,
   "settings": [
-    { "key": "anzeige_dauer_sek", "type": "number", "label": "Anzeigedauer in Sek. (bei Spalten-Rotation mit anderen Modulen)", "default": 30 },
-    { "key": "zeige_datum", "type": "bool", "label": "Datum anzeigen", "default": true },
+    {
+      "key": "anzeige_dauer_sek",
+      "type": "number",
+      "label": "Anzeigedauer in Sek. (bei Spalten-Rotation mit anderen Modulen)",
+      "default": 30
+    },
+    {
+      "key": "darstellung",
+      "type": "select",
+      "label": "Darstellung",
+      "default": "digital",
+      "options": [
+        {
+          "value": "digital",
+          "label": "Digital"
+        },
+        {
+          "value": "analog",
+          "label": "Analog (Zifferblatt)"
+        }
+      ]
+    },
+    {
+      "key": "zeige_datum",
+      "type": "bool",
+      "label": "Datum anzeigen",
+      "default": true
+    },
     {
       "key": "format_zeit",
       "type": "select",
       "label": "Zeitformat",
       "default": "H:i",
       "options": [
-        { "value": "H:i", "label": "24h, z.B. 14:05" },
-        { "value": "H:i:s", "label": "24h mit Sekunden, z.B. 14:05:32" },
-        { "value": "g:i A", "label": "12h, z.B. 2:05 PM" }
+        {
+          "value": "H:i",
+          "label": "24h, z.B. 14:05"
+        },
+        {
+          "value": "H:i:s",
+          "label": "24h mit Sekunden, z.B. 14:05:32"
+        },
+        {
+          "value": "g:i A",
+          "label": "12h, z.B. 2:05 PM"
+        }
       ]
     },
     {
@@ -24,8 +59,39 @@
       "label": "Datumsformat",
       "default": "d.m.Y",
       "options": [
-        { "value": "d.m.Y", "label": "31.12.2026" },
-        { "value": "l, d.m.Y", "label": "Donnerstag, 31.12.2026" }
+        {
+          "value": "d.m.Y",
+          "label": "31.12.2026"
+        },
+        {
+          "value": "l, d.m.Y",
+          "label": "Donnerstag, 31.12.2026"
+        }
+      ]
+    },
+    {
+      "key": "hintergrund_bild",
+      "type": "mediathek_bild",
+      "label": "Hintergrundbild (optional — Uhr sitzt dann auf einem transparenten Kasten)"
+    },
+    {
+      "key": "pill_transparenz",
+      "type": "select",
+      "label": "Kasten-Transparenz (nur mit Hintergrundbild)",
+      "default": "0.15",
+      "options": [
+        {
+          "value": "0.15",
+          "label": "Leicht (15 %)"
+        },
+        {
+          "value": "0.30",
+          "label": "Mittel (30 %)"
+        },
+        {
+          "value": "0.45",
+          "label": "Stark (45 %)"
+        }
       ]
     }
   ]
