@@ -47,7 +47,6 @@ _Letzte Aktualisierung: Schritt 20, Etappe 3 — alle 7 Module auf `getSlides`, 
   - `uhrzeit` digital: unverändert; **analog**: Zifferblatt, roter Sekundenzeiger, Datum darunter; mit Hintergrundbild: Pill 15/30/45 %
   - Instanz-Editor Uhr: „Bild wählen"-Picker (neuer Setting-Typ `mediathek_bild`)
 - **`modulAnzeigeDauer` bleibt:** synchrone Dauer-Schätzung (Playlist-Timer + Spalten-Skalierung) — die Sonderfälle sind bewusst NICHT entfernt, da die Slide-Sammlung asynchron ist
-- **`test-module3.php`/`test-module4.php`:** Alt-Testseiten nutzen `TanzschuleLoader.render()` — funktionieren seit der Portierung nicht mehr (Konsolen-Hinweis); bei Gelegenheit löschen
 - **FRET Fortschrittsbalken:** FRET-API liefert `remainingSeconds` immer `null` → `startTime`-Fallback greift; serverseitiges FRET-Problem, kein Code-Fehler
 - **SETTLE_MS = 800:** Heuristik für Off-screen-Pre-render; bei sehr langsamer NC-API ggf. auf 1000–1200ms erhöhen
 - **Branch-Protection:** `main` in GitHub-Settings → Branches → Add ruleset schützen (noch nicht eingerichtet)
