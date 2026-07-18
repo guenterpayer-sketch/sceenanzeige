@@ -3,7 +3,7 @@
 > **Branch:** `claude/intelligent-cray-im1xte`  
 > Eine neue Session liest `CLAUDE.md` (Konzept) + diese Datei (Stand) und kann sofort weiterarbeiten.
 
-_Letzte Aktualisierung: Schritt 22 auf Staging — Playlist-Editor erlaubt Modul-Instanzen mehrfach in Spalte und über Spalten hinweg (A → B → A → C)._
+_Letzte Aktualisierung: Schritt 22 live ✅ — Playlist-Editor erlaubt Modul-Instanzen mehrfach in Spalte und über Spalten hinweg (A → B → A → C)._
 
 ---
 
@@ -35,7 +35,7 @@ _Letzte Aktualisierung: Schritt 22 auf Staging — Playlist-Editor erlaubt Modul
 | 19 | Modul-Übergänge: Overlay-Dissolve (deckende Container) + Settle-Phase + Rotation-Freeze + `isolation:isolate` gegen z-index-Leak | ✅ live |
 | 20 | Slide-Engine: Trennung Inhalt/Präsentation (`KONZEPT_SLIDE_ENGINE.md`) | ✅ live |
 | 21 | Uhr-Modul: Analog-Zifferblatt (SVG, Ziffern 12/3/6/9, roter Sekundenzeiger) + Hintergrundbild mit Transparenz-Pill; Setting-Typ `mediathek_bild` | ✅ live |
-| 22 | Playlist-Editor: Duplikat-Sperre entfernt — Instanzen mehrfach pro Spalte und über Spalten hinweg | 🧪 auf Staging |
+| 22 | Playlist-Editor: Duplikat-Sperre entfernt — Instanzen mehrfach pro Spalte und über Spalten hinweg | ✅ live |
 
 ---
 

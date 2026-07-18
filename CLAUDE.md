@@ -296,7 +296,7 @@ FRET-Polling 5–10 Sek., Ticker unabhängig.
 | 19 | Modul-Übergänge: Overlay-Dissolve (deckende `.tm-modul-container` + `isolation:isolate`) + `MODUL_SETTLE_MS` + Rotation-Freeze; innere Layer-Transition-Fixes in `bild` + `ankuendigung` | ✅ live |
 | 20 | Slide-Engine: Module liefern nur Inhalt, Engine besitzt Präsentation (Konzept + Stand: `KONZEPT_SLIDE_ENGINE.md`) | ✅ live |
 | 21 | Uhr-Modul: Analog-Zifferblatt (SVG) + Hintergrundbild/Transparenz-Pill; neuer Setting-Typ `mediathek_bild` (Registry + Picker in `instanz.php`) | ✅ live |
-| 22 | Playlist-Editor: Duplikat-Sperre entfernt — Instanzen mehrfach in Spalte und über Spalten hinweg (A → B → A → C) | 🧪 auf Staging |
+| 22 | Playlist-Editor: Duplikat-Sperre entfernt — Instanzen mehrfach in Spalte und über Spalten hinweg (A → B → A → C) | ✅ live |
 
 ---
 
