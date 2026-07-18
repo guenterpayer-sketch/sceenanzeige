@@ -300,6 +300,7 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
         </div>
         <div class="adm-dialog-aktionen">
             <button type="button" id="zd-loeschen" class="adm-btn adm-btn-grau" hidden>Löschen</button>
+            <button type="button" id="zd-duplizieren" class="adm-btn adm-btn-grau" hidden title="Diesen Eintrag als Vorlage übernehmen — anschließend Tage/Zeit anpassen und speichern">Duplizieren</button>
             <span style="flex:1"></span>
             <button type="button" id="zd-abbrechen" class="adm-btn adm-btn-grau">Abbrechen</button>
             <button type="button" id="zd-speichern" class="adm-btn-primary">Übernehmen</button>
@@ -462,7 +463,8 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
             pickListe.innerHTML = '<p class="adm-leer">Nichts vorhanden.</p>';
         }
         var idFeld = liste.getAttribute('data-idfeld');
-        var aktuell = parseInt(zeile.querySelector('[data-feld="' + idFeld + '"]').value, 10) || 0;
+        // zeile ist null beim Aufruf aus dem Kalender-Detail-Dialog (Callback-Modus)
+        var aktuell = zeile ? (parseInt(zeile.querySelector('[data-feld="' + idFeld + '"]').value, 10) || 0) : 0;
         META[art].items.forEach(function (it) {
             var btn = document.createElement('button');
             btn.type = 'button';
@@ -818,6 +820,7 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
         prio:      document.getElementById('zd-prio'),
         dauer:     document.getElementById('zd-dauer'),
         loeschen:  document.getElementById('zd-loeschen'),
+        duplizieren: document.getElementById('zd-duplizieren'),
         abbrechen: document.getElementById('zd-abbrechen'),
         speichern: document.getElementById('zd-speichern')
     };
@@ -852,6 +855,7 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
         zd.zeitfelder.style.opacity = zdState.ganztags ? '0.4' : '1';
         zd.von.disabled = zd.bis.disabled = zdState.ganztags;
         zd.loeschen.hidden = !zdState.zid;
+        zd.duplizieren.hidden = !zdState.zid;
     }
 
     function zdOeffnen(daten) {
@@ -899,6 +903,15 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
     zd.dauer.addEventListener('input', function () { zdState.dauer = parseInt(zd.dauer.value, 10) || 300; });
     zd.abbrechen.addEventListener('click', zdSchliessen);
     zd.overlay.addEventListener('click', function (e) { if (e.target === zd.overlay) { zdSchliessen(); } });
+    zd.duplizieren.addEventListener('click', function () {
+        // Aus Bearbeiten-Modus wird Neu-Modus mit vorbelegten Werten.
+        // Für die typische Anpassung (andere Tage / andere Uhrzeit) alle
+        // Wochentage abwählen — der Nutzer wählt gezielt neu.
+        zdState.zid = null;
+        zdState.tage = [];
+        zd.titel.textContent = 'Neuer Eintrag (Duplikat)';
+        zdBefuelle();
+    });
     zd.loeschen.addEventListener('click', function () {
         admBestaetigen('Diesen Zeitplan-Eintrag löschen?', function (ok) {
             if (!ok) { return; }
