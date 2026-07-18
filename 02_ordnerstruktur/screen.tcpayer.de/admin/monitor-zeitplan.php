@@ -208,7 +208,12 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
 <form method="post" id="zeitplan-form">
     <input type="hidden" name="aktion" value="speichern">
 
-    <div class="adm-card">
+    <div class="adm-tabs adm-pl-tabs">
+        <button type="button" class="adm-tab an" data-tab="klassisch">Klassisch (Liste)</button>
+        <button type="button" class="adm-tab" data-tab="kalender">Wochenkalender</button>
+    </div>
+
+    <div class="adm-card adm-pl-ansicht" data-ansicht="klassisch">
         <h2>Playlist-Zeitplan</h2>
         <p class="adm-hilfe">
             Lege fest, welche Playlist wann auf diesem Monitor läuft. Playlist auswählen,
@@ -224,6 +229,18 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
         <div id="zeitplan-liste" class="adm-zeitregeln"
              data-art="playlist" data-prefix="zeitplan" data-idfeld="playlist_id" data-prio="1"></div>
         <button type="button" id="zeitplan-hinzu" class="adm-btn" <?= empty($playlists) ? 'disabled' : '' ?>>+ Eintrag hinzufügen</button>
+    </div>
+
+    <div class="adm-card adm-pl-ansicht" data-ansicht="kalender" hidden>
+        <h2>Playlist-Zeitplan · Wochenkalender</h2>
+        <p class="adm-hilfe">
+            Nur-Ansicht: zeigt die im Reiter „Klassisch" gepflegten Einträge visuell an.
+            Ganztägige Einträge (ohne Uhrzeit) stehen oben als <strong>Fallback</strong>.
+            Bei Überschneidungen gewinnt der Eintrag mit höherer Priorität (P-Badge).
+            Zum Bearbeiten in den Reiter „Klassisch" wechseln.
+        </p>
+        <div id="pl-kalender-fallback" class="adm-kal-fallback"></div>
+        <div id="pl-kalender-grid" class="adm-kal-grid"></div>
     </div>
 
     <div class="adm-card">
@@ -462,6 +479,135 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
     tk.neu = bindeListe(tk.liste, document.getElementById('ticker-hinzu'));
     ZEITPLAN.forEach(pl.neu);
     TICKERPLAN.forEach(tk.neu);
+
+    // ---- Wochenkalender-Ansicht (Etappe A: nur lesen) ------------------------
+    // Liest bei jedem Tab-Wechsel den aktuellen DOM-Zustand von zeitplan-liste
+    // (nicht das JSON-ZEITPLAN), damit ungespeicherte Änderungen sofort sichtbar
+    // sind. Zeitfenster fix 6:00–24:00; ganztägige Einträge landen im Fallback.
+    var KAL_START_H = 6, KAL_END_H = 24, KAL_ROW_H = 40;
+
+    function playlistFarbe(name) {
+        var h = 0;
+        for (var i = 0; i < name.length; i++) { h = (h * 31 + name.charCodeAt(i)) >>> 0; }
+        return 'hsl(' + (h % 360) + ' 55% 38%)';
+    }
+
+    function leseEintraegeAusDom() {
+        var out = [];
+        pl.liste.querySelectorAll('.adm-zeitregel').forEach(function (z) {
+            var pid = parseInt(z.querySelector('[data-feld="playlist_id"]').value, 10) || 0;
+            if (!pid) { return; }
+            var tage = Array.prototype.map.call(
+                z.querySelectorAll('.adm-tag-btn.an'),
+                function (b) { return parseInt(b.getAttribute('data-tag'), 10); }
+            );
+            if (!tage.length) { return; }
+            out.push({
+                playlist_id: pid,
+                tage:        tage,
+                von:         z.querySelector('[data-feld="von"]').value || '',
+                bis:         z.querySelector('[data-feld="bis"]').value || '',
+                prio:        parseInt(z.querySelector('[data-feld="prio"]').value, 10) || 0
+            });
+        });
+        return out;
+    }
+
+    function zeitZuMin(s) {
+        var m = /^(\d{1,2}):(\d{2})$/.exec(s || '');
+        if (!m) { return null; }
+        return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+    }
+
+    function rendereKalender() {
+        var eintraege = leseEintraegeAusDom();
+        var fallbackEl = document.getElementById('pl-kalender-fallback');
+        var gridEl     = document.getElementById('pl-kalender-grid');
+
+        // Fallback-Zeile: ganztägige Einträge (kein Uhrzeit-Fenster)
+        var fallbacks = eintraege.filter(function (e) { return !e.von && !e.bis; });
+        if (!fallbacks.length) {
+            fallbackEl.innerHTML = '<span class="adm-kal-fallback-leer">Kein Fallback gesetzt — außerhalb der Zeitfenster wird nichts angezeigt.</span>';
+        } else {
+            fallbackEl.innerHTML = '<span class="adm-kal-fallback-label">Fallback (ganztags):</span> '
+                + fallbacks.map(function (e) {
+                    var pl = itemName('playlist', e.playlist_id);
+                    var name = pl ? pl.name : '?';
+                    var tage = e.tage.length === 7 ? 'täglich'
+                        : e.tage.map(function (t) { return TAGE[t-1][1]; }).join(' ');
+                    return '<span class="adm-kal-block adm-kal-block--fallback" style="background:' + playlistFarbe(name) + '">'
+                        + escapeHtml(name) + '<span class="adm-kal-block-meta">' + escapeHtml(tage)
+                        + (e.prio ? ' · P' + e.prio : '') + '</span></span>';
+                }).join(' ');
+        }
+
+        // Grid-Skelett aufbauen
+        var std = KAL_END_H - KAL_START_H;
+        var head = '<div class="adm-kal-corner"></div>';
+        for (var t = 0; t < 7; t++) { head += '<div class="adm-kal-tagkopf">' + TAGE[t][1] + '</div>'; }
+        var stunden = '';
+        for (var h = 0; h < std; h++) {
+            stunden += '<div class="adm-kal-std" style="top:' + (h * KAL_ROW_H) + 'px">'
+                + String(KAL_START_H + h).padStart(2, '0') + ':00</div>';
+        }
+        var spalten = '';
+        for (var d = 1; d <= 7; d++) {
+            spalten += '<div class="adm-kal-tag" data-tag="' + d + '" style="height:' + (std * KAL_ROW_H) + 'px"></div>';
+        }
+        gridEl.innerHTML =
+            '<div class="adm-kal-kopf">' + head + '</div>' +
+            '<div class="adm-kal-body">' +
+                '<div class="adm-kal-stundenspalte" style="height:' + (std * KAL_ROW_H) + 'px">' + stunden + '</div>' +
+                '<div class="adm-kal-spalten">' + spalten + '</div>' +
+            '</div>';
+
+        // Zeitgebundene Einträge einsetzen — pro Wochentag ein Block
+        var startMin = KAL_START_H * 60, endMin = KAL_END_H * 60;
+        eintraege.forEach(function (e) {
+            if (!e.von || !e.bis) { return; }
+            var vMin = zeitZuMin(e.von), bMin = zeitZuMin(e.bis);
+            if (vMin == null || bMin == null || bMin <= vMin) { return; }
+            var pl   = itemName('playlist', e.playlist_id);
+            var name = pl ? pl.name : '?';
+            var farbe = playlistFarbe(name);
+            var vClamp = Math.max(vMin, startMin), bClamp = Math.min(bMin, endMin);
+            if (bClamp <= vClamp) { return; }
+            var topPx = (vClamp - startMin) / 60 * KAL_ROW_H;
+            var hPx   = (bClamp - vClamp) / 60 * KAL_ROW_H;
+            e.tage.forEach(function (tag) {
+                var col = gridEl.querySelector('.adm-kal-tag[data-tag="' + tag + '"]');
+                if (!col) { return; }
+                var b = document.createElement('div');
+                b.className = 'adm-kal-block';
+                b.style.top = topPx + 'px';
+                b.style.height = hPx + 'px';
+                b.style.background = farbe;
+                b.style.zIndex = String(10 + e.prio);
+                b.innerHTML = '<span class="adm-kal-block-titel">' + escapeHtml(name) + '</span>'
+                    + '<span class="adm-kal-block-meta">' + e.von + '–' + e.bis
+                    + (e.prio ? ' · P' + e.prio : '')
+                    + (pl && !pl.aktiv ? ' · pausiert' : '') + '</span>';
+                b.title = name + ' · ' + e.von + '–' + e.bis + (e.prio ? ' · Priorität ' + e.prio : '');
+                col.appendChild(b);
+            });
+        });
+    }
+
+    var tabs = document.querySelector('.adm-pl-tabs');
+    if (tabs) {
+        tabs.addEventListener('click', function (e) {
+            var btn = e.target.closest('.adm-tab');
+            if (!btn) { return; }
+            var tab = btn.getAttribute('data-tab');
+            tabs.querySelectorAll('.adm-tab').forEach(function (b) {
+                b.classList.toggle('an', b === btn);
+            });
+            document.querySelectorAll('.adm-pl-ansicht').forEach(function (v) {
+                v.hidden = (v.getAttribute('data-ansicht') !== tab);
+            });
+            if (tab === 'kalender') { rendereKalender(); }
+        });
+    }
 })();
 </script>
 
