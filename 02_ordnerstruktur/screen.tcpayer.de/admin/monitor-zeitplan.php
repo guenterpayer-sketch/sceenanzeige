@@ -484,7 +484,7 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
     // Liest bei jedem Tab-Wechsel den aktuellen DOM-Zustand von zeitplan-liste
     // (nicht das JSON-ZEITPLAN), damit ungespeicherte Änderungen sofort sichtbar
     // sind. Zeitfenster fix 6:00–24:00; ganztägige Einträge landen im Fallback.
-    var KAL_START_H = 6, KAL_END_H = 24, KAL_ROW_H = 40;
+    var KAL_START_H = 9, KAL_END_H = 24, KAL_ROW_H = 40;
 
     function playlistFarbe(name) {
         var h = 0;
@@ -535,8 +535,9 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
                     var name = pl ? pl.name : '?';
                     var tage = e.tage.length === 7 ? 'täglich'
                         : e.tage.map(function (t) { return TAGE[t-1][1]; }).join(' ');
-                    return '<span class="adm-kal-block adm-kal-block--fallback" style="background:' + playlistFarbe(name) + '">'
-                        + escapeHtml(name) + '<span class="adm-kal-block-meta">' + escapeHtml(tage)
+                    return '<span class="adm-kal-fallback-item" style="background:' + playlistFarbe(name) + '">'
+                        + '<span class="adm-kal-fallback-name">' + escapeHtml(name) + '</span>'
+                        + '<span class="adm-kal-fallback-meta">' + escapeHtml(tage)
                         + (e.prio ? ' · P' + e.prio : '') + '</span></span>';
                 }).join(' ');
         }
