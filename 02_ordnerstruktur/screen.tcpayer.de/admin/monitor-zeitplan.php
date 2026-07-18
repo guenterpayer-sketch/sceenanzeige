@@ -268,6 +268,45 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
     </div>
 </form>
 
+<!-- Detail-Dialog: Zeitplan-Eintrag im Kalender bearbeiten/anlegen -->
+<div id="zd-overlay" class="adm-overlay" hidden>
+    <div class="adm-dialog adm-dialog-breit">
+        <h3 id="zd-titel">Zeitplan-Eintrag</h3>
+        <div class="adm-feld">
+            <label>Playlist</label>
+            <button type="button" id="zd-playlist" class="adm-auswahl-kachel">
+                <span class="adm-auswahl-leer">Playlist wählen …</span>
+            </button>
+        </div>
+        <div class="adm-feld">
+            <label>Wochentage</label>
+            <div id="zd-tage" class="adm-tag-btns"></div>
+            <div class="adm-zr-presets" style="margin-top:6px">
+                <button type="button" class="adm-mini" data-preset="alle">Alle</button>
+                <button type="button" class="adm-mini" data-preset="woche">Mo–Fr</button>
+                <button type="button" class="adm-mini" data-preset="we">Wochenende</button>
+            </div>
+        </div>
+        <div class="adm-feld">
+            <label class="adm-inhalt-aktiv">
+                <input type="checkbox" id="zd-ganztags"> Ganztags (Fallback — läuft, wenn nichts Spezifischeres passt)
+            </label>
+        </div>
+        <div class="adm-feld adm-feld-zeit" id="zd-zeitfelder">
+            <label>Von <input type="time" id="zd-von" step="900"></label>
+            <label>Bis <input type="time" id="zd-bis" step="900"></label>
+            <label>Priorität <input type="number" id="zd-prio" step="1" min="0" value="1" style="width:5em"></label>
+            <label>Dauer&nbsp;(s) <input type="number" id="zd-dauer" min="10" step="10" value="300" style="width:6em"></label>
+        </div>
+        <div class="adm-dialog-aktionen">
+            <button type="button" id="zd-loeschen" class="adm-btn adm-btn-grau" hidden>Löschen</button>
+            <span style="flex:1"></span>
+            <button type="button" id="zd-abbrechen" class="adm-btn adm-btn-grau">Abbrechen</button>
+            <button type="button" id="zd-speichern" class="adm-btn-primary">Übernehmen</button>
+        </div>
+    </div>
+</div>
+
 <!-- Picker-Dialog (Playlist bzw. Ticker als Kacheln) -->
 <div id="picker-overlay" class="adm-overlay" hidden>
     <div class="adm-dialog adm-dialog-breit">
@@ -409,10 +448,13 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
     var overlay   = document.getElementById('picker-overlay');
     var pickListe = document.getElementById('picker-liste');
     var pickTitel = document.getElementById('picker-titel');
-    var aktiveZeile = null, aktiveListe = null;
+    var aktiveZeile = null, aktiveListe = null, aktiveCallback = null;
 
-    function oeffnePicker(liste, zeile) {
-        aktiveListe = liste; aktiveZeile = zeile;
+    // Picker öffnen; wenn callback gesetzt, wird bei Auswahl nur callback(it)
+    // aufgerufen (für den Kalender-Dialog); sonst wird wie bisher die
+    // Klassisch-Zeile befüllt.
+    function oeffnePicker(liste, zeile, callback) {
+        aktiveListe = liste; aktiveZeile = zeile; aktiveCallback = callback || null;
         var art = liste.getAttribute('data-art');
         pickTitel.textContent = META[art].titel;
         pickListe.innerHTML = '';
@@ -434,8 +476,9 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
         });
         overlay.hidden = false;
     }
-    function schliessePicker() { overlay.hidden = true; aktiveZeile = null; aktiveListe = null; }
+    function schliessePicker() { overlay.hidden = true; aktiveZeile = null; aktiveListe = null; aktiveCallback = null; }
     function waehle(it) {
+        if (aktiveCallback) { var cb = aktiveCallback; schliessePicker(); cb(it); return; }
         if (!aktiveZeile || !aktiveListe) { return; }
         var art = aktiveListe.getAttribute('data-art');
         var idFeld = aktiveListe.getAttribute('data-idfeld');
@@ -609,6 +652,420 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
             if (tab === 'kalender') { rendereKalender(); }
         });
     }
+
+    // ---- Etappe B: Bearbeiten im Kalender ----------------------------------
+    // Wahrheit sind die Klassisch-Zeilen. Der Kalender liest von dort und
+    // schreibt dorthin zurück; jede Zeile bekommt eine stabile zeit-id, die
+    // auch die Kalender-Blöcke tragen. Nach jeder Änderung wird der Kalender
+    // aus dem aktuellen DOM neu gerendert.
+
+    var _zeitIdZaehler = 0;
+    function neueZeitId() { return 'z' + (++_zeitIdZaehler); }
+    function stelleZeitIdsSicher() {
+        pl.liste.querySelectorAll('.adm-zeitregel').forEach(function (z) {
+            if (!z.getAttribute('data-zeit-id')) { z.setAttribute('data-zeit-id', neueZeitId()); }
+        });
+    }
+    function findeZeile(zid) {
+        return pl.liste.querySelector('.adm-zeitregel[data-zeit-id="' + zid + '"]');
+    }
+    function setzeZeileTage(zeile, tage) {
+        zeile.querySelectorAll('.adm-tag-btn').forEach(function (b) {
+            var an = tage.indexOf(parseInt(b.getAttribute('data-tag'), 10)) !== -1;
+            b.classList.toggle('an', an);
+            b.setAttribute('aria-pressed', an ? 'true' : 'false');
+        });
+    }
+    function schreibeZeile(zid, patch) {
+        var z = findeZeile(zid);
+        if (!z) { return; }
+        if (patch.playlist_id !== undefined) {
+            z.querySelector('[data-feld="playlist_id"]').value = patch.playlist_id;
+            var it = itemName('playlist', patch.playlist_id);
+            var k  = z.querySelector('.adm-auswahl-kachel');
+            if (it && k) {
+                k.classList.add('gewaehlt');
+                k.innerHTML =
+                    '<span class="adm-eintrag-icon">' + META.playlist.icon + '</span>' +
+                    '<span class="adm-eintrag-text"><span class="adm-eintrag-name">' + escapeHtml(it.name) +
+                        (it.aktiv ? '' : ' <span class="adm-badge-pause">pausiert</span>') + '</span></span>';
+            }
+        }
+        if (patch.tage !== undefined) { setzeZeileTage(z, patch.tage); }
+        if (patch.von  !== undefined) { z.querySelector('[data-feld="von"]').value = patch.von; }
+        if (patch.bis  !== undefined) { z.querySelector('[data-feld="bis"]').value = patch.bis; }
+        if (patch.prio !== undefined) {
+            var pf = z.querySelector('[data-feld="prio"]'); if (pf) { pf.value = patch.prio; }
+        }
+        if (patch.dauer_sek !== undefined) {
+            var df = z.querySelector('[data-feld="dauer_sek"]'); if (df) { df.value = patch.dauer_sek; }
+        }
+    }
+    function leseZeile(zid) {
+        var z = findeZeile(zid);
+        if (!z) { return null; }
+        return {
+            playlist_id: parseInt(z.querySelector('[data-feld="playlist_id"]').value, 10) || 0,
+            tage: Array.prototype.map.call(z.querySelectorAll('.adm-tag-btn.an'),
+                function (b) { return parseInt(b.getAttribute('data-tag'), 10); }),
+            von: z.querySelector('[data-feld="von"]').value || '',
+            bis: z.querySelector('[data-feld="bis"]').value || '',
+            prio: parseInt(z.querySelector('[data-feld="prio"]').value, 10) || 0,
+            dauer_sek: parseInt((z.querySelector('[data-feld="dauer_sek"]') || {}).value || '300', 10) || 300
+        };
+    }
+    function loescheZeile(zid) { var z = findeZeile(zid); if (z) { z.remove(); } }
+    function legeNeuZeileAn(daten) {
+        pl.neu(daten);
+        var zeilen = pl.liste.querySelectorAll('.adm-zeitregel');
+        var neu = zeilen[zeilen.length - 1];
+        var zid = neueZeitId();
+        neu.setAttribute('data-zeit-id', zid);
+        // baueZeile hat schon Auswahl/Tage/Uhrzeit/Prio gesetzt; nichts zu tun
+        return zid;
+    }
+
+    // Kalender neu rendern nachdem sich Klassisch geändert hat
+    function refreshKalender() {
+        if (document.querySelector('.adm-pl-ansicht[data-ansicht="kalender"]').hidden) { return; }
+        rendereKalender();
+    }
+
+    // Die vom Etappe-A-Rendering erzeugten Blöcke bekommen zeit-id + Tag als data-attrs.
+    // Dafür wickele ich rendereKalender ein und ergänze nach dem Aufbau.
+    var _renderOriginal = rendereKalender;
+    rendereKalender = function () {
+        stelleZeitIdsSicher();
+        _renderOriginal();
+        // Jetzt: Blöcke mit zeit-id verknüpfen, Klick-Zonen aktivieren,
+        // Resize-Handles anhängen, Fallback-Chips klickbar machen.
+        var eintraege = leseEintraegeAusDomMitId();
+        var gridEl    = document.getElementById('pl-kalender-grid');
+        var fbEl      = document.getElementById('pl-kalender-fallback');
+
+        // Blöcke im Grid — pro Tag der passende Kalender-Block
+        eintraege.forEach(function (e) {
+            if (!e.von || !e.bis) { return; }
+            e.tage.forEach(function (tag) {
+                var col = gridEl.querySelector('.adm-kal-tag[data-tag="' + tag + '"]');
+                if (!col) { return; }
+                // Nimm den letzten noch ungebundenen Block in dieser Spalte,
+                // der zu unseren Top/Height passt — einfacher: alle Blöcke ohne
+                // data-zeit-id nach Reihenfolge auffüllen.
+                var kandidat = col.querySelector('.adm-kal-block:not([data-zeit-id])');
+                if (!kandidat) { return; }
+                kandidat.setAttribute('data-zeit-id', e.zid);
+                kandidat.setAttribute('data-tag', tag);
+                kandidat.classList.add('adm-kal-block--interaktiv');
+                var handle = document.createElement('div');
+                handle.className = 'adm-kal-block-resize';
+                handle.title = 'Ende ziehen';
+                kandidat.appendChild(handle);
+            });
+        });
+
+        // Fallback-Chips klickbar machen — jedem Chip die passende zeit-id anhängen
+        var fbChips = fbEl.querySelectorAll('.adm-kal-fallback-item');
+        var fbEintraege = eintraege.filter(function (e) { return !e.von && !e.bis; });
+        fbChips.forEach(function (chip, i) {
+            if (fbEintraege[i]) {
+                chip.setAttribute('data-zeit-id', fbEintraege[i].zid);
+                chip.classList.add('adm-kal-fallback-item--interaktiv');
+                chip.title = 'Bearbeiten';
+            }
+        });
+
+        // "+ Fallback"-Button in Fallback-Zeile
+        if (!fbEl.querySelector('.adm-kal-fallback-neu')) {
+            var neu = document.createElement('button');
+            neu.type = 'button';
+            neu.className = 'adm-kal-fallback-neu';
+            neu.textContent = '+ Fallback';
+            neu.title = 'Ganztägigen Eintrag hinzufügen';
+            fbEl.appendChild(neu);
+        }
+    };
+
+    function leseEintraegeAusDomMitId() {
+        var out = [];
+        pl.liste.querySelectorAll('.adm-zeitregel').forEach(function (z) {
+            var pid = parseInt(z.querySelector('[data-feld="playlist_id"]').value, 10) || 0;
+            if (!pid) { return; }
+            var tage = Array.prototype.map.call(z.querySelectorAll('.adm-tag-btn.an'),
+                function (b) { return parseInt(b.getAttribute('data-tag'), 10); });
+            if (!tage.length) { return; }
+            out.push({
+                zid:  z.getAttribute('data-zeit-id'),
+                playlist_id: pid, tage: tage,
+                von: z.querySelector('[data-feld="von"]').value || '',
+                bis: z.querySelector('[data-feld="bis"]').value || '',
+                prio: parseInt(z.querySelector('[data-feld="prio"]').value, 10) || 0
+            });
+        });
+        return out;
+    }
+
+    // ---- Detail-Dialog -----------------------------------------------------
+    var zd = {
+        overlay:   document.getElementById('zd-overlay'),
+        titel:     document.getElementById('zd-titel'),
+        plBtn:     document.getElementById('zd-playlist'),
+        tageWrap:  document.getElementById('zd-tage'),
+        ganztags:  document.getElementById('zd-ganztags'),
+        zeitfelder:document.getElementById('zd-zeitfelder'),
+        von:       document.getElementById('zd-von'),
+        bis:       document.getElementById('zd-bis'),
+        prio:      document.getElementById('zd-prio'),
+        dauer:     document.getElementById('zd-dauer'),
+        loeschen:  document.getElementById('zd-loeschen'),
+        abbrechen: document.getElementById('zd-abbrechen'),
+        speichern: document.getElementById('zd-speichern')
+    };
+    // Tag-Buttons in den Dialog
+    zd.tageWrap.innerHTML = TAGE.map(function (t) {
+        return '<button type="button" class="adm-tag-btn" data-tag="' + t[0] + '" aria-pressed="false">' + t[1] + '</button>';
+    }).join('');
+
+    var zdState = null; // { zid|null, playlist_id, tage, von, bis, prio, dauer, ganztags }
+
+    function zdBefuelle() {
+        // Playlist-Button
+        var it = itemName('playlist', zdState.playlist_id);
+        zd.plBtn.classList.toggle('gewaehlt', !!it);
+        zd.plBtn.innerHTML = it
+            ? '<span class="adm-eintrag-icon">' + META.playlist.icon + '</span>' +
+              '<span class="adm-eintrag-text"><span class="adm-eintrag-name">' + escapeHtml(it.name) +
+                  (it.aktiv ? '' : ' <span class="adm-badge-pause">pausiert</span>') + '</span></span>'
+            : '<span class="adm-auswahl-leer">Playlist wählen …</span>';
+        // Tage
+        zd.tageWrap.querySelectorAll('.adm-tag-btn').forEach(function (b) {
+            var an = zdState.tage.indexOf(parseInt(b.getAttribute('data-tag'), 10)) !== -1;
+            b.classList.toggle('an', an);
+            b.setAttribute('aria-pressed', an ? 'true' : 'false');
+        });
+        // Zeit/Prio/Dauer + Ganztags
+        zd.ganztags.checked = zdState.ganztags;
+        zd.von.value = zdState.von || '';
+        zd.bis.value = zdState.bis || '';
+        zd.prio.value = zdState.prio;
+        zd.dauer.value = zdState.dauer;
+        zd.zeitfelder.style.opacity = zdState.ganztags ? '0.4' : '1';
+        zd.von.disabled = zd.bis.disabled = zdState.ganztags;
+        zd.loeschen.hidden = !zdState.zid;
+    }
+
+    function zdOeffnen(daten) {
+        zdState = Object.assign({
+            zid: null, playlist_id: 0, tage: [], von: '', bis: '',
+            prio: 1, dauer: 300, ganztags: false
+        }, daten);
+        zd.titel.textContent = zdState.zid ? 'Eintrag bearbeiten' : 'Neuer Eintrag';
+        zdBefuelle();
+        zd.overlay.hidden = false;
+    }
+    function zdSchliessen() { zd.overlay.hidden = true; zdState = null; }
+
+    zd.plBtn.addEventListener('click', function () {
+        oeffnePicker(pl.liste, null, function (it) {
+            zdState.playlist_id = it.id;
+            zdBefuelle();
+            zd.overlay.hidden = false; // Dialog wieder in Vordergrund
+        });
+        zd.overlay.hidden = true; // während Picker zu; wird beim Callback wieder geöffnet
+    });
+    zd.tageWrap.addEventListener('click', function (e) {
+        var b = e.target.closest('.adm-tag-btn');
+        if (!b) { return; }
+        var t = parseInt(b.getAttribute('data-tag'), 10);
+        var i = zdState.tage.indexOf(t);
+        if (i === -1) { zdState.tage.push(t); zdState.tage.sort(); } else { zdState.tage.splice(i, 1); }
+        zdBefuelle();
+    });
+    zd.overlay.querySelectorAll('[data-preset]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            zdState.tage = PRESETS[btn.getAttribute('data-preset')].slice();
+            zdBefuelle();
+        });
+    });
+    zd.ganztags.addEventListener('change', function () {
+        zdState.ganztags = zd.ganztags.checked;
+        if (zdState.ganztags) { zdState.von = ''; zdState.bis = ''; zdState.prio = 0; zd.prio.value = 0; }
+        zdBefuelle();
+    });
+    ['von', 'bis'].forEach(function (k) {
+        zd[k].addEventListener('input', function () { zdState[k] = zd[k].value; });
+    });
+    zd.prio.addEventListener('input',  function () { zdState.prio  = parseInt(zd.prio.value, 10) || 0; });
+    zd.dauer.addEventListener('input', function () { zdState.dauer = parseInt(zd.dauer.value, 10) || 300; });
+    zd.abbrechen.addEventListener('click', zdSchliessen);
+    zd.overlay.addEventListener('click', function (e) { if (e.target === zd.overlay) { zdSchliessen(); } });
+    zd.loeschen.addEventListener('click', function () {
+        admBestaetigen('Diesen Zeitplan-Eintrag löschen?', function (ok) {
+            if (!ok) { return; }
+            if (zdState.zid) { loescheZeile(zdState.zid); }
+            zdSchliessen();
+            refreshKalender();
+        }, 'Löschen');
+    });
+    zd.speichern.addEventListener('click', function () {
+        if (!zdState.playlist_id) { admMeldung('Bitte eine Playlist wählen.'); return; }
+        if (!zdState.tage.length) { admMeldung('Bitte mindestens einen Wochentag wählen.'); return; }
+        if (!zdState.ganztags) {
+            if (!zdState.von || !zdState.bis) { admMeldung('Bitte Von- und Bis-Uhrzeit angeben oder „Ganztags" wählen.'); return; }
+            if (zdState.von >= zdState.bis)   { admMeldung('„Von" muss vor „Bis" liegen.'); return; }
+        }
+        var patch = {
+            playlist_id: zdState.playlist_id,
+            tage: zdState.tage.slice(),
+            von:  zdState.ganztags ? '' : zdState.von,
+            bis:  zdState.ganztags ? '' : zdState.bis,
+            prio: zdState.prio,
+            dauer_sek: zdState.dauer
+        };
+        if (zdState.zid) { schreibeZeile(zdState.zid, patch); }
+        else {
+            // Beim Anlegen: pl.neu erwartet das Klassisch-Format (playlist_id, tage, von, bis, prio, dauer_sek)
+            legeNeuZeileAn(patch);
+        }
+        zdSchliessen();
+        refreshKalender();
+    });
+
+    // ---- Klick + Drag im Grid ---------------------------------------------
+    var gridEl = document.getElementById('pl-kalender-grid');
+    var fbEl   = document.getElementById('pl-kalender-fallback');
+
+    function snap15Min(minGesamt) { return Math.round(minGesamt / 15) * 15; }
+    function minZuHhmm(m) {
+        var h = Math.floor(m / 60), mm = m % 60;
+        return String(h).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+    }
+
+    // Drag-Tracking (Verschieben eines Blocks bzw. Ziehen der Unterkante)
+    var drag = null; // { zid, tag, kind: 'move'|'resize', startY, urVon, urBis, spalteEl, blockEl }
+
+    gridEl.addEventListener('mousedown', function (e) {
+        var block = e.target.closest('.adm-kal-block[data-zeit-id]');
+        if (!block) { return; }
+        var handle = e.target.closest('.adm-kal-block-resize');
+        var zid = block.getAttribute('data-zeit-id');
+        var eintrag = leseZeile(zid);
+        if (!eintrag) { return; }
+        drag = {
+            zid: zid,
+            tag: parseInt(block.getAttribute('data-tag'), 10),
+            kind: handle ? 'resize' : 'move',
+            startY: e.clientY,
+            urVon: eintrag.von, urBis: eintrag.bis,
+            blockEl: block,
+            distanz: 0
+        };
+        block.classList.add('wird-bewegt');
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', function (e) {
+        if (!drag) { return; }
+        var dy = e.clientY - drag.startY;
+        drag.distanz = Math.max(drag.distanz, Math.abs(dy));
+        // Live-Preview: nur visuell, echte Werte kommen erst bei mouseup
+        if (drag.kind === 'move') {
+            drag.blockEl.style.transform = 'translateY(' + dy + 'px)';
+        } else {
+            var neu = parseInt(drag.blockEl.style.height, 10) + dy;
+            drag.blockEl.style.height = Math.max(KAL_ROW_H / 4, neu) + 'px';
+            drag.startY = e.clientY;
+        }
+    });
+
+    document.addEventListener('mouseup', function (e) {
+        if (!drag) { return; }
+        var d = drag; drag = null;
+        // Zustand VOR dem Reset lesen
+        var dyMove = 0, neueH = 0;
+        if (d.kind === 'move') {
+            var m = /translateY\(([-\d.]+)px\)/.exec(d.blockEl.style.transform || '');
+            dyMove = m ? parseFloat(m[1]) : 0;
+        } else {
+            neueH = parseInt(d.blockEl.style.height, 10) || 0;
+        }
+        // Optik zurücksetzen — wird gleich vom refreshKalender neu gemalt
+        d.blockEl.classList.remove('wird-bewegt');
+        d.blockEl.style.transform = '';
+
+        // Klick (kaum bewegt) → Detail-Dialog öffnen
+        if (d.distanz < 5) {
+            var eintrag = leseZeile(d.zid);
+            if (eintrag) {
+                zdOeffnen({
+                    zid: d.zid,
+                    playlist_id: eintrag.playlist_id,
+                    tage: eintrag.tage,
+                    von: eintrag.von, bis: eintrag.bis,
+                    prio: eintrag.prio, dauer: eintrag.dauer_sek,
+                    ganztags: !eintrag.von && !eintrag.bis
+                });
+            }
+            return;
+        }
+        // Bewegung → Werte anpassen
+        var eintrag = leseZeile(d.zid);
+        if (!eintrag) { return; }
+        var vonMinAlt = zeitZuMin(d.urVon), bisMinAlt = zeitZuMin(d.urBis);
+        if (d.kind === 'move') {
+            var deltaMin = snap15Min(dyMove / KAL_ROW_H * 60);
+            var vonMin = Math.max(0, Math.min(24*60, vonMinAlt + deltaMin));
+            var bisMin = vonMin + (bisMinAlt - vonMinAlt);
+            if (bisMin > 24*60) { bisMin = 24*60; vonMin = bisMin - (bisMinAlt - vonMinAlt); }
+            schreibeZeile(d.zid, { von: minZuHhmm(vonMin), bis: minZuHhmm(bisMin) });
+        } else {
+            var dauerMin = snap15Min(neueH / KAL_ROW_H * 60);
+            if (dauerMin < 15) { dauerMin = 15; }
+            var bisMin = Math.min(24*60, vonMinAlt + dauerMin);
+            schreibeZeile(d.zid, { bis: minZuHhmm(bisMin) });
+        }
+        refreshKalender();
+    });
+
+    // Klick auf leere Grid-Zelle → Neu-Dialog mit Tag + Zeit vorbelegt
+    gridEl.addEventListener('click', function (e) {
+        if (drag) { return; }
+        // Klick auf Block wird schon in mouseup verarbeitet
+        if (e.target.closest('.adm-kal-block')) { return; }
+        var col = e.target.closest('.adm-kal-tag');
+        if (!col) { return; }
+        var rect = col.getBoundingClientRect();
+        var yInCol = e.clientY - rect.top;
+        var vonMin = snap15Min(yInCol / KAL_ROW_H * 60) + KAL_START_H * 60;
+        vonMin = Math.max(KAL_START_H * 60, Math.min(KAL_END_H * 60 - 60, vonMin));
+        var tag = parseInt(col.getAttribute('data-tag'), 10);
+        zdOeffnen({
+            tage: [tag],
+            von:  minZuHhmm(vonMin),
+            bis:  minZuHhmm(vonMin + 60), // Standarddauer 1 h
+            prio: 1, dauer: 300, ganztags: false
+        });
+    });
+
+    // Fallback: Chip = Bearbeiten, "+ Fallback"-Button = Neu (ganztags)
+    fbEl.addEventListener('click', function (e) {
+        if (e.target.closest('.adm-kal-fallback-neu')) {
+            zdOeffnen({ tage: [1,2,3,4,5,6,7], ganztags: true, prio: 0, dauer: 300 });
+            return;
+        }
+        var chip = e.target.closest('.adm-kal-fallback-item[data-zeit-id]');
+        if (!chip) { return; }
+        var zid = chip.getAttribute('data-zeit-id');
+        var eintrag = leseZeile(zid);
+        if (!eintrag) { return; }
+        zdOeffnen({
+            zid: zid,
+            playlist_id: eintrag.playlist_id, tage: eintrag.tage,
+            von: '', bis: '',
+            prio: eintrag.prio, dauer: eintrag.dauer_sek,
+            ganztags: true
+        });
+    });
 })();
 </script>
 

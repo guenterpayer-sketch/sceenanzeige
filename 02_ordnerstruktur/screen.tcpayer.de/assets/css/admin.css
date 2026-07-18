@@ -1053,3 +1053,58 @@ a.adm-kachel-link:hover { background: #fbeaea; }
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+/* ── Wochenkalender: interaktive Elemente (Etappe B) ─────────────────────── */
+
+.adm-kal-block--interaktiv { cursor: move; user-select: none; }
+.adm-kal-block--interaktiv.wird-bewegt { opacity: .75; box-shadow: 0 4px 12px rgba(0,0,0,.3); z-index: 100 !important; }
+
+.adm-kal-block-resize {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 6px;
+    cursor: ns-resize;
+    background: rgba(255,255,255,.15);
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+.adm-kal-block-resize:hover { background: rgba(255,255,255,.35); }
+
+.adm-kal-tag { cursor: crosshair; }
+
+.adm-kal-fallback-item--interaktiv { cursor: pointer; }
+.adm-kal-fallback-item--interaktiv:hover { filter: brightness(1.1); }
+
+.adm-kal-fallback-neu {
+    border: 1px dashed #aab8c8;
+    background: #fff;
+    color: #5a6b7d;
+    border-radius: 4px;
+    padding: 5px 12px;
+    cursor: pointer;
+    font-size: 13px;
+}
+.adm-kal-fallback-neu:hover { border-color: #ad2121; color: #ad2121; }
+
+/* Detail-Dialog Layout */
+.adm-feld-zeit {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-end;
+}
+.adm-feld-zeit label { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: #5a6b7d; }
+.adm-feld-zeit input { padding: 4px 6px; border: 1px solid #dde3ea; border-radius: 4px; font-size: 14px; }
+
+#zd-playlist.adm-auswahl-kachel {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 8px 12px;
+    background: #f4f6f9;
+    border: 1px solid #dde3ea;
+    border-radius: 6px;
+    cursor: pointer;
+}
+#zd-playlist.adm-auswahl-kachel.gewaehlt { background: #fff; }
+#zd-playlist:hover { border-color: #ad2121; }
