@@ -423,12 +423,10 @@ function pl_modul_icon(string $icon): string
     function fuegeEinSpalte(spalteNr, data) {
         var col = spaltenWrap.querySelector('.adm-spalte[data-spalte="' + spalteNr + '"]');
         if (!col) { return false; }
-        var liste = col.querySelector('.adm-spalte-liste');
-        // Doppelte Instanz in derselben Spalte vermeiden
-        if (liste.querySelector('.adm-spalte-eintrag[data-mid="' + data.modul_instanz_id + '"]')) {
-            return false;
-        }
-        liste.appendChild(baueEintrag(data));
+        // Dieselbe Instanz darf mehrfach in einer Spalte stehen (A → B → A → C).
+        // data-mid bleibt informativ am Eintrag, wird aber nicht mehr als
+        // Eindeutigkeit erzwungen — DOM-Elemente sind ohnehin unterschiedlich.
+        col.querySelector('.adm-spalte-liste').appendChild(baueEintrag(data));
         pruefeLeer(col);
         return true;
     }
@@ -513,16 +511,8 @@ function pl_modul_icon(string $icon): string
     spaltenWrap.addEventListener('drop', function (e) {
         if (!gezogen) { return; }
         e.preventDefault();
-        var zielListe = gezogen.parentElement;
-        var mid = gezogen.getAttribute('data-mid');
-        // Doppelte Instanz in derselben Spalte verhindern → zurück an Ursprung
-        var doppelt = Array.prototype.slice.call(
-            zielListe.querySelectorAll('.adm-spalte-eintrag')
-        ).some(function (el) { return el !== gezogen && el.getAttribute('data-mid') === mid; });
-        if (doppelt) {
-            if (urParent) { urParent.insertBefore(gezogen, urNext); }
-            admMeldung('Diese Instanz ist in der Zielspalte bereits enthalten.');
-        }
+        // Duplikate sind erlaubt — Drop ohne weitere Prüfung akzeptieren.
+        // Position wurde bereits in dragover per DOM-Insertion gesetzt.
     });
 
     spaltenWrap.addEventListener('dragend', function () {
@@ -602,11 +592,10 @@ function pl_modul_icon(string $icon): string
                             '<span class="adm-eintrag-typ">' + escapeHtml(inst.typ_label) + '</span>' +
                         '</span>';
                     btn.addEventListener('click', function () {
-                        var ok = fuegeEinSpalte(zielSpalte, {
+                        fuegeEinSpalte(zielSpalte, {
                             modul_instanz_id: inst.id, name: inst.name, modul_typ: inst.modul_typ,
                             typ_label: inst.typ_label, icon: inst.icon, aktiv: inst.aktiv
                         });
-                        if (!ok) { alert('Diese Instanz ist in dieser Spalte bereits enthalten.'); return; }
                         schliessePicker();
                     });
                     liste.appendChild(btn);
