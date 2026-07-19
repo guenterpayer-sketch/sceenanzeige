@@ -18,9 +18,8 @@
     var TAGE = [ [1,'Mo'], [2,'Di'], [3,'Mi'], [4,'Do'], [5,'Fr'], [6,'Sa'], [7,'So'] ];
     var KAL_START_H = 9, KAL_END_H = 24, KAL_ROW_H = 40;
 
-    var filterEl   = document.getElementById('wp-monitor-filter');
-    var fallbackEl = document.getElementById('wp-kalender-fallback');
-    var gridEl     = document.getElementById('wp-kalender-grid');
+    var filterEl = document.getElementById('wp-monitor-filter');
+    var gridEl   = document.getElementById('wp-kalender-grid');
     if (!gridEl) { return; }
 
     function escapeHtml(s) {
@@ -109,34 +108,23 @@
     function rendere() {
         var eintraege = EINTRAEGE.filter(function (e) { return aktiveMonitore[e.monitor_id]; });
 
-        // Fallback-Chips: gruppiert nach Playlist + Tage-Kombination,
-        // Monitore der Gruppe werden gesammelt.
-        var fbGruppen = {};
+        // Ganztags-Einträge (Fallback): pro Tag + Playlist gruppieren,
+        // Monitore der Gruppe sammeln — landen in der Ganztags-Zeile oben
+        // in der jeweiligen Tagesspalte.
+        var gzGruppen = {};
         eintraege.forEach(function (e) {
             if (e.von || e.bis) { return; }
-            var key = e.playlist_id + '|' + e.tage.join(',');
-            if (!fbGruppen[key]) { fbGruppen[key] = { e: e, monitore: [] }; }
-            if (fbGruppen[key].monitore.indexOf(e.monitor_id) === -1) {
-                fbGruppen[key].monitore.push(e.monitor_id);
-            }
+            e.tage.forEach(function (tag) {
+                var key = tag + '|' + e.playlist_id;
+                if (!gzGruppen[key]) { gzGruppen[key] = { tag: tag, e: e, monitore: [], prio: e.prio }; }
+                if (gzGruppen[key].monitore.indexOf(e.monitor_id) === -1) {
+                    gzGruppen[key].monitore.push(e.monitor_id);
+                }
+                gzGruppen[key].prio = Math.max(gzGruppen[key].prio, e.prio);
+            });
         });
-        var fbKeys = Object.keys(fbGruppen);
-        if (!fbKeys.length) {
-            fallbackEl.innerHTML = '<span class="adm-kal-fallback-leer">Kein Fallback gesetzt.</span>';
-        } else {
-            fallbackEl.innerHTML = '<span class="adm-kal-fallback-label">Fallback (ganztags):</span> '
-                + fbKeys.map(function (key) {
-                    var g = fbGruppen[key], e = g.e;
-                    var tage = e.tage.length === 7 ? 'täglich'
-                        : e.tage.map(function (t) { return TAGE[t-1][1]; }).join(' ');
-                    var mons = g.monitore.map(monitorName).join(' · ');
-                    return '<span class="adm-kal-fallback-item" style="background:' + playlistFarbe(e.playlist_name) + '">'
-                        + '<span class="adm-kal-fallback-name">' + escapeHtml(e.playlist_name)
-                        + (e.playlist_aktiv ? '' : ' (pausiert)') + '</span>'
-                        + '<span class="adm-kal-fallback-meta">' + escapeHtml(tage)
-                        + (e.prio ? ' · P' + e.prio : '') + ' · ' + escapeHtml(mons) + '</span></span>';
-                }).join(' ');
-        }
+        var gzZellen = '';
+        for (var gd = 1; gd <= 7; gd++) { gzZellen += '<div class="adm-kal-gz-tag" data-tag="' + gd + '"></div>'; }
 
         // Grid-Skelett
         var std = KAL_END_H - KAL_START_H;
@@ -153,10 +141,35 @@
         }
         gridEl.innerHTML =
             '<div class="adm-kal-kopf">' + head + '</div>' +
+            '<div class="adm-kal-ganztags">' +
+                '<div class="adm-kal-gz-label">Ganztags</div>' + gzZellen +
+            '</div>' +
             '<div class="adm-kal-body">' +
                 '<div class="adm-kal-stundenspalte" style="height:' + (std * KAL_ROW_H) + 'px">' + stunden + '</div>' +
                 '<div class="adm-kal-spalten">' + spalten + '</div>' +
             '</div>';
+
+        // Ganztags-Blöcke einsetzen (höhere Prio zuerst)
+        Object.keys(gzGruppen)
+            .map(function (key) { return gzGruppen[key]; })
+            .sort(function (a, b) { return b.prio - a.prio; })
+            .forEach(function (g) {
+                var zelle = gridEl.querySelector('.adm-kal-gz-tag[data-tag="' + g.tag + '"]');
+                if (!zelle) { return; }
+                var e = g.e;
+                var mons = g.monitore.map(monitorName).join(' · ');
+                var b = document.createElement('div');
+                b.className = 'adm-kal-gz-block';
+                b.style.background = playlistFarbe(e.playlist_name);
+                b.innerHTML = '<span class="adm-kal-block-titel">' + escapeHtml(e.playlist_name) + '</span>'
+                    + '<span class="adm-kal-block-monitore">'
+                    + (g.prio ? 'P' + g.prio + ' · ' : '')
+                    + (e.playlist_aktiv ? '' : 'pausiert · ')
+                    + escapeHtml(mons) + '</span>';
+                b.title = e.playlist_name + ' · ganztags (Fallback)'
+                    + (g.prio ? ' · Priorität ' + g.prio : '') + ' · ' + mons;
+                zelle.appendChild(b);
+            });
 
         // Zeitgebundene Einträge: pro Tag gruppieren nach Playlist + Uhrzeit —
         // gleiche Einträge auf mehreren Monitoren werden ein Block.

@@ -1124,6 +1124,41 @@ a.adm-kachel-link:hover { background: #fbeaea; }
     user-select: none;
 }
 
+/* Ganztags-Zeile: Fallback-Einträge oben in der jeweiligen Tagesspalte */
+.adm-kal-ganztags {
+    display: grid;
+    grid-template-columns: 60px repeat(7, 1fr);
+    background: #fbfcfd;
+    border-bottom: 2px solid #dde3ea;
+}
+.adm-kal-gz-label {
+    padding: 6px 6px 6px 0;
+    font-size: 11px;
+    color: #8a97a6;
+    text-align: right;
+    align-self: center;
+}
+.adm-kal-gz-tag {
+    border-left: 1px solid #eef1f5;
+    padding: 3px 2px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-height: 26px;
+}
+.adm-kal-gz-block {
+    padding: 3px 6px;
+    color: #fff;
+    border-radius: 4px;
+    font-size: 12px;
+    line-height: 1.25;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,.15);
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
 .adm-kal-block-monitore {
     font-size: 10px;
     font-weight: 600;

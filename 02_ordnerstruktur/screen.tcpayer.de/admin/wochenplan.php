@@ -53,7 +53,8 @@ admin_header('Wochenplan', 'wochenplan');
         Übersicht über die Playlist-Zeitpläne aller Monitore in einer Woche.
         Läuft derselbe Eintrag auf mehreren Monitoren, wird er als
         <strong>ein Block</strong> mit den Monitor-Namen angezeigt.
-        Ganztägige Einträge (ohne Uhrzeit) stehen oben als <strong>Fallback</strong>.
+        Ganztägige Einträge (ohne Uhrzeit, Fallback) stehen in der
+        <strong>Ganztags-Zeile</strong> oben in der jeweiligen Tagesspalte.
         Zum Bearbeiten den Zeitplan des jeweiligen Monitors unter
         <a href="monitore.php">Monitore</a> öffnen.
     </p>
@@ -61,7 +62,6 @@ admin_header('Wochenplan', 'wochenplan');
         <p class="adm-hilfe">Es gibt noch keine Monitore.</p>
     <?php else: ?>
         <div id="wp-monitor-filter" class="adm-wp-filter"></div>
-        <div id="wp-kalender-fallback" class="adm-kal-fallback"></div>
         <div id="wp-kalender-grid" class="adm-kal-grid"></div>
     <?php endif; ?>
 </div>
