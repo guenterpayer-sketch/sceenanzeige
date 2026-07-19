@@ -3,7 +3,7 @@
 > **Branch:** `claude/intelligent-cray-im1xte`  
 > Eine neue Session liest `CLAUDE.md` (Konzept) + diese Datei (Stand) und kann sofort weiterarbeiten.
 
-_Letzte Aktualisierung: Schritt 23 Etappe A auf Staging — Monitor-Zeitplan Wochenkalender-Ansicht (nur lesen), Tab-Umschalter Klassisch/Kalender._
+_Letzte Aktualisierung: Schritt 23 Etappe A + B live — Monitor-Zeitplan Wochenkalender vollständig bearbeitbar (Klick, Drag, Resize, Duplizieren, Dialoge)._
 
 ---
 
@@ -36,7 +36,7 @@ _Letzte Aktualisierung: Schritt 23 Etappe A auf Staging — Monitor-Zeitplan Woc
 | 20 | Slide-Engine: Trennung Inhalt/Präsentation (`KONZEPT_SLIDE_ENGINE.md`) | ✅ live |
 | 21 | Uhr-Modul: Analog-Zifferblatt (SVG, Ziffern 12/3/6/9, roter Sekundenzeiger) + Hintergrundbild mit Transparenz-Pill; Setting-Typ `mediathek_bild` | ✅ live |
 | 22 | Playlist-Editor: Duplikat-Sperre entfernt — Instanzen mehrfach pro Spalte und über Spalten hinweg | ✅ live |
-| 23 | Monitor-Zeitplan: Wochenkalender-Ansicht (Etappe A: nur lesen, Fallback-Zeile für Ganztags-Einträge, Tab-Umschalter) | 🧪 auf Staging |
+| 23 | Monitor-Zeitplan: Wochenkalender-Ansicht (Etappe A + B: lesen + bearbeiten, Klick/Drag im Grid, Dialoge, Duplizieren, Fallback-Chips) | ✅ live |
 
 ---
 
