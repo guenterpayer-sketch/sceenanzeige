@@ -255,26 +255,10 @@
 
     function rendereKalender() {
         var eintraege = leseEintraegeAusDom();
-        var fallbackEl = document.getElementById('pl-kalender-fallback');
-        var gridEl     = document.getElementById('pl-kalender-grid');
+        var gridEl    = document.getElementById('pl-kalender-grid');
 
-        // Fallback-Zeile: ganztägige Einträge (kein Uhrzeit-Fenster)
+        // Ganztägige Einträge (kein Uhrzeit-Fenster) → Ganztags-Zeile im Grid
         var fallbacks = eintraege.filter(function (e) { return !e.von && !e.bis; });
-        if (!fallbacks.length) {
-            fallbackEl.innerHTML = '<span class="adm-kal-fallback-leer">Kein Fallback gesetzt — außerhalb der Zeitfenster wird nichts angezeigt.</span>';
-        } else {
-            fallbackEl.innerHTML = '<span class="adm-kal-fallback-label">Fallback (ganztags):</span> '
-                + fallbacks.map(function (e) {
-                    var pl = itemName('playlist', e.playlist_id);
-                    var name = pl ? pl.name : '?';
-                    var tage = e.tage.length === 7 ? 'täglich'
-                        : e.tage.map(function (t) { return TAGE[t-1][1]; }).join(' ');
-                    return '<span class="adm-kal-fallback-item" style="background:' + playlistFarbe(name) + '">'
-                        + '<span class="adm-kal-fallback-name">' + escapeHtml(name) + '</span>'
-                        + '<span class="adm-kal-fallback-meta">' + escapeHtml(tage)
-                        + (e.prio ? ' · P' + e.prio : '') + '</span></span>';
-                }).join(' ');
-        }
 
         // Grid-Skelett aufbauen
         var std = KAL_END_H - KAL_START_H;
@@ -289,12 +273,37 @@
         for (var d = 1; d <= 7; d++) {
             spalten += '<div class="adm-kal-tag" data-tag="' + d + '" style="height:' + (std * KAL_ROW_H) + 'px"></div>';
         }
+        var gzZellen = '';
+        for (var gd = 1; gd <= 7; gd++) { gzZellen += '<div class="adm-kal-gz-tag" data-tag="' + gd + '"></div>'; }
         gridEl.innerHTML =
             '<div class="adm-kal-kopf">' + head + '</div>' +
+            '<div class="adm-kal-ganztags">' +
+                '<div class="adm-kal-gz-label">Ganztags</div>' + gzZellen +
+            '</div>' +
             '<div class="adm-kal-body">' +
                 '<div class="adm-kal-stundenspalte" style="height:' + (std * KAL_ROW_H) + 'px">' + stunden + '</div>' +
                 '<div class="adm-kal-spalten">' + spalten + '</div>' +
             '</div>';
+
+        // Ganztags-Blöcke in die Tagesspalten einsetzen (DOM-Reihenfolge —
+        // das Wrapper-Binding der zeit-ids verlässt sich darauf)
+        fallbacks.forEach(function (e) {
+            var pl   = itemName('playlist', e.playlist_id);
+            var name = pl ? pl.name : '?';
+            e.tage.forEach(function (tag) {
+                var zelle = gridEl.querySelector('.adm-kal-gz-tag[data-tag="' + tag + '"]');
+                if (!zelle) { return; }
+                var b = document.createElement('div');
+                b.className = 'adm-kal-gz-block';
+                b.style.background = playlistFarbe(name);
+                b.innerHTML = '<span class="adm-kal-block-titel">' + escapeHtml(name) + '</span>'
+                    + '<span class="adm-kal-block-meta">ganztags'
+                    + (e.prio ? ' · P' + e.prio : '')
+                    + (pl && !pl.aktiv ? ' · pausiert' : '') + '</span>';
+                b.title = name + ' · ganztags (Fallback)' + (e.prio ? ' · Priorität ' + e.prio : '');
+                zelle.appendChild(b);
+            });
+        });
 
         // Zeitgebundene Einträge einsetzen — pro Wochentag ein Block
         var startMin = KAL_START_H * 60, endMin = KAL_END_H * 60;
@@ -432,7 +441,6 @@
         // Resize-Handles anhängen, Fallback-Chips klickbar machen.
         var eintraege = leseEintraegeAusDomMitId();
         var gridEl    = document.getElementById('pl-kalender-grid');
-        var fbEl      = document.getElementById('pl-kalender-fallback');
 
         // Blöcke im Grid — pro Tag der passende Kalender-Block
         eintraege.forEach(function (e) {
@@ -471,26 +479,20 @@
         // Etappe C: Farb-Legende (alle im Zeitplan vorkommenden Playlists)
         baueLegende(eintraege);
 
-        // Fallback-Chips klickbar machen — jedem Chip die passende zeit-id anhängen
-        var fbChips = fbEl.querySelectorAll('.adm-kal-fallback-item');
-        var fbEintraege = eintraege.filter(function (e) { return !e.von && !e.bis; });
-        fbChips.forEach(function (chip, i) {
-            if (fbEintraege[i]) {
-                chip.setAttribute('data-zeit-id', fbEintraege[i].zid);
-                chip.classList.add('adm-kal-fallback-item--interaktiv');
-                chip.title = 'Bearbeiten';
-            }
+        // Ganztags-Blöcke mit zeit-id verknüpfen — gleiche Iterationsreihenfolge
+        // wie beim Aufbau in rendereKalender, daher Auffüllen nach DOM-Ordnung.
+        eintraege.forEach(function (e) {
+            if (e.von || e.bis) { return; }
+            e.tage.forEach(function (tag) {
+                var zelle = gridEl.querySelector('.adm-kal-gz-tag[data-tag="' + tag + '"]');
+                if (!zelle) { return; }
+                var kandidat = zelle.querySelector('.adm-kal-gz-block:not([data-zeit-id])');
+                if (kandidat) {
+                    kandidat.setAttribute('data-zeit-id', e.zid);
+                    kandidat.title += ' · Klicken zum Bearbeiten';
+                }
+            });
         });
-
-        // "+ Fallback"-Button in Fallback-Zeile
-        if (!fbEl.querySelector('.adm-kal-fallback-neu')) {
-            var neu = document.createElement('button');
-            neu.type = 'button';
-            neu.className = 'adm-kal-fallback-neu';
-            neu.textContent = '+ Fallback';
-            neu.title = 'Ganztägigen Eintrag hinzufügen';
-            fbEl.appendChild(neu);
-        }
     };
 
     // Überlappende Blöcke innerhalb einer Tagesspalte nebeneinander anordnen.
@@ -724,7 +726,6 @@
 
     // ---- Klick + Drag im Grid ---------------------------------------------
     var gridEl = document.getElementById('pl-kalender-grid');
-    var fbEl   = document.getElementById('pl-kalender-fallback');
 
     function snap15Min(minGesamt) { return Math.round(minGesamt / 15) * 15; }
     function minZuHhmm(m) {
@@ -843,6 +844,30 @@
     // Klick auf leere Grid-Zelle → Neu-Dialog mit Tag + Zeit vorbelegt
     gridEl.addEventListener('click', function (e) {
         if (drag || Date.now() < _suppressClickUntil) { return; }
+        // Ganztags-Zeile: Block = bearbeiten, leere Zelle = neuer Fallback für den Tag
+        var gzBlock = e.target.closest('.adm-kal-gz-block[data-zeit-id]');
+        if (gzBlock) {
+            var zidG = gzBlock.getAttribute('data-zeit-id');
+            var eg = leseZeile(zidG);
+            if (eg) {
+                zdOeffnen({
+                    zid: zidG,
+                    playlist_id: eg.playlist_id, tage: eg.tage,
+                    von: '', bis: '',
+                    prio: eg.prio, dauer: eg.dauer_sek,
+                    ganztags: true
+                });
+            }
+            return;
+        }
+        var gzZelle = e.target.closest('.adm-kal-gz-tag');
+        if (gzZelle) {
+            zdOeffnen({
+                tage: [parseInt(gzZelle.getAttribute('data-tag'), 10)],
+                ganztags: true, prio: 0, dauer: 300
+            });
+            return;
+        }
         // Klick auf Block wird schon in mouseup verarbeitet
         if (e.target.closest('.adm-kal-block')) { return; }
         var col = e.target.closest('.adm-kal-tag');
@@ -860,23 +885,4 @@
         });
     });
 
-    // Fallback: Chip = Bearbeiten, "+ Fallback"-Button = Neu (ganztags)
-    fbEl.addEventListener('click', function (e) {
-        if (e.target.closest('.adm-kal-fallback-neu')) {
-            zdOeffnen({ tage: [1,2,3,4,5,6,7], ganztags: true, prio: 0, dauer: 300 });
-            return;
-        }
-        var chip = e.target.closest('.adm-kal-fallback-item[data-zeit-id]');
-        if (!chip) { return; }
-        var zid = chip.getAttribute('data-zeit-id');
-        var eintrag = leseZeile(zid);
-        if (!eintrag) { return; }
-        zdOeffnen({
-            zid: zid,
-            playlist_id: eintrag.playlist_id, tage: eintrag.tage,
-            von: '', bis: '',
-            prio: eintrag.prio, dauer: eintrag.dauer_sek,
-            ganztags: true
-        });
-    });
 })();

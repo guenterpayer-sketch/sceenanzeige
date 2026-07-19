@@ -1159,6 +1159,11 @@ a.adm-kachel-link:hover { background: #fbeaea; }
     gap: 1px;
 }
 
+/* Monitor-Zeitplan: Ganztags-Zeile ist bearbeitbar */
+.adm-kal-gz-tag { cursor: crosshair; }
+.adm-kal-gz-block[data-zeit-id] { cursor: pointer; }
+.adm-kal-gz-block[data-zeit-id]:hover { filter: brightness(1.12); }
+
 .adm-kal-block-monitore {
     font-size: 10px;
     font-weight: 600;
