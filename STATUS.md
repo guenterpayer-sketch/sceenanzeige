@@ -3,7 +3,7 @@
 > **Branch:** `claude/intelligent-cray-im1xte`  
 > Eine neue Session liest `CLAUDE.md` (Konzept) + diese Datei (Stand) und kann sofort weiterarbeiten.
 
-_Letzte Aktualisierung: Schritt 24 auf Staging — globaler Wochenplan (alle Monitore, nur lesen); Schritt 23 Etappe C auf Staging (Lanes, Tag-Drag, Resize oben)._
+_Letzte Aktualisierung: Schritt 23 (komplett) + 24 live — Wochenkalender mit Lanes/Tag-Drag/Resize oben, globaler Wochenplan, Ganztags-Zeile in beiden Kalendern._
 
 ---
 
@@ -36,8 +36,8 @@ _Letzte Aktualisierung: Schritt 24 auf Staging — globaler Wochenplan (alle Mon
 | 20 | Slide-Engine: Trennung Inhalt/Präsentation (`KONZEPT_SLIDE_ENGINE.md`) | ✅ live |
 | 21 | Uhr-Modul: Analog-Zifferblatt (SVG, Ziffern 12/3/6/9, roter Sekundenzeiger) + Hintergrundbild mit Transparenz-Pill; Setting-Typ `mediathek_bild` | ✅ live |
 | 22 | Playlist-Editor: Duplikat-Sperre entfernt — Instanzen mehrfach pro Spalte und über Spalten hinweg | ✅ live |
-| 23 | Monitor-Zeitplan: Wochenkalender-Ansicht (Etappe A + B: lesen + bearbeiten; Etappe C: Lanes bei Überlappung, Tag-Tausch per Quer-Drag, Resize oben, Farb-Legende) | ✅ A+B live, C auf Staging |
-| 24 | Globaler Wochenplan (`admin/wochenplan.php` + `assets/js/admin/wochenplan.js`): alle Monitore in einem Kalender (nur lesen), Gruppierung identischer Einträge mit Monitor-Badges, Filter-Checkboxen | 🧪 auf Staging |
+| 23 | Monitor-Zeitplan: Wochenkalender-Ansicht (Etappe A + B: lesen + bearbeiten; Etappe C: Lanes bei Überlappung, Tag-Tausch per Quer-Drag, Resize oben, Ganztags-Zeile in Tagesspalten) | ✅ komplett live |
+| 24 | Globaler Wochenplan (`admin/wochenplan.php` + `assets/js/admin/wochenplan.js`): alle Monitore in einem Kalender (nur lesen), Gruppierung identischer Einträge mit Monitor-Badges, Filter-Checkboxen, Ganztags-Zeile | ✅ live |
 
 ---
 

@@ -298,8 +298,8 @@ FRET-Polling 5–10 Sek., Ticker unabhängig.
 | 20 | Slide-Engine: Module liefern nur Inhalt, Engine besitzt Präsentation (Konzept + Stand: `KONZEPT_SLIDE_ENGINE.md`) | ✅ live |
 | 21 | Uhr-Modul: Analog-Zifferblatt (SVG) + Hintergrundbild/Transparenz-Pill; neuer Setting-Typ `mediathek_bild` (Registry + Picker in `instanz.php`) | ✅ live |
 | 22 | Playlist-Editor: Duplikat-Sperre entfernt — Instanzen mehrfach in Spalte und über Spalten hinweg (A → B → A → C) | ✅ live |
-| 23 | Monitor-Zeitplan: Wochenkalender-Ansicht in Etappen — A: nur lesen, B: bearbeiten (Klick/Drag), C: Politur (Lanes, Tag-Drag, Resize oben, Legende) | ✅ komplett, C auf Staging |
-| 24 | Globaler Wochenplan (`admin/wochenplan.php`): Zeitpläne ALLER Monitore in einem Kalender, nur lesen; identische Einträge monitorübergreifend zu einem Block zusammengefasst, Monitor-Filter-Checkboxen | 🧪 auf Staging |
+| 23 | Monitor-Zeitplan: Wochenkalender-Ansicht in Etappen — A: nur lesen, B: bearbeiten (Klick/Drag), C: Politur (Lanes, Tag-Drag, Resize oben, Ganztags-Zeile in Tagesspalten) | ✅ komplett live |
+| 24 | Globaler Wochenplan (`admin/wochenplan.php`): Zeitpläne ALLER Monitore in einem Kalender, nur lesen; identische Einträge monitorübergreifend zu einem Block zusammengefasst, Monitor-Filter-Checkboxen, Ganztags-Zeile | ✅ live |
 
 ---
 
