@@ -1102,6 +1102,38 @@ a.adm-kachel-link:hover { background: #fbeaea; }
     gap: 6px;
     color: #1c2733;
 }
+/* ── Globaler Wochenplan (wochenplan.php) ────────────────────────────────── */
+
+.adm-wp-filter {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    padding: 10px 12px;
+    background: #f4f6f9;
+    border-radius: 6px;
+    margin-bottom: 14px;
+    font-size: 14px;
+}
+.adm-wp-filter-label { color: #5a6b7d; font-weight: 500; }
+.adm-wp-filter-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.adm-kal-block-monitore {
+    font-size: 10px;
+    font-weight: 600;
+    opacity: .9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.adm-kal-block--klein .adm-kal-block-monitore { display: none; }
+
 .adm-kal-legende-farbe {
     width: 14px;
     height: 14px;
