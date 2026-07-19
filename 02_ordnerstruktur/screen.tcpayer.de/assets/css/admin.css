@@ -971,7 +971,7 @@ a.adm-kachel-link:hover { background: #fbeaea; }
 }
 .adm-kal-kopf {
     display: grid;
-    grid-template-columns: 60px repeat(7, 1fr);
+    grid-template-columns: 60px repeat(7, minmax(0, 1fr));
     background: #f4f6f9;
     border-bottom: 1px solid #dde3ea;
 }
@@ -1008,7 +1008,7 @@ a.adm-kachel-link:hover { background: #fbeaea; }
 
 .adm-kal-spalten {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(7, minmax(0, 1fr));
     position: relative;
 }
 .adm-kal-tag {
@@ -1127,7 +1127,9 @@ a.adm-kachel-link:hover { background: #fbeaea; }
 /* Ganztags-Zeile: Fallback-Einträge oben in der jeweiligen Tagesspalte */
 .adm-kal-ganztags {
     display: grid;
-    grid-template-columns: 60px repeat(7, 1fr);
+    /* minmax(0, 1fr): Spalten dürfen NICHT an langen Namen wachsen —
+       sonst verschieben sie sich gegenüber Kopf/Zeitraster */
+    grid-template-columns: 60px repeat(7, minmax(0, 1fr));
     background: #fbfcfd;
     border-bottom: 2px solid #dde3ea;
 }
@@ -1145,6 +1147,12 @@ a.adm-kachel-link:hover { background: #fbeaea; }
     flex-direction: column;
     gap: 3px;
     min-height: 26px;
+    min-width: 0; /* Blöcke dürfen die Zelle nicht aufweiten */
+}
+.adm-kal-gz-block .adm-kal-block-titel {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .adm-kal-gz-block {
     padding: 3px 6px;
