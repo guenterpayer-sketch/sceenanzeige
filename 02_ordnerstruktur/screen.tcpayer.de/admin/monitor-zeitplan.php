@@ -234,13 +234,18 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
     <div class="adm-card adm-pl-ansicht" data-ansicht="kalender" hidden>
         <h2>Playlist-Zeitplan · Wochenkalender</h2>
         <p class="adm-hilfe">
-            Nur-Ansicht: zeigt die im Reiter „Klassisch" gepflegten Einträge visuell an.
-            Ganztägige Einträge (ohne Uhrzeit) stehen oben als <strong>Fallback</strong>.
-            Bei Überschneidungen gewinnt der Eintrag mit höherer Priorität (P-Badge).
-            Zum Bearbeiten in den Reiter „Klassisch" wechseln.
+            Klick auf eine freie Stelle legt einen neuen Eintrag an, Klick auf einen
+            Block öffnet ihn zum Bearbeiten. Blöcke lassen sich <strong>ziehen</strong>
+            (Uhrzeit ändern, quer = Wochentag tauschen) und an <strong>Ober-/Unterkante</strong>
+            in 15-Minuten-Schritten anpassen. Ganztägige Einträge (Fallback) stehen in der
+            <strong>Ganztags-Zeile</strong> oben in ihrer Tagesspalte — Klick auf eine
+            freie Stelle dort legt einen neuen Fallback für den Tag an.
+            Überlappende Einträge stehen nebeneinander —
+            der mit höherer Priorität (P-Badge) links, er gewinnt auf dem Monitor.
+            Änderungen gelten erst nach <strong>Speichern</strong>.
         </p>
-        <div id="pl-kalender-fallback" class="adm-kal-fallback"></div>
         <div id="pl-kalender-grid" class="adm-kal-grid"></div>
+        <div id="pl-kalender-legende" class="adm-kal-legende"></div>
     </div>
 
     <div class="adm-card">

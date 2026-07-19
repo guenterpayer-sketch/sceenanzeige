@@ -971,7 +971,7 @@ a.adm-kachel-link:hover { background: #fbeaea; }
 }
 .adm-kal-kopf {
     display: grid;
-    grid-template-columns: 60px repeat(7, 1fr);
+    grid-template-columns: 60px repeat(7, minmax(0, 1fr));
     background: #f4f6f9;
     border-bottom: 1px solid #dde3ea;
 }
@@ -1008,7 +1008,7 @@ a.adm-kachel-link:hover { background: #fbeaea; }
 
 .adm-kal-spalten {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(7, minmax(0, 1fr));
     position: relative;
 }
 .adm-kal-tag {
@@ -1069,6 +1069,125 @@ a.adm-kachel-link:hover { background: #fbeaea; }
     border-bottom-right-radius: 4px;
 }
 .adm-kal-block-resize:hover { background: rgba(255,255,255,.35); }
+
+.adm-kal-block-resize-oben {
+    position: absolute;
+    left: 0; right: 0; top: 0;
+    height: 6px;
+    cursor: ns-resize;
+    background: rgba(255,255,255,.15);
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+}
+.adm-kal-block-resize-oben:hover { background: rgba(255,255,255,.35); }
+
+/* Etappe C: sehr kurze Einträge (< 45 min) kompakt — nur Titel, kleine Schrift */
+.adm-kal-block--klein { padding: 1px 4px; font-size: 10px; gap: 0; }
+.adm-kal-block--klein .adm-kal-block-meta { display: none; }
+
+/* Etappe C: Farb-Legende unter dem Kalender */
+.adm-kal-legende {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 14px;
+    margin-top: 10px;
+    font-size: 13px;
+}
+.adm-kal-legende:empty { display: none; }
+.adm-kal-legende-label { color: #5a6b7d; font-weight: 500; }
+.adm-kal-legende-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #1c2733;
+}
+/* ── Globaler Wochenplan (wochenplan.php) ────────────────────────────────── */
+
+.adm-wp-filter {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    padding: 10px 12px;
+    background: #f4f6f9;
+    border-radius: 6px;
+    margin-bottom: 14px;
+    font-size: 14px;
+}
+.adm-wp-filter-label { color: #5a6b7d; font-weight: 500; }
+.adm-wp-filter-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    user-select: none;
+}
+
+/* Ganztags-Zeile: Fallback-Einträge oben in der jeweiligen Tagesspalte */
+.adm-kal-ganztags {
+    display: grid;
+    /* minmax(0, 1fr): Spalten dürfen NICHT an langen Namen wachsen —
+       sonst verschieben sie sich gegenüber Kopf/Zeitraster */
+    grid-template-columns: 60px repeat(7, minmax(0, 1fr));
+    background: #fbfcfd;
+    border-bottom: 2px solid #dde3ea;
+}
+.adm-kal-gz-label {
+    padding: 6px 6px 6px 0;
+    font-size: 11px;
+    color: #8a97a6;
+    text-align: right;
+    align-self: center;
+}
+.adm-kal-gz-tag {
+    border-left: 1px solid #eef1f5;
+    padding: 3px 2px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-height: 26px;
+    min-width: 0; /* Blöcke dürfen die Zelle nicht aufweiten */
+}
+.adm-kal-gz-block .adm-kal-block-titel {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.adm-kal-gz-block {
+    padding: 3px 6px;
+    color: #fff;
+    border-radius: 4px;
+    font-size: 12px;
+    line-height: 1.25;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,.15);
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+/* Monitor-Zeitplan: Ganztags-Zeile ist bearbeitbar */
+.adm-kal-gz-tag { cursor: crosshair; }
+.adm-kal-gz-block[data-zeit-id] { cursor: pointer; }
+.adm-kal-gz-block[data-zeit-id]:hover { filter: brightness(1.12); }
+
+.adm-kal-block-monitore {
+    font-size: 10px;
+    font-weight: 600;
+    opacity: .9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.adm-kal-block--klein .adm-kal-block-monitore { display: none; }
+
+.adm-kal-legende-farbe {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.2);
+}
 
 .adm-kal-tag { cursor: crosshair; }
 
