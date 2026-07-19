@@ -1070,6 +1070,45 @@ a.adm-kachel-link:hover { background: #fbeaea; }
 }
 .adm-kal-block-resize:hover { background: rgba(255,255,255,.35); }
 
+.adm-kal-block-resize-oben {
+    position: absolute;
+    left: 0; right: 0; top: 0;
+    height: 6px;
+    cursor: ns-resize;
+    background: rgba(255,255,255,.15);
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+}
+.adm-kal-block-resize-oben:hover { background: rgba(255,255,255,.35); }
+
+/* Etappe C: sehr kurze Einträge (< 45 min) kompakt — nur Titel, kleine Schrift */
+.adm-kal-block--klein { padding: 1px 4px; font-size: 10px; gap: 0; }
+.adm-kal-block--klein .adm-kal-block-meta { display: none; }
+
+/* Etappe C: Farb-Legende unter dem Kalender */
+.adm-kal-legende {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 14px;
+    margin-top: 10px;
+    font-size: 13px;
+}
+.adm-kal-legende:empty { display: none; }
+.adm-kal-legende-label { color: #5a6b7d; font-weight: 500; }
+.adm-kal-legende-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #1c2733;
+}
+.adm-kal-legende-farbe {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.2);
+}
+
 .adm-kal-tag { cursor: crosshair; }
 
 .adm-kal-fallback-item--interaktiv { cursor: pointer; }

@@ -447,13 +447,29 @@
                 if (!kandidat) { return; }
                 kandidat.setAttribute('data-zeit-id', e.zid);
                 kandidat.setAttribute('data-tag', tag);
+                kandidat.setAttribute('data-prio', String(e.prio));
                 kandidat.classList.add('adm-kal-block--interaktiv');
                 var handle = document.createElement('div');
                 handle.className = 'adm-kal-block-resize';
                 handle.title = 'Ende ziehen';
                 kandidat.appendChild(handle);
+                var handleOben = document.createElement('div');
+                handleOben.className = 'adm-kal-block-resize-oben';
+                handleOben.title = 'Beginn ziehen';
+                kandidat.appendChild(handleOben);
             });
         });
+
+        // Etappe C: Überlappende Blöcke nebeneinander statt übereinander
+        verteileLanes(gridEl);
+
+        // Etappe C: sehr kurze Einträge kompakter darstellen (Meta ausblenden)
+        gridEl.querySelectorAll('.adm-kal-block').forEach(function (b) {
+            if ((parseFloat(b.style.height) || 0) < 34) { b.classList.add('adm-kal-block--klein'); }
+        });
+
+        // Etappe C: Farb-Legende (alle im Zeitplan vorkommenden Playlists)
+        baueLegende(eintraege);
 
         // Fallback-Chips klickbar machen — jedem Chip die passende zeit-id anhängen
         var fbChips = fbEl.querySelectorAll('.adm-kal-fallback-item');
@@ -476,6 +492,71 @@
             fbEl.appendChild(neu);
         }
     };
+
+    // Überlappende Blöcke innerhalb einer Tagesspalte nebeneinander anordnen.
+    // Transitiv überlappende Blöcke bilden einen Cluster; im Cluster bekommt
+    // jeder Block eine Lane (höhere Priorität weiter links), die Spaltenbreite
+    // wird gleichmäßig auf die Lanes aufgeteilt.
+    function verteileLanes(gridEl) {
+        gridEl.querySelectorAll('.adm-kal-tag').forEach(function (col) {
+            var blocks = col.querySelectorAll('.adm-kal-block');
+            if (blocks.length < 2) { return; }
+            var infos = Array.prototype.map.call(blocks, function (b) {
+                var top = parseFloat(b.style.top) || 0;
+                return { el: b, top: top, bottom: top + (parseFloat(b.style.height) || 0),
+                         prio: parseInt(b.getAttribute('data-prio'), 10) || 0 };
+            });
+            infos.sort(function (a, b) { return a.top - b.top || b.prio - a.prio; });
+            var cluster = [], aktuell = null, ende = -1;
+            infos.forEach(function (i) {
+                if (!aktuell || i.top >= ende) { aktuell = []; cluster.push(aktuell); }
+                ende = aktuell.length ? Math.max(ende, i.bottom) : i.bottom;
+                aktuell.push(i);
+            });
+            cluster.forEach(function (c) {
+                if (c.length < 2) { return; }
+                c.sort(function (a, b) { return b.prio - a.prio || a.top - b.top; });
+                var lanes = []; // je Lane die bereits platzierten Blöcke
+                c.forEach(function (i) {
+                    var l = -1;
+                    for (var k = 0; k < lanes.length; k++) {
+                        var frei = lanes[k].every(function (o) {
+                            return i.bottom <= o.top || i.top >= o.bottom;
+                        });
+                        if (frei) { l = k; break; }
+                    }
+                    if (l === -1) { lanes.push([]); l = lanes.length - 1; }
+                    lanes[l].push(i);
+                    i.lane = l;
+                });
+                var n = lanes.length;
+                c.forEach(function (i) {
+                    i.el.style.left  = 'calc(' + (i.lane * 100 / n) + '% + 2px)';
+                    i.el.style.right = 'auto';
+                    i.el.style.width = 'calc(' + (100 / n) + '% - 4px)';
+                });
+            });
+        });
+    }
+
+    // Farb-Legende unter dem Kalender: welche Farbe gehört zu welcher Playlist
+    function baueLegende(eintraege) {
+        var legEl = document.getElementById('pl-kalender-legende');
+        if (!legEl) { return; }
+        var gesehen = {}, chips = [];
+        eintraege.forEach(function (e) {
+            var it = itemName('playlist', e.playlist_id);
+            var name = it ? it.name : '?';
+            if (gesehen[name]) { return; }
+            gesehen[name] = true;
+            chips.push('<span class="adm-kal-legende-item">' +
+                '<span class="adm-kal-legende-farbe" style="background:' + playlistFarbe(name) + '"></span>' +
+                escapeHtml(name) + '</span>');
+        });
+        legEl.innerHTML = chips.length
+            ? '<span class="adm-kal-legende-label">Playlists:</span>' + chips.join('')
+            : '';
+    }
 
     function leseEintraegeAusDomMitId() {
         var out = [];
@@ -662,17 +743,21 @@
         var block = e.target.closest('.adm-kal-block[data-zeit-id]');
         if (!block) { return; }
         var handle = e.target.closest('.adm-kal-block-resize');
+        var handleOben = e.target.closest('.adm-kal-block-resize-oben');
         var zid = block.getAttribute('data-zeit-id');
         var eintrag = leseZeile(zid);
         if (!eintrag) { return; }
         drag = {
             zid: zid,
-            kind: handle ? 'resize' : 'move',
+            kind: handle ? 'resize' : (handleOben ? 'resize-oben' : 'move'),
             startY: e.clientY,
+            startX: e.clientX,
             urVon: eintrag.von, urBis: eintrag.bis,
             blockEl: block,
+            origTop: parseInt(block.style.top, 10) || 0,
             origHeight: parseInt(block.style.height, 10) || KAL_ROW_H,
-            dy: 0,
+            tagAlt: parseInt(block.getAttribute('data-tag'), 10) || 0,
+            dy: 0, dx: 0,
             bewegt: false
         };
         block.classList.add('wird-bewegt');
@@ -682,12 +767,17 @@
     document.addEventListener('mousemove', function (e) {
         if (!drag) { return; }
         drag.dy = e.clientY - drag.startY;
-        if (Math.abs(drag.dy) >= DRAG_SCHWELLE) { drag.bewegt = true; }
+        drag.dx = e.clientX - drag.startX;
+        if (Math.abs(drag.dy) >= DRAG_SCHWELLE || Math.abs(drag.dx) >= DRAG_SCHWELLE) { drag.bewegt = true; }
         // Live-Preview (nur visuell; echte Werte in mouseup)
         if (drag.kind === 'move') {
-            drag.blockEl.style.transform = 'translateY(' + drag.dy + 'px)';
-        } else {
+            drag.blockEl.style.transform = 'translate(' + drag.dx + 'px,' + drag.dy + 'px)';
+        } else if (drag.kind === 'resize') {
             drag.blockEl.style.height = Math.max(KAL_ROW_H / 4, drag.origHeight + drag.dy) + 'px';
+        } else { // resize-oben: Oberkante folgt, Unterkante bleibt
+            var dyC = Math.min(drag.origHeight - KAL_ROW_H / 4, drag.dy);
+            drag.blockEl.style.top    = (drag.origTop + dyC) + 'px';
+            drag.blockEl.style.height = (drag.origHeight - dyC) + 'px';
         }
     });
 
@@ -696,6 +786,8 @@
         var d = drag; drag = null;
         d.blockEl.classList.remove('wird-bewegt');
         d.blockEl.style.transform = '';
+        d.blockEl.style.top = d.origTop + 'px';
+        d.blockEl.style.height = d.origHeight + 'px';
 
         // Nicht bewegt → Klick → Detail-Dialog öffnen
         if (!d.bewegt) {
@@ -722,11 +814,28 @@
             var deltaMin = snap15Min(d.dy / KAL_ROW_H * 60);
             var laenge = bisMinAlt - vonMinAlt;
             var vonMin = Math.max(0, Math.min(24 * 60 - laenge, vonMinAlt + deltaMin));
-            schreibeZeile(d.zid, { von: minZuHhmm(vonMin), bis: minZuHhmm(vonMin + laenge) });
-        } else {
+            var patch = { von: minZuHhmm(vonMin), bis: minZuHhmm(vonMin + laenge) };
+            // Quer gezogen? → nur den gezogenen Wochentag tauschen, die
+            // übrigen Tage des Eintrags bleiben unverändert.
+            var colEl = gridEl.querySelector('.adm-kal-tag');
+            var colW  = colEl ? colEl.getBoundingClientRect().width : 0;
+            var deltaTage = colW ? Math.round(d.dx / colW) : 0;
+            var neuTag = Math.max(1, Math.min(7, d.tagAlt + deltaTage));
+            if (d.tagAlt && neuTag !== d.tagAlt) {
+                var tage = eintrag.tage.filter(function (t) { return t !== d.tagAlt; });
+                if (tage.indexOf(neuTag) === -1) { tage.push(neuTag); }
+                tage.sort(function (a, b) { return a - b; });
+                patch.tage = tage;
+            }
+            schreibeZeile(d.zid, patch);
+        } else if (d.kind === 'resize') {
             var dauerMin = Math.max(15, snap15Min((d.origHeight + d.dy) / KAL_ROW_H * 60));
             var bisMin = Math.min(24 * 60, vonMinAlt + dauerMin);
             schreibeZeile(d.zid, { bis: minZuHhmm(bisMin) });
+        } else { // resize-oben: Startzeit ändern, Ende bleibt
+            var deltaMinO = snap15Min(d.dy / KAL_ROW_H * 60);
+            var vonMinNeu = Math.min(bisMinAlt - 15, Math.max(0, vonMinAlt + deltaMinO));
+            schreibeZeile(d.zid, { von: minZuHhmm(vonMinNeu) });
         }
         refreshKalender();
     });
