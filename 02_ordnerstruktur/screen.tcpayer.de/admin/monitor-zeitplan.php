@@ -904,13 +904,21 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
     zd.abbrechen.addEventListener('click', zdSchliessen);
     zd.overlay.addEventListener('click', function (e) { if (e.target === zd.overlay) { zdSchliessen(); } });
     zd.duplizieren.addEventListener('click', function () {
-        // Aus Bearbeiten-Modus wird Neu-Modus mit vorbelegten Werten.
-        // Für die typische Anpassung (andere Tage / andere Uhrzeit) alle
-        // Wochentage abwählen — der Nutzer wählt gezielt neu.
-        zdState.zid = null;
-        zdState.tage = [];
-        zd.titel.textContent = 'Neuer Eintrag (Duplikat)';
-        zdBefuelle();
+        // Sichtbarer Wechsel: Dialog kurz schließen, dann als NEUER Eintrag
+        // wieder öffnen (mit vorbelegten Werten, aber ohne Wochentage —
+        // die wählt man gezielt neu). Der Zu-/Auf-Effekt macht klar, dass
+        // jetzt ein Duplikat und nicht der Originaleintrag bearbeitet wird.
+        var vorlage = Object.assign({}, zdState, { zid: null, tage: [] });
+        zdSchliessen();
+        setTimeout(function () {
+            zdOeffnen(vorlage);
+            zd.titel.textContent = 'Neuer Eintrag (Duplikat)';
+            zd.overlay.querySelector('.adm-dialog').classList.add('zd-flash');
+            setTimeout(function () {
+                var dlg = zd.overlay.querySelector('.adm-dialog');
+                if (dlg) { dlg.classList.remove('zd-flash'); }
+            }, 600);
+        }, 180);
     });
     zd.loeschen.addEventListener('click', function () {
         admBestaetigen('Diesen Zeitplan-Eintrag löschen?', function (ok) {
@@ -954,8 +962,12 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
         return String(h).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
     }
 
-    // Drag-Tracking (Verschieben eines Blocks bzw. Ziehen der Unterkante)
-    var drag = null; // { zid, tag, kind: 'move'|'resize', startY, urVon, urBis, spalteEl, blockEl }
+    // Drag-Tracking (Verschieben eines Blocks bzw. Ziehen der Unterkante).
+    // dy wird durchgehend vom Startpunkt gemessen (startY wird NIE zurück-
+    // gesetzt) → zuverlässige Klick-/Drag-Unterscheidung und exakte Werte.
+    var drag = null;
+    var DRAG_SCHWELLE = 4;          // px, ab hier gilt es als Ziehen (nicht Klick)
+    var _suppressClickUntil = 0;    // unterdrückt den Klick direkt nach einem Drag
 
     gridEl.addEventListener('mousedown', function (e) {
         var block = e.target.closest('.adm-kal-block[data-zeit-id]');
@@ -966,12 +978,13 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
         if (!eintrag) { return; }
         drag = {
             zid: zid,
-            tag: parseInt(block.getAttribute('data-tag'), 10),
             kind: handle ? 'resize' : 'move',
             startY: e.clientY,
             urVon: eintrag.von, urBis: eintrag.bis,
             blockEl: block,
-            distanz: 0
+            origHeight: parseInt(block.style.height, 10) || KAL_ROW_H,
+            dy: 0,
+            bewegt: false
         };
         block.classList.add('wird-bewegt');
         e.preventDefault();
@@ -979,62 +992,51 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
 
     document.addEventListener('mousemove', function (e) {
         if (!drag) { return; }
-        var dy = e.clientY - drag.startY;
-        drag.distanz = Math.max(drag.distanz, Math.abs(dy));
-        // Live-Preview: nur visuell, echte Werte kommen erst bei mouseup
+        drag.dy = e.clientY - drag.startY;
+        if (Math.abs(drag.dy) >= DRAG_SCHWELLE) { drag.bewegt = true; }
+        // Live-Preview (nur visuell; echte Werte in mouseup)
         if (drag.kind === 'move') {
-            drag.blockEl.style.transform = 'translateY(' + dy + 'px)';
+            drag.blockEl.style.transform = 'translateY(' + drag.dy + 'px)';
         } else {
-            var neu = parseInt(drag.blockEl.style.height, 10) + dy;
-            drag.blockEl.style.height = Math.max(KAL_ROW_H / 4, neu) + 'px';
-            drag.startY = e.clientY;
+            drag.blockEl.style.height = Math.max(KAL_ROW_H / 4, drag.origHeight + drag.dy) + 'px';
         }
     });
 
-    document.addEventListener('mouseup', function (e) {
+    document.addEventListener('mouseup', function () {
         if (!drag) { return; }
         var d = drag; drag = null;
-        // Zustand VOR dem Reset lesen
-        var dyMove = 0, neueH = 0;
-        if (d.kind === 'move') {
-            var m = /translateY\(([-\d.]+)px\)/.exec(d.blockEl.style.transform || '');
-            dyMove = m ? parseFloat(m[1]) : 0;
-        } else {
-            neueH = parseInt(d.blockEl.style.height, 10) || 0;
-        }
-        // Optik zurücksetzen — wird gleich vom refreshKalender neu gemalt
         d.blockEl.classList.remove('wird-bewegt');
         d.blockEl.style.transform = '';
 
-        // Klick (kaum bewegt) → Detail-Dialog öffnen
-        if (d.distanz < 5) {
-            var eintrag = leseZeile(d.zid);
-            if (eintrag) {
+        // Nicht bewegt → Klick → Detail-Dialog öffnen
+        if (!d.bewegt) {
+            var e0 = leseZeile(d.zid);
+            if (e0) {
                 zdOeffnen({
                     zid: d.zid,
-                    playlist_id: eintrag.playlist_id,
-                    tage: eintrag.tage,
-                    von: eintrag.von, bis: eintrag.bis,
-                    prio: eintrag.prio, dauer: eintrag.dauer_sek,
-                    ganztags: !eintrag.von && !eintrag.bis
+                    playlist_id: e0.playlist_id, tage: e0.tage,
+                    von: e0.von, bis: e0.bis,
+                    prio: e0.prio, dauer: e0.dauer_sek,
+                    ganztags: !e0.von && !e0.bis
                 });
             }
             return;
         }
-        // Bewegung → Werte anpassen
+
+        // Bewegung → Werte anpassen (aus d.dy, nicht aus dem DOM)
+        _suppressClickUntil = Date.now() + 300;
         var eintrag = leseZeile(d.zid);
         if (!eintrag) { return; }
         var vonMinAlt = zeitZuMin(d.urVon), bisMinAlt = zeitZuMin(d.urBis);
+        if (vonMinAlt == null || bisMinAlt == null) { refreshKalender(); return; }
         if (d.kind === 'move') {
-            var deltaMin = snap15Min(dyMove / KAL_ROW_H * 60);
-            var vonMin = Math.max(0, Math.min(24*60, vonMinAlt + deltaMin));
-            var bisMin = vonMin + (bisMinAlt - vonMinAlt);
-            if (bisMin > 24*60) { bisMin = 24*60; vonMin = bisMin - (bisMinAlt - vonMinAlt); }
-            schreibeZeile(d.zid, { von: minZuHhmm(vonMin), bis: minZuHhmm(bisMin) });
+            var deltaMin = snap15Min(d.dy / KAL_ROW_H * 60);
+            var laenge = bisMinAlt - vonMinAlt;
+            var vonMin = Math.max(0, Math.min(24 * 60 - laenge, vonMinAlt + deltaMin));
+            schreibeZeile(d.zid, { von: minZuHhmm(vonMin), bis: minZuHhmm(vonMin + laenge) });
         } else {
-            var dauerMin = snap15Min(neueH / KAL_ROW_H * 60);
-            if (dauerMin < 15) { dauerMin = 15; }
-            var bisMin = Math.min(24*60, vonMinAlt + dauerMin);
+            var dauerMin = Math.max(15, snap15Min((d.origHeight + d.dy) / KAL_ROW_H * 60));
+            var bisMin = Math.min(24 * 60, vonMinAlt + dauerMin);
             schreibeZeile(d.zid, { bis: minZuHhmm(bisMin) });
         }
         refreshKalender();
@@ -1042,7 +1044,7 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
 
     // Klick auf leere Grid-Zelle → Neu-Dialog mit Tag + Zeit vorbelegt
     gridEl.addEventListener('click', function (e) {
-        if (drag) { return; }
+        if (drag || Date.now() < _suppressClickUntil) { return; }
         // Klick auf Block wird schon in mouseup verarbeitet
         if (e.target.closest('.adm-kal-block')) { return; }
         var col = e.target.closest('.adm-kal-tag');
