@@ -543,7 +543,7 @@ html, body {
 /* ── Text-Elemente (Basis = Querformat) ── */
 
 .tm-va-datum {
-    font-size: 38px;
+    font-size: 60px;
     font-weight: 700;
     color: #e03535;
     letter-spacing: 0.02em;
@@ -552,7 +552,7 @@ html, body {
 }
 
 .tm-va-uhrzeit {
-    font-size: 30px;
+    font-size: 52px;
     opacity: 0.85;
     font-variant-numeric: tabular-nums;
     text-shadow: 0 2px 14px rgba(0, 0, 0, 0.95);
@@ -573,13 +573,13 @@ html, body {
 }
 
 /* Hochkant: etwas kleiner (Textspalte ~60 % der Breite) */
-.tm-va-slide--portrait .tm-va-datum  { font-size: 34px; }
-.tm-va-slide--portrait .tm-va-uhrzeit { font-size: 26px; }
+.tm-va-slide--portrait .tm-va-datum  { font-size: 46px; }
+.tm-va-slide--portrait .tm-va-uhrzeit { font-size: 40px; }
 .tm-va-slide--portrait .tm-va-titel  { font-size: 56px; -webkit-line-clamp: 3; }
 
 /* Kein Bild: kein Schlagschatten nötig, Titel darf maximal groß sein */
-.tm-va-slide--keinbild .tm-va-datum   { font-size: 40px; text-shadow: none; }
-.tm-va-slide--keinbild .tm-va-uhrzeit { font-size: 32px; text-shadow: none; }
+.tm-va-slide--keinbild .tm-va-datum   { font-size: 68px; text-shadow: none; }
+.tm-va-slide--keinbild .tm-va-uhrzeit { font-size: 60px; text-shadow: none; }
 .tm-va-slide--keinbild .tm-va-titel   { font-size: 84px; text-shadow: none; }
 
 .tm-va-status,
