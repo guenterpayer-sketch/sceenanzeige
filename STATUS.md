@@ -3,7 +3,7 @@
 > **Branch:** `claude/intelligent-cray-im1xte`  
 > Eine neue Session liest `CLAUDE.md` (Konzept) + diese Datei (Stand) und kann sofort weiterarbeiten.
 
-_Letzte Aktualisierung: Schritt 23 (komplett) + 24 live — Wochenkalender mit Lanes/Tag-Drag/Resize oben, globaler Wochenplan, Ganztags-Zeile in beiden Kalendern._
+_Letzte Aktualisierung: Veranstaltung — Datum/Uhrzeit-Schrift vergrößert (nur noch geringfügig kleiner als der Titel). Zuvor: Schritt 23 (komplett) + 24 live — Wochenkalender mit Lanes/Tag-Drag/Resize oben, globaler Wochenplan, Ganztags-Zeile in beiden Kalendern._
 
 ---
 
