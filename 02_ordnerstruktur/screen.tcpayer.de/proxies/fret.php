@@ -116,15 +116,43 @@ function song_aufbereiten(array $s): array
         ];
     }
 
+    $position         = (int)($s['position'] ?? 0);
+    $duration         = $s['duration'] ?? null;
+    $startTime        = $s['startTime'] ?? null;
+    $remainingSeconds = $s['remainingSeconds'] ?? null;
+
+    // remainingSeconds serverseitig aus startTime + duration NEU berechnen:
+    // FRETs eigener remainingSeconds-Wert ist unzuverlässig — er ist teils
+    // null und (per Live-Test bestätigt) teils VERALTET: er bleibt über
+    // mehrere Polls konstant, obwohl der Song weiterläuft. startTime ist
+    // dagegen ein fester, verlässlicher Zeitstempel. Deshalb rechnen wir den
+    // Rest IMMER aus startTime + duration gegen die NTP-korrekte Server-Uhr
+    // (nur laufender Song, position 0) und überschreiben FRETs Wert. Der
+    // Client bekommt so einen stets frischen, taktunabhängigen Wert
+    // (remainingSeconds + lokale Empfangszeit) und muss nicht gegen die – bei
+    // Google-TV oft falsch gestellte – Client-Uhr rechnen. startTime trägt
+    // einen Offset (z.B. +00:00) → strtotime liefert korrekte UTC-Epoch,
+    // microtime(true) ebenso. Nur wenn startTime fehlt, bleibt FRETs Wert.
+    if ($position === 0 && $startTime !== null && $duration !== null) {
+        $startTs = strtotime((string)$startTime);
+        if ($startTs !== false) {
+            $elapsed = microtime(true) - $startTs;
+            if ($elapsed < 0) {
+                $elapsed = 0.0; // startTime minimal in der Zukunft → voller Balken
+            }
+            $remainingSeconds = max(0.0, (float)$duration - $elapsed);
+        }
+    }
+
     return [
         'position'                   => $s['position'] ?? 0,
         'songId'                     => $s['songId'] ?? null,
         'title'                      => $s['title'] ?? '',
         'artist'                     => $s['artist'] ?? '',
         'taenze'                     => $taenze,
-        'duration'                   => $s['duration'] ?? null,
-        'startTime'                  => $s['startTime'] ?? null,
-        'remainingSeconds'           => $s['remainingSeconds'] ?? null,
+        'duration'                   => $duration,
+        'startTime'                  => $startTime,
+        'remainingSeconds'           => $remainingSeconds,
         'estimatedSecondsUntilStart' => $s['estimatedSecondsUntilStart'] ?? null,
         'coverImageUrl'              => $s['coverImageUrl'] ?? null,
         'year'                       => $s['year'] ?? null,
