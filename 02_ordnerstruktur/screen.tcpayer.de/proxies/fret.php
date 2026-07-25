@@ -121,23 +121,26 @@ function song_aufbereiten(array $s): array
     $startTime        = $s['startTime'] ?? null;
     $remainingSeconds = $s['remainingSeconds'] ?? null;
 
-    // Serverseitiger Fallback für remainingSeconds:
-    // FRET liefert remainingSeconds zeitweise null, obwohl startTime + duration
-    // gesetzt sind (nur beim laufenden Song, position 0). Dann rechnen wir den
-    // Rest aus der VERLÄSSLICHEN Server-Uhr (NTP) nach. Der Client bekommt so
-    // immer einen taktunabhängigen Wert (remainingSeconds + lokale Empfangs-
-    // zeit) und muss nicht auf die – bei Google-TV oft falsch gestellte –
-    // Client-Uhr gegen startTime rechnen (von FRET selbst als „fragil"
-    // dokumentiert). startTime trägt einen Offset (z.B. +00:00) → strtotime
-    // interpretiert korrekt in UTC-Epoch, microtime(true) ebenso.
-    if ($remainingSeconds === null && $position === 0
-        && $startTime !== null && $duration !== null) {
+    // remainingSeconds serverseitig aus startTime + duration NEU berechnen:
+    // FRETs eigener remainingSeconds-Wert ist unzuverlässig — er ist teils
+    // null und (per Live-Test bestätigt) teils VERALTET: er bleibt über
+    // mehrere Polls konstant, obwohl der Song weiterläuft. startTime ist
+    // dagegen ein fester, verlässlicher Zeitstempel. Deshalb rechnen wir den
+    // Rest IMMER aus startTime + duration gegen die NTP-korrekte Server-Uhr
+    // (nur laufender Song, position 0) und überschreiben FRETs Wert. Der
+    // Client bekommt so einen stets frischen, taktunabhängigen Wert
+    // (remainingSeconds + lokale Empfangszeit) und muss nicht gegen die – bei
+    // Google-TV oft falsch gestellte – Client-Uhr rechnen. startTime trägt
+    // einen Offset (z.B. +00:00) → strtotime liefert korrekte UTC-Epoch,
+    // microtime(true) ebenso. Nur wenn startTime fehlt, bleibt FRETs Wert.
+    if ($position === 0 && $startTime !== null && $duration !== null) {
         $startTs = strtotime((string)$startTime);
         if ($startTs !== false) {
             $elapsed = microtime(true) - $startTs;
-            if ($elapsed >= 0 && $elapsed <= (float)$duration) {
-                $remainingSeconds = (float)$duration - $elapsed;
+            if ($elapsed < 0) {
+                $elapsed = 0.0; // startTime minimal in der Zukunft → voller Balken
             }
+            $remainingSeconds = max(0.0, (float)$duration - $elapsed);
         }
     }
 
