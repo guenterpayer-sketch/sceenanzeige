@@ -7,9 +7,13 @@
  * requestAnimationFrame und Countdown-Intervalle ab.
  *
  * Fortschrittsbalken:
- *   - remainingSeconds + lokale Empfangszeit (Date.now()) → requestAnimationFrame-Loop
- *   - isPlaying=false oder remainingSeconds=null → Balken einfrieren (kein Reset)
- *   - startTime-Fallback wenn remainingSeconds null
+ *   - EIN absoluter Endzeitpunkt (bar.endeAm, lokale Uhr) als Basis; rAF
+ *     rechnet den Rest jederzeit daraus → über Polls hinweg stabil
+ *   - Anker wird NICHT bei jedem Poll neu gesetzt: nur bei Songwechsel,
+ *     besserer Quelle oder echter Korrektur (> Toleranz) → kein Springen
+ *   - remainingSeconds bevorzugt (taktunabhängig; Proxy berechnet es notfalls
+ *     serverseitig aus startTime nach); startTime nur als letzter Ausweg
+ *   - isPlaying=false oder keine Positionsdaten → Balken einfrieren (kein Reset)
  *   - Songwechsel (songId) → Balken auf 0 zurücksetzen
  */
 (function () {
@@ -77,14 +81,19 @@
             var raf        = null;
             var countdowns = [];
 
-            // Fortschritts-Zustand
+            // Fortschritts-Zustand. Kern ist EIN absoluter Endzeitpunkt
+            // (bar.endeAm, lokale Uhr in ms) statt „Rest + Empfangszeit" — das
+            // ist über Polls hinweg stabil und wird bewusst NICHT bei jedem
+            // Poll neu gesetzt (sonst springt der Balken durch Netz-Jitter).
+            var ANKER_TOLERANZ_MS = 1500; // kleinere Abweichung → nicht neu ankern
             var bar = {
-                songId:          null,  // aktuell angezeigte Song-UUID
-                dauer:           null,  // Gesamtlänge in Sek.
-                restBeiEmpfang:  null,  // remainingSeconds zum Zeitpunkt des Poll-Eingangs
-                empfangenAm:     null,  // Date.now() beim Poll-Eingang
-                letzterWert:     0,     // letzter gezeichneter Fortschritt (0–1), für Einfrieren
-                laeuft:          false  // true nur wenn isPlaying + Positionsdaten vorhanden
+                songId:      null,  // aktuell angezeigte Song-UUID (für Reset auf 0)
+                ankerSongId: null,  // Song, auf den der aktuelle Anker gesetzt ist
+                dauer:       null,  // Gesamtlänge in Sek.
+                endeAm:      null,  // absoluter Songend-Zeitpunkt (Date.now()-Basis, ms)
+                quelle:      null,  // 'rs' (remainingSeconds) | 'start' (startTime)
+                letzterWert: 0,     // letzter gezeichneter Fortschritt (0–1), für Einfrieren
+                laeuft:      false  // true nur wenn isPlaying + Positionsdaten vorhanden
             };
 
             function zeichneBalken(anteil) {
@@ -93,15 +102,14 @@
 
             function rafLoop() {
                 if (!bar.laeuft) { return; }
-                var vergangenSek = (Date.now() - bar.empfangenAm) / 1000;
-                var restSek      = bar.restBeiEmpfang - vergangenSek;
+                var restSek = (bar.endeAm - Date.now()) / 1000;
                 if (restSek <= 0) {
                     zeichneBalken(1);
                     bar.letzterWert = 1;
                     bar.laeuft = false;
                     return; // Song abgelaufen — nächster Poll bringt neuen Song
                 }
-                var anteil = 1 - restSek / bar.dauer;
+                var anteil = bar.dauer ? (1 - restSek / bar.dauer) : bar.letzterWert;
                 bar.letzterWert = anteil;
                 zeichneBalken(anteil);
                 raf = requestAnimationFrame(rafLoop);
@@ -128,7 +136,8 @@
 
                 // Songwechsel erkennen → Balken auf 0 zurücksetzen
                 var neueSongId = s.songId || (s.title + '|' + s.artist);
-                if (neueSongId !== bar.songId) {
+                var istWechsel = (neueSongId !== bar.songId);
+                if (istWechsel) {
                     bar.songId      = neueSongId;
                     bar.letzterWert = 0;
                     zeichneBalken(0);
@@ -136,23 +145,54 @@
 
                 if (data.isPlaying && s.duration) {
                     bar.dauer = s.duration;
+
+                    // Kandidat für das absolute Songende (lokale Uhr) + Quelle.
+                    // 'rs' bevorzugt: remainingSeconds ist taktunabhängig (Proxy
+                    // berechnet es notfalls serverseitig nach). 'start' nur als
+                    // letzter Ausweg (hängt an der Client-Uhr).
+                    var kandidatEnde = null, quelle = null;
                     if (s.remainingSeconds != null) {
-                        // Primär: remainingSeconds + lokale Empfangszeit (exakt)
-                        bar.restBeiEmpfang = s.remainingSeconds;
-                        bar.empfangenAm    = Date.now();
+                        kandidatEnde = Date.now() + s.remainingSeconds * 1000;
+                        quelle = 'rs';
                     } else if (s.startTime) {
-                        // Fallback: startTime + duration (UTC-Differenz)
-                        var startMs        = Date.parse(s.startTime);
-                        var elapsedSek     = (Date.now() - startMs) / 1000;
-                        bar.restBeiEmpfang = Math.max(0, s.duration - elapsedSek);
-                        bar.empfangenAm    = Date.now();
-                    } else {
-                        // Keine Positionsdaten → einfrieren
+                        var startMs = Date.parse(s.startTime);
+                        if (!isNaN(startMs)) {
+                            kandidatEnde = startMs + s.duration * 1000;
+                            quelle = 'start';
+                        }
+                    }
+
+                    if (kandidatEnde == null) {
+                        // Keine Positionsdaten → einfrieren (kein Reset)
                         bar.laeuft = false;
                         if (raf) { cancelAnimationFrame(raf); }
                         zeichneBalken(bar.letzterWert);
                         return;
                     }
+
+                    // Neu ankern nur wenn nötig — sonst springt der Balken bei
+                    // jedem Poll durch Netz-Jitter. Regeln:
+                    //  • Songwechsel oder noch kein Anker → immer setzen
+                    //  • bessere Quelle ('rs' ersetzt 'start') → setzen
+                    //  • schlechtere Quelle ('start') ersetzt NIE ein 'rs' → skip
+                    //  • sonst nur bei echter Korrektur (> Toleranz), z.B. Seek
+                    var abweichung = Math.abs(kandidatEnde - bar.endeAm);
+                    var ankern;
+                    if (istWechsel || bar.endeAm == null) {
+                        ankern = true;
+                    } else if (quelle === 'start' && bar.quelle === 'rs') {
+                        ankern = false;
+                    } else if (quelle === 'rs' && bar.quelle === 'start') {
+                        ankern = true;
+                    } else {
+                        ankern = abweichung > ANKER_TOLERANZ_MS;
+                    }
+                    if (ankern) {
+                        bar.endeAm      = kandidatEnde;
+                        bar.quelle      = quelle;
+                        bar.ankerSongId = neueSongId;
+                    }
+
                     bar.laeuft = true;
                     starteAnimation();
                 } else {

@@ -44,7 +44,7 @@ _Letzte Aktualisierung: Veranstaltung — Datum/Uhrzeit-Schrift vergrößert (nu
 ## Offene Punkte
 
 - **`modulAnzeigeDauer` bleibt:** synchrone Dauer-Schätzung (Playlist-Timer + Spalten-Skalierung) — die Sonderfälle sind bewusst NICHT entfernt, da die Slide-Sammlung asynchron ist
-- **FRET Fortschrittsbalken:** FRET-API liefert `remainingSeconds` immer `null` → `startTime`-Fallback greift; serverseitiges FRET-Problem, kein Code-Fehler
+- **FRET Fortschrittsbalken (gelöst):** FRET-API liefert `remainingSeconds` oft `null`. Statt clientseitig gegen die (bei Google-TV falsche) Uhr zu rechnen, berechnet jetzt der Proxy `remainingSeconds` aus `startTime`+`duration` gegen die NTP-Server-Uhr nach → taktunabhängig. Balken hält EINEN absoluten Endzeitpunkt und ankert nur bei Songwechsel/Korrektur neu (Toleranz 1500 ms) → kein Springen mehr durch Netz-Jitter.
 - **SETTLE_MS = 800:** Heuristik für Off-screen-Pre-render; bei sehr langsamer NC-API ggf. auf 1000–1200ms erhöhen
 - **Branch-Protection:** `main` in GitHub-Settings → Branches → Add ruleset schützen (noch nicht eingerichtet)
 
