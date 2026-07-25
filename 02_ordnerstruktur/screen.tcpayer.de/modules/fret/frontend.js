@@ -213,7 +213,9 @@
                 kommendeEl.innerHTML = '';
                 if (liste.length === 0) { return; }
 
-                // Restzeit des aktuellen Songs als Basis für Countdown-Fallback
+                // Restzeit des aktuellen Songs als Basis für den Countdown.
+                // akt.remainingSeconds ist serverseitig verlässlich berechnet
+                // (Proxy, aus startTime gegen die NTP-Uhr) → primäre Quelle.
                 var restSekBasis = null;
                 if (data.aktuell) {
                     var akt = data.aktuell;
@@ -257,10 +259,18 @@
 
                     li.appendChild(info);
 
-                    // API-Wert bevorzugen; sonst akkumulierter Fallback
-                    var sek = s.estimatedSecondsUntilStart;
-                    if (sek == null && akkumuliertSek != null) {
+                    // Akkumulierte Rechnung bevorzugen: sie basiert auf der
+                    // verlässlichen (serverseitig berechneten) Restzeit des
+                    // aktuellen Songs + aufsummierten Song-Dauern. FRETs eigener
+                    // estimatedSecondsUntilStart ist – wie remainingSeconds –
+                    // teils veraltet/null und wird bei jedem Poll neu gesetzt
+                    // (→ springender/fehlender Countdown). Nur als Notnagel
+                    // nehmen, wenn keine Basis vorhanden ist (z.B. Pause).
+                    var sek = null;
+                    if (akkumuliertSek != null) {
                         sek = Math.round(akkumuliertSek);
+                    } else if (s.estimatedSecondsUntilStart != null) {
+                        sek = s.estimatedSecondsUntilStart;
                     }
 
                     if (sek != null) {
