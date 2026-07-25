@@ -50,10 +50,25 @@
             var anzahlKommende = (settings.anzahl_kommende != null) ? settings.anzahl_kommende : 3;
             var pollSek        = (settings.poll_sek && settings.poll_sek >= 3) ? settings.poll_sek : 7;
             var dauerSek       = (settings.anzeige_dauer_sek > 0) ? settings.anzeige_dauer_sek : 30;
+            var debug          = /[?&]fretdebug=1/.test(window.location.search);
 
             var el = document.createElement('div');
             el.className = 'tm-modul-fret';
             el.style.cssText = 'width:100%;height:100%;';
+
+            // Optionale Debug-Anzeige (nur mit ?fretdebug=1 in der URL).
+            var dbgEl = null;
+            if (debug) {
+                dbgEl = document.createElement('div');
+                dbgEl.style.cssText = 'position:fixed;left:0;top:0;z-index:99999;'
+                    + 'background:rgba(0,0,0,.85);color:#0f0;font:12px/1.4 monospace;'
+                    + 'padding:8px 10px;white-space:pre;max-width:60vw;pointer-events:none;';
+                document.body.appendChild(dbgEl);
+            }
+            function dbg(zeilen) {
+                if (!dbgEl) { return; }
+                dbgEl.textContent = zeilen.join('\n');
+            }
 
             if (!computerId) {
                 el.innerHTML = '<div class="tm-song-heading">' + escapeHtml(titel) + '</div>'
@@ -112,8 +127,16 @@
                 var anteil = bar.dauer ? (1 - restSek / bar.dauer) : bar.letzterWert;
                 bar.letzterWert = anteil;
                 zeichneBalken(anteil);
+                if (dbgEl) {
+                    dbg(dbgBasis.concat([
+                        'LIVE restSek=' + restSek.toFixed(2)
+                            + '  anteil=' + (anteil * 100).toFixed(1) + '%',
+                        'now=' + new Date().toISOString()
+                    ]));
+                }
                 raf = requestAnimationFrame(rafLoop);
             }
+            var dbgBasis = [];
 
             function starteAnimation() {
                 if (raf) { cancelAnimationFrame(raf); }
@@ -133,6 +156,18 @@
                     '<div class="tm-song-titel">' + escapeHtml(s.title) + '</div>'
                     + '<div class="tm-song-artist">' + escapeHtml(s.artist) + '</div>'
                     + '<div class="tm-song-badges">' + badges(s.taenze) + '</div>';
+
+                if (dbgEl) {
+                    dbgBasis = [
+                        'RAW isPlaying=' + data.isPlaying,
+                        '  title=' + (s.title || '').slice(0, 30),
+                        '  duration=' + s.duration + '  (typ ' + typeof s.duration + ')',
+                        '  remainingSeconds=' + s.remainingSeconds + '  (typ ' + typeof s.remainingSeconds + ')',
+                        '  startTime=' + s.startTime,
+                        '  songId=' + s.songId
+                    ];
+                    dbg(dbgBasis);
+                }
 
                 // Songwechsel erkennen → Balken auf 0 zurücksetzen
                 var neueSongId = s.songId || (s.title + '|' + s.artist);
@@ -330,6 +365,7 @@
                     if (raf)  { cancelAnimationFrame(raf); raf = null; }
                     countdowns.forEach(function (id) { clearInterval(id); });
                     countdowns = [];
+                    if (dbgEl && dbgEl.parentNode) { dbgEl.parentNode.removeChild(dbgEl); }
                 }
             }]);
         }
