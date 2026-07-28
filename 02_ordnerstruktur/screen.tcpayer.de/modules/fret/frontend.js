@@ -80,6 +80,20 @@
             var poll       = null;
             var raf        = null;
             var countdowns = [];
+            var nachpoll   = null;  // Timeout für Extra-Poll (Songende / Wechsel-Settling)
+
+            // Songwechsel-Settling: FRET meldet nach einem Wechsel kurz den neuen
+            // Titel mit der ALTEN startTime → remaining ≈ 0 → Balken fälschlich
+            // voll. Solange die Werte für den neuen Song unplausibel sind, wird
+            // der Wert verworfen und schnell nachgepollt.
+            var UNPLAUSIBEL_ELAPSED_S = 30;  // neuer Song mit elapsed > 30s = startTime noch nicht nachgezogen
+            var MAX_WECHSEL_VERSUCHE  = 6;   // danach best effort (Song beginnt jetzt)
+            var wechselVersuche       = 0;
+
+            function planeNachpoll(ms) {
+                if (nachpoll) { clearTimeout(nachpoll); }
+                nachpoll = setTimeout(function () { nachpoll = null; holeDaten(); }, ms);
+            }
 
             // Fortschritts-Zustand. Kern ist EIN absoluter Endzeitpunkt
             // (bar.endeAm, lokale Uhr in ms) statt „Rest + Empfangszeit" — das
@@ -93,7 +107,8 @@
                 endeAm:      null,  // absoluter Songend-Zeitpunkt (Date.now()-Basis, ms)
                 quelle:      null,  // 'rs' (remainingSeconds) | 'start' (startTime)
                 letzterWert: 0,     // letzter gezeichneter Fortschritt (0–1), für Einfrieren
-                laeuft:      false  // true nur wenn isPlaying + Positionsdaten vorhanden
+                laeuft:      false, // true nur wenn isPlaying + Positionsdaten vorhanden
+                gesettled:   false  // false bis für den aktuellen Song ein plausibler Wert ankam
             };
 
             function zeichneBalken(anteil) {
@@ -107,7 +122,8 @@
                     zeichneBalken(1);
                     bar.letzterWert = 1;
                     bar.laeuft = false;
-                    return; // Song abgelaufen — nächster Poll bringt neuen Song
+                    planeNachpoll(1500); // Song müsste zu Ende sein → neuen sofort holen
+                    return;
                 }
                 var anteil = bar.dauer ? (1 - restSek / bar.dauer) : bar.letzterWert;
                 bar.letzterWert = anteil;
@@ -140,6 +156,8 @@
                 if (istWechsel) {
                     bar.songId      = neueSongId;
                     bar.letzterWert = 0;
+                    bar.gesettled   = false;
+                    wechselVersuche = 0;
                     zeichneBalken(0);
                 }
 
@@ -170,6 +188,30 @@
                         return;
                     }
 
+                    // Plausibilitäts-Check nach einem Songwechsel: Ein gerade
+                    // gestarteter Song muss elapsed ≈ 0 haben. Ist elapsed
+                    // unplausibel groß, hat FRET den neuen Titel noch mit der
+                    // alten startTime gemeldet (→ remaining ≈ 0 → voller Balken).
+                    // Dann Wert verwerfen, Balken bei 0 lassen und schnell
+                    // nachpollen, bis die Daten konsistent sind.
+                    var restKandidatSek = (kandidatEnde - Date.now()) / 1000;
+                    var elapsedKandidat = s.duration - restKandidatSek;
+                    if (!bar.gesettled && elapsedKandidat > UNPLAUSIBEL_ELAPSED_S) {
+                        wechselVersuche++;
+                        if (wechselVersuche <= MAX_WECHSEL_VERSUCHE) {
+                            bar.laeuft = false;
+                            if (raf) { cancelAnimationFrame(raf); }
+                            bar.letzterWert = 0;
+                            zeichneBalken(0);
+                            planeNachpoll(2000);
+                            return;
+                        }
+                        // Zu lange unplausibel → best effort: Song beginnt jetzt.
+                        kandidatEnde = Date.now() + s.duration * 1000;
+                        quelle       = 'start';
+                    }
+                    bar.gesettled = true;
+
                     // Neu ankern nur wenn nötig — sonst springt der Balken bei
                     // jedem Poll durch Netz-Jitter. Regeln:
                     //  • Songwechsel oder noch kein Anker → immer setzen
@@ -178,7 +220,9 @@
                     //  • sonst nur bei echter Korrektur (> Toleranz), z.B. Seek
                     var abweichung = Math.abs(kandidatEnde - bar.endeAm);
                     var ankern;
-                    if (istWechsel || bar.endeAm == null) {
+                    if (bar.ankerSongId !== neueSongId || bar.endeAm == null) {
+                        // Für diesen Song noch kein Anker gesetzt (Wechsel-Poll,
+                        // oder erster plausibler Wert nach dem Settling) → setzen
                         ankern = true;
                     } else if (quelle === 'start' && bar.quelle === 'rs') {
                         ankern = false;
@@ -213,7 +257,9 @@
                 kommendeEl.innerHTML = '';
                 if (liste.length === 0) { return; }
 
-                // Restzeit des aktuellen Songs als Basis für Countdown-Fallback
+                // Restzeit des aktuellen Songs als Basis für den Countdown.
+                // akt.remainingSeconds ist serverseitig verlässlich berechnet
+                // (Proxy, aus startTime gegen die NTP-Uhr) → primäre Quelle.
                 var restSekBasis = null;
                 if (data.aktuell) {
                     var akt = data.aktuell;
@@ -257,10 +303,18 @@
 
                     li.appendChild(info);
 
-                    // API-Wert bevorzugen; sonst akkumulierter Fallback
-                    var sek = s.estimatedSecondsUntilStart;
-                    if (sek == null && akkumuliertSek != null) {
+                    // Akkumulierte Rechnung bevorzugen: sie basiert auf der
+                    // verlässlichen (serverseitig berechneten) Restzeit des
+                    // aktuellen Songs + aufsummierten Song-Dauern. FRETs eigener
+                    // estimatedSecondsUntilStart ist – wie remainingSeconds –
+                    // teils veraltet/null und wird bei jedem Poll neu gesetzt
+                    // (→ springender/fehlender Countdown). Nur als Notnagel
+                    // nehmen, wenn keine Basis vorhanden ist (z.B. Pause).
+                    var sek = null;
+                    if (akkumuliertSek != null) {
                         sek = Math.round(akkumuliertSek);
+                    } else if (s.estimatedSecondsUntilStart != null) {
+                        sek = s.estimatedSecondsUntilStart;
                     }
 
                     if (sek != null) {
@@ -326,8 +380,9 @@
                 el:       el,
                 dauerSek: dauerSek,
                 destroy:  function () {
-                    if (poll) { clearInterval(poll); poll = null; }
-                    if (raf)  { cancelAnimationFrame(raf); raf = null; }
+                    if (poll)     { clearInterval(poll); poll = null; }
+                    if (raf)      { cancelAnimationFrame(raf); raf = null; }
+                    if (nachpoll) { clearTimeout(nachpoll); nachpoll = null; }
                     countdowns.forEach(function (id) { clearInterval(id); });
                     countdowns = [];
                 }
