@@ -189,8 +189,8 @@
 
     // ---- Dirty-Guard: Warnung bei ungespeicherten Änderungen ----
     var zpForm = document.getElementById('zeitplan-form');
-    zpForm.addEventListener('input', function () { _dirty = true; });
-    zpForm.addEventListener('change', function () { _dirty = true; });
+    zpForm.addEventListener('input', function (e) { if (e.isTrusted) { _dirty = true; } });
+    zpForm.addEventListener('change', function (e) { if (e.isTrusted) { _dirty = true; } });
     window.addEventListener('beforeunload', function (e) {
         if (_dirty) { e.preventDefault(); e.returnValue = ''; }
     });

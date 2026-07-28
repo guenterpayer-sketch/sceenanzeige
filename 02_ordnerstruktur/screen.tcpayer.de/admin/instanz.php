@@ -453,8 +453,8 @@ admin_header(($istNeu ? 'Neue ' : '') . $meta['label'] . '-Instanz', 'bibliothek
             });
         });
     });
-    instForm.addEventListener('input', function () { _dirty = true; });
-    instForm.addEventListener('change', function () { _dirty = true; });
+    instForm.addEventListener('input', function (e) { if (e.isTrusted) { _dirty = true; } });
+    instForm.addEventListener('change', function (e) { if (e.isTrusted) { _dirty = true; } });
     window.addEventListener('beforeunload', function (e) {
         if (_dirty) { e.preventDefault(); e.returnValue = ''; }
     });
@@ -668,8 +668,8 @@ admin_header(($istNeu ? 'Neue ' : '') . $meta['label'] . '-Instanz', 'bibliothek
 (function () {
     var _dirty = false;
     var instForm = document.getElementById('instanz-form');
-    instForm.addEventListener('input', function () { _dirty = true; });
-    instForm.addEventListener('change', function () { _dirty = true; });
+    instForm.addEventListener('input', function (e) { if (e.isTrusted) { _dirty = true; } });
+    instForm.addEventListener('change', function (e) { if (e.isTrusted) { _dirty = true; } });
     instForm.addEventListener('submit', function () { _dirty = false; });
     window.addEventListener('beforeunload', function (e) {
         if (_dirty) { e.preventDefault(); e.returnValue = ''; }

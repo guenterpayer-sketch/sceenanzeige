@@ -613,8 +613,8 @@ function pl_modul_icon(string $icon): string
 
     // ---- Dirty-Guard: Warnung bei ungespeicherten Änderungen ----
     var plForm = document.getElementById('playlist-form');
-    plForm.addEventListener('input', function () { _dirty = true; });
-    plForm.addEventListener('change', function () { _dirty = true; });
+    plForm.addEventListener('input', function (e) { if (e.isTrusted) { _dirty = true; } });
+    plForm.addEventListener('change', function (e) { if (e.isTrusted) { _dirty = true; } });
     window.addEventListener('beforeunload', function (e) {
         if (_dirty) { e.preventDefault(); e.returnValue = ''; }
     });
