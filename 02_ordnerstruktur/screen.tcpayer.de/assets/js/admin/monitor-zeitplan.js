@@ -897,4 +897,8 @@
         });
     });
 
+    // Initialaufbau abgeschlossen — ein evtl. programmatisch gesetztes _dirty
+    // zurücksetzen, damit der Guard nicht ohne echte Nutzer-Änderung warnt.
+    _dirty = false;
+
 })();

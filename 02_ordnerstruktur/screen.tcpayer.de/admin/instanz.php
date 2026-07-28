@@ -413,6 +413,8 @@ admin_header(($istNeu ? 'Neue ' : '') . $meta['label'] . '-Instanz', 'bibliothek
 
     // Startdaten rendern
     START.forEach(neueZeile);
+    // Initialaufbau zählt nicht als Nutzer-Änderung.
+    _dirty = false;
 
     document.getElementById('zeile-hinzu').addEventListener('click', function () {
         neueZeile({}); _dirty = true;

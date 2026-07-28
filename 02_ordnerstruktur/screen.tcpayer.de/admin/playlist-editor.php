@@ -642,6 +642,10 @@ function pl_modul_icon(string $icon): string
     // Startdaten in ihre Spalten einsortieren
     START.forEach(function (d) { fuegeEinSpalte(Math.min(d.spalte, anzSpalten()), d); });
     aktualisiereVorschau();
+    // Der programmatische Aufbau oben (fuegeEinSpalte) hat _dirty gesetzt — das ist
+    // KEINE Nutzer-Änderung. Zurücksetzen, sonst warnt der Guard schon beim Laden
+    // und nach jedem Speichern (Reload). Ab hier zählen nur echte Interaktionen.
+    _dirty = false;
 })();
 </script>
 
