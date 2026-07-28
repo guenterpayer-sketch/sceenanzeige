@@ -265,8 +265,9 @@ function pl_modul_icon(string $icon): string
             <select id="picker-typ"><option value="">Alle Modularten</option></select>
         </div>
         <div id="picker-liste" class="adm-picker-instanzen"></div>
-        <div class="adm-dialog-aktionen">
-            <a class="adm-btn adm-btn-grau" href="bibliothek.php" target="_blank" rel="noopener">Neue Instanz anlegen ↗</a>
+        <div class="adm-dialog-aktionen adm-dialog-aktionen--mit-hinweis">
+            <a class="adm-btn adm-btn-grau" href="bibliothek.php" target="_blank" rel="noopener">+ Neue Instanz anlegen ↗</a>
+            <span class="adm-picker-hinweis">öffnet die Bibliothek in neuem Tab — danach hier neu laden</span>
             <button type="button" id="picker-abbrechen" class="adm-btn-grau">Schließen</button>
         </div>
     </div>

@@ -120,7 +120,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'speic
     if (empty($fehler)) {
         Monitor::ersetzeZeitplan($id, $eintraege);
         Monitor::ersetzeTickerZeitplan($id, $tickerEintraege);
-        header('Location: monitor-zeitplan.php?id=' . $id . '&gespeichert=1');
+        if (!empty($_POST['schliessen'])) {
+            // „Speichern & schließen" — zurück zur Monitor-Übersicht
+            header('Location: monitore.php?zeitplan_gespeichert=1');
+        } else {
+            // „Speichern" — auf der Seite bleiben
+            header('Location: monitor-zeitplan.php?id=' . $id . '&gespeichert=1');
+        }
         exit;
     }
 }
@@ -273,6 +279,7 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
 
     <div class="adm-aktionsleiste">
         <button type="submit" class="adm-btn-primary">Speichern</button>
+        <button type="submit" name="schliessen" value="1" class="adm-btn-primary">Speichern &amp; schließen</button>
         <a href="monitore.php" class="adm-btn adm-btn-grau">Abbrechen</a>
     </div>
 </form>

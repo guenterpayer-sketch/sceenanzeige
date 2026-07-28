@@ -74,6 +74,9 @@ if (empty($fehler) && $_SERVER['REQUEST_METHOD'] !== 'POST' && isset($_GET['edit
 
 if (isset($_GET['geloescht']))   { $flash = 'Monitor gelöscht.'; }
 if (isset($_GET['gespeichert'])) { $flash = 'Monitor gespeichert.'; }
+if (isset($_GET['zeitplan_gespeichert'])) {
+    $flash = 'Zeitplan gespeichert. Die Monitore übernehmen die Änderung innerhalb von ca. 1 Minute — oder sofort über den Button „↺ Monitore neu laden" oben.';
+}
 
 $monitore     = Monitor::listAll();
 $istEditieren = ($formId > 0);

@@ -33,8 +33,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 }
+$hinweisAktion = null; // [href, label] — geführter nächster Schritt im Flash
 if (isset($_GET['geloescht']))   { $hinweis = 'Instanz gelöscht.'; }
-if (isset($_GET['gespeichert'])) { $hinweis = 'Instanz gespeichert.'; }
+if (isset($_GET['gespeichert'])) {
+    $hinweis       = 'Instanz gespeichert.';
+    $hinweisAktion = ['playlists.php', '→ In Playlist einsetzen'];
+}
 
 $module    = ModuleRegistry::getAll();
 $instanzen = ModulInstanz::listAll();
@@ -144,7 +148,12 @@ if ($istTypAnsicht) {
 ?>
 
 <?php if ($hinweis): ?>
-    <div class="adm-flash"><?= htmlspecialchars($hinweis) ?></div>
+    <div class="adm-flash<?= $hinweisAktion ? ' adm-flash--mit-aktion' : '' ?>">
+        <span><?= htmlspecialchars($hinweis) ?></span>
+        <?php if ($hinweisAktion): ?>
+            <a class="adm-btn adm-flash-btn" href="<?= htmlspecialchars($hinweisAktion[0]) ?>"><?= htmlspecialchars($hinweisAktion[1]) ?></a>
+        <?php endif; ?>
+    </div>
 <?php endif; ?>
 
 <?php if (!$istTypAnsicht): ?>
@@ -183,8 +192,8 @@ if ($istTypAnsicht) {
             <?= instanz_vorschau($inst, $meta, $uploadsBasis, $fretMap) ?>
             <?php if ($verw['anzahl'] > 0): ?>
             <div class="adm-kachel-badges">
-                <span class="adm-meta-badge adm-playlists-badge--aktiv"
-                      data-playlists="<?= htmlspecialchars($verw['namen']) ?>">🗂️ in <?= $verw['anzahl'] ?> Playlist<?= $verw['anzahl'] === 1 ? '' : 's' ?></span>
+                <a class="adm-meta-badge adm-playlists-badge--aktiv" href="playlists.php"
+                   data-playlists="<?= htmlspecialchars($verw['namen']) ?>">🗂️ in <?= $verw['anzahl'] ?> Playlist<?= $verw['anzahl'] === 1 ? '' : 's' ?></a>
             </div>
             <?php endif; ?>
             <div class="adm-kachel-body">

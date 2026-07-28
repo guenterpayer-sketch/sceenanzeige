@@ -33,8 +33,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 }
+$hinweisAktion = null; // [href, label] — geführter nächster Schritt im Flash
 if (isset($_GET['geloescht']))   { $hinweis = 'Playlist gelöscht.'; }
-if (isset($_GET['gespeichert'])) { $hinweis = 'Playlist gespeichert.'; }
+if (isset($_GET['gespeichert'])) {
+    $hinweis       = 'Playlist gespeichert. Eingeplante Monitore übernehmen Änderungen '
+                   . 'innerhalb von ca. 1 Minute — oder sofort über „↺ Monitore neu laden" oben.';
+    $hinweisAktion = ['monitore.php', '→ Jetzt auf einem Monitor einplanen'];
+}
 
 $playlists = Playlist::listAll();
 
@@ -57,7 +62,12 @@ admin_header('Playlists', 'playlists');
 ?>
 
 <?php if ($hinweis): ?>
-    <div class="adm-flash"><?= htmlspecialchars($hinweis) ?></div>
+    <div class="adm-flash<?= $hinweisAktion ? ' adm-flash--mit-aktion' : '' ?>">
+        <span><?= htmlspecialchars($hinweis) ?></span>
+        <?php if ($hinweisAktion): ?>
+            <a class="adm-btn adm-flash-btn" href="<?= htmlspecialchars($hinweisAktion[0]) ?>"><?= htmlspecialchars($hinweisAktion[1]) ?></a>
+        <?php endif; ?>
+    </div>
 <?php endif; ?>
 
 <p class="adm-hilfe">
@@ -84,8 +94,9 @@ admin_header('Playlists', 'playlists');
                 </span>
             </div>
             <div class="adm-kachel-badges">
-                <span class="adm-meta-badge adm-monitore-badge<?= (int)$p['anzahl_monitore'] > 0 ? ' adm-monitore-badge--aktiv' : '' ?>"
-                      data-monitore="<?= htmlspecialchars($p['monitor_namen'] ?? '') ?>">🖥️ auf <?= (int)$p['anzahl_monitore'] ?> Monitor<?= (int)$p['anzahl_monitore'] === 1 ? '' : 'en' ?></span>
+                <a class="adm-meta-badge adm-monitore-badge<?= (int)$p['anzahl_monitore'] > 0 ? ' adm-monitore-badge--aktiv' : '' ?>"
+                   href="monitore.php"
+                   data-monitore="<?= htmlspecialchars($p['monitor_namen'] ?? '') ?>">🖥️ auf <?= (int)$p['anzahl_monitore'] ?> Monitor<?= (int)$p['anzahl_monitore'] === 1 ? '' : 'en' ?><?= (int)$p['anzahl_monitore'] === 0 ? ' — einplanen' : '' ?></a>
             </div>
             <div class="adm-kachel-body">
                 <div class="adm-kachel-name">

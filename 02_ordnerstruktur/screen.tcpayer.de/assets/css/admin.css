@@ -1288,3 +1288,21 @@ a.adm-kachel-link:hover { background: #fbeaea; }
 @media (max-width: 900px) {
     .adm-dash-schnell { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* ===== Geführte nächste Schritte + klickbare Badges (Schritt 26) ===== */
+
+/* Flash-Meldung mit Aktions-Button („→ nächster Schritt") */
+.adm-flash--mit-aktion { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.adm-flash-btn {
+    background: #1e6b34; color: #fff; border: none;
+    padding: 6px 12px; font-size: 13px; border-radius: 6px; text-decoration: none;
+}
+.adm-flash-btn:hover { background: #175427; color: #fff; }
+
+/* Badges als Links (Kachel-Badges führen zum passenden Bereich) */
+a.adm-meta-badge { text-decoration: none; cursor: pointer; }
+a.adm-meta-badge:hover { background: #dde3ea; }
+
+/* Hinweistext neben „+ Neue Instanz anlegen" im Picker-Dialog */
+.adm-dialog-aktionen--mit-hinweis { align-items: center; }
+.adm-picker-hinweis { font-size: 12px; color: #6b7a8d; flex: 1; }

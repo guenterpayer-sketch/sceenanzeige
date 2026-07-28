@@ -73,7 +73,9 @@ admin_header('Ticker', 'ticker');
                 </span>
             </div>
             <div class="adm-kachel-badges">
-                <span class="adm-meta-badge" title="auf so vielen Monitoren eingeplant">🖥️ auf <?= (int)$t['anzahl_monitore'] ?> Monitor<?= (int)$t['anzahl_monitore'] === 1 ? '' : 'en' ?></span>
+                <a class="adm-meta-badge adm-monitore-badge<?= (int)$t['anzahl_monitore'] > 0 ? ' adm-monitore-badge--aktiv' : '' ?>"
+                   href="monitore.php"
+                   data-monitore="<?= htmlspecialchars($t['monitor_namen'] ?? '') ?>">🖥️ auf <?= (int)$t['anzahl_monitore'] ?> Monitor<?= (int)$t['anzahl_monitore'] === 1 ? '' : 'en' ?><?= (int)$t['anzahl_monitore'] === 0 ? ' — einplanen' : '' ?></a>
             </div>
             <div class="adm-kachel-body">
                 <div class="adm-kachel-name">

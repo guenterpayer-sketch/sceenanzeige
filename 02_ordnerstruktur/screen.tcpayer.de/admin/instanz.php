@@ -117,7 +117,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'speic
             ModulInstanz::ersetzeInhalte($id, $inhalte);
         }
 
-        header('Location: bibliothek.php?typ=' . urlencode($modulTyp) . '&gespeichert=1');
+        if (!empty($_POST['bleiben'])) {
+            // „Speichern" — auf der Seite bleiben (auch nach Neuanlage: ab
+            // jetzt im Bearbeiten-Modus mit der frischen ID weiterarbeiten)
+            header('Location: instanz.php?id=' . $id . '&gespeichert=1');
+        } else {
+            // „Speichern & schließen" — zurück zur Typ-Übersicht
+            header('Location: bibliothek.php?typ=' . urlencode($modulTyp) . '&gespeichert=1');
+        }
         exit;
     }
 }
@@ -176,6 +183,10 @@ admin_header(($istNeu ? 'Neue ' : '') . $meta['label'] . '-Instanz', 'bibliothek
 ?>
 
 <p><a href="bibliothek.php?typ=<?= urlencode($modulTyp) ?>" class="adm-zurueck">← zurück zur <?= htmlspecialchars($meta['label']) ?>-Übersicht</a></p>
+
+<?php if (isset($_GET['gespeichert'])): ?>
+    <div class="adm-flash">Instanz gespeichert.</div>
+<?php endif; ?>
 
 <?php foreach ($fehler as $f): ?>
     <div class="adm-flash adm-flash-fehler"><?= htmlspecialchars($f) ?></div>
@@ -250,7 +261,8 @@ admin_header(($istNeu ? 'Neue ' : '') . $meta['label'] . '-Instanz', 'bibliothek
     <?php endif; ?>
 
     <div class="adm-aktionsleiste">
-        <button type="submit" class="adm-btn-primary">Speichern</button>
+        <button type="submit" name="bleiben" value="1" class="adm-btn-primary">Speichern</button>
+        <button type="submit" class="adm-btn-primary">Speichern &amp; schließen</button>
         <a href="bibliothek.php?typ=<?= urlencode($modulTyp) ?>" class="adm-btn adm-btn-grau">Abbrechen</a>
     </div>
 </form>
