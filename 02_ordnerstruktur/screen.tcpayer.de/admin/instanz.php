@@ -117,7 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'speic
             ModulInstanz::ersetzeInhalte($id, $inhalte);
         }
 
-        header('Location: bibliothek.php?gespeichert=1');
+        header('Location: bibliothek.php?typ=' . urlencode($modulTyp) . '&gespeichert=1');
         exit;
     }
 }
@@ -175,7 +175,7 @@ $standardDauer = (int)($werteEinstellungen['intervall_sek'] ?? 10);
 admin_header(($istNeu ? 'Neue ' : '') . $meta['label'] . '-Instanz', 'bibliothek');
 ?>
 
-<p><a href="bibliothek.php" class="adm-zurueck">← zurück zur Bibliothek</a></p>
+<p><a href="bibliothek.php?typ=<?= urlencode($modulTyp) ?>" class="adm-zurueck">← zurück zur <?= htmlspecialchars($meta['label']) ?>-Übersicht</a></p>
 
 <?php foreach ($fehler as $f): ?>
     <div class="adm-flash adm-flash-fehler"><?= htmlspecialchars($f) ?></div>
@@ -251,7 +251,7 @@ admin_header(($istNeu ? 'Neue ' : '') . $meta['label'] . '-Instanz', 'bibliothek
 
     <div class="adm-aktionsleiste">
         <button type="submit" class="adm-btn-primary">Speichern</button>
-        <a href="bibliothek.php" class="adm-btn adm-btn-grau">Abbrechen</a>
+        <a href="bibliothek.php?typ=<?= urlencode($modulTyp) ?>" class="adm-btn adm-btn-grau">Abbrechen</a>
     </div>
 </form>
 
@@ -292,6 +292,7 @@ admin_header(($istNeu ? 'Neue ' : '') . $meta['label'] . '-Instanz', 'bibliothek
     var START     = <?= json_encode($inhalteFuerJs, JSON_UNESCAPED_UNICODE) ?>;
 
     var liste = document.getElementById('inhalte-liste');
+    var _dirty = false;
 
     function escapeHtml(s) {
         return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -414,7 +415,7 @@ admin_header(($istNeu ? 'Neue ' : '') . $meta['label'] . '-Instanz', 'bibliothek
     START.forEach(neueZeile);
 
     document.getElementById('zeile-hinzu').addEventListener('click', function () {
-        neueZeile({});
+        neueZeile({}); _dirty = true;
     });
 
     // Zeilen-Aktionen (Delegation)
@@ -426,26 +427,34 @@ admin_header(($istNeu ? 'Neue ' : '') . $meta['label'] . '-Instanz', 'bibliothek
         if (e.target.closest('.adm-bild-entfernen')) {
             zeile.querySelector('[data-feld="mediathek_id"]').value = '';
             zeile.querySelector('.adm-inhalt-vorschau').innerHTML = bildVorschau(null);
+            _dirty = true;
             return;
         }
         if (e.target.closest('.adm-video-waehlen')) { oeffneVideoPicker(zeile); return; }
         var akt = e.target.getAttribute('data-akt');
         if (akt === 'weg') {
-            admBestaetigen('Diesen Eintrag entfernen?', function (ok) { if (ok) { zeile.remove(); } }, 'Entfernen');
+            admBestaetigen('Diesen Eintrag entfernen?', function (ok) { if (ok) { zeile.remove(); _dirty = true; } }, 'Entfernen');
             return;
         }
-        if (akt === 'hoch'   && zeile.previousElementSibling) { liste.insertBefore(zeile, zeile.previousElementSibling); }
-        if (akt === 'runter' && zeile.nextElementSibling)     { liste.insertBefore(zeile.nextElementSibling, zeile); }
+        if (akt === 'hoch'   && zeile.previousElementSibling) { liste.insertBefore(zeile, zeile.previousElementSibling); _dirty = true; }
+        if (akt === 'runter' && zeile.nextElementSibling)     { liste.insertBefore(zeile.nextElementSibling, zeile); _dirty = true; }
     });
 
     // Vor dem Absenden: Feldnamen sequenziell nach DOM-Reihenfolge vergeben
-    document.getElementById('instanz-form').addEventListener('submit', function () {
+    var instForm = document.getElementById('instanz-form');
+    instForm.addEventListener('submit', function () {
+        _dirty = false;
         var zeilen = liste.querySelectorAll('.adm-inhalt-zeile');
         zeilen.forEach(function (zeile, i) {
             zeile.querySelectorAll('[data-feld]').forEach(function (feld) {
                 feld.setAttribute('name', 'inhalt[' + i + '][' + feld.getAttribute('data-feld') + ']');
             });
         });
+    });
+    instForm.addEventListener('input', function () { _dirty = true; });
+    instForm.addEventListener('change', function () { _dirty = true; });
+    window.addEventListener('beforeunload', function (e) {
+        if (_dirty) { e.preventDefault(); }
     });
 
     // ---- Bild-Picker ----
@@ -509,6 +518,7 @@ admin_header(($istNeu ? 'Neue ' : '') . $meta['label'] . '-Instanz', 'bibliothek
         if (!zielZeile) { return; }
         zielZeile.querySelector('[data-feld="mediathek_id"]').value = b.id;
         zielZeile.querySelector('.adm-inhalt-vorschau').innerHTML = '<img src="' + escapeHtml(b.url) + '" alt="">';
+        _dirty = true;
         schliessePicker();
     }
 

@@ -176,9 +176,17 @@ if ($istTypAnsicht) {
     <p class="adm-leer">Noch keine Instanz dieser Modulart. Mit dem Button oben anlegen.</p>
 <?php else: ?>
 <div class="adm-kachelgrid">
-    <?php foreach ($liste as $inst): ?>
+    <?php foreach ($liste as $inst):
+        $verw = ModulInstanz::verwendetInPlaylists((int)$inst['id']);
+    ?>
         <div class="adm-kachel <?= $inst['aktiv'] ? '' : 'inaktiv' ?>">
             <?= instanz_vorschau($inst, $meta, $uploadsBasis, $fretMap) ?>
+            <?php if ($verw['anzahl'] > 0): ?>
+            <div class="adm-kachel-badges">
+                <span class="adm-meta-badge adm-playlists-badge--aktiv"
+                      data-playlists="<?= htmlspecialchars($verw['namen']) ?>">🗂️ in <?= $verw['anzahl'] ?> Playlist<?= $verw['anzahl'] === 1 ? '' : 's' ?></span>
+            </div>
+            <?php endif; ?>
             <div class="adm-kachel-body">
                 <div class="adm-kachel-name">
                     <?= htmlspecialchars($inst['name']) ?>
@@ -192,7 +200,10 @@ if ($istTypAnsicht) {
                         <input type="hidden" name="typ" value="<?= htmlspecialchars($typ) ?>">
                         <button type="submit" class="adm-btn adm-btn-grau"><?= $inst['aktiv'] ? 'Pausieren' : 'Aktivieren' ?></button>
                     </form>
-                    <form method="post" class="adm-inline adm-del-form" data-name="<?= htmlspecialchars($inst['name']) ?>">
+                    <form method="post" class="adm-inline adm-del-form"
+                          data-name="<?= htmlspecialchars($inst['name']) ?>"
+                          data-pl-anzahl="<?= $verw['anzahl'] ?>"
+                          data-pl-namen="<?= htmlspecialchars($verw['namen']) ?>">
                         <input type="hidden" name="aktion" value="loeschen">
                         <input type="hidden" name="id" value="<?= (int)$inst['id'] ?>">
                         <input type="hidden" name="typ" value="<?= htmlspecialchars($typ) ?>">
@@ -209,7 +220,12 @@ if ($istTypAnsicht) {
 document.querySelectorAll('.adm-del-form').forEach(function (f) {
     f.addEventListener('submit', function (e) {
         e.preventDefault();
-        admBestaetigen('Instanz „' + (f.dataset.name || '') + '" wirklich löschen?', function (ok) {
+        var text = 'Instanz „' + (f.dataset.name || '') + '" wirklich löschen?';
+        var anz = parseInt(f.dataset.plAnzahl || '0', 10);
+        if (anz > 0) {
+            text += '\n\nAchtung: wird in folgenden Playlists verwendet: ' + (f.dataset.plNamen || '') + '. Sie wird dort entfernt.';
+        }
+        admBestaetigen(text, function (ok) {
             if (ok) { f.submit(); }
         }, 'Löschen');
     });

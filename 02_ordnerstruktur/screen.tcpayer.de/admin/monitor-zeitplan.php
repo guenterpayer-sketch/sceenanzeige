@@ -120,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'speic
     if (empty($fehler)) {
         Monitor::ersetzeZeitplan($id, $eintraege);
         Monitor::ersetzeTickerZeitplan($id, $tickerEintraege);
-        header('Location: monitore.php?gespeichert=1');
+        header('Location: monitor-zeitplan.php?id=' . $id . '&gespeichert=1');
         exit;
     }
 }
@@ -197,6 +197,10 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
             data-url="https://<?= htmlspecialchars($monitor['subdomain']) ?>"
             data-name="<?= htmlspecialchars($monitor['name']) ?>">Vorschau</button>
 </div>
+
+<?php if (isset($_GET['gespeichert'])): ?>
+    <div class="adm-flash">Zeitplan gespeichert. Die Monitore übernehmen die Änderung innerhalb von ca. 1 Minute — oder sofort über den Button „↺ Monitore neu laden" oben.</div>
+<?php endif; ?>
 
 <?php foreach ($fehler as $f): ?>
     <div class="adm-flash adm-flash-fehler"><?= $f ?></div>

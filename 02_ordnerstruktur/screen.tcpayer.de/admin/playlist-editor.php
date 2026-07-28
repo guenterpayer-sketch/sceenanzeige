@@ -136,7 +136,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'speic
         }
         Playlist::ersetzeSpaltenInhalte($id, $inhalte);
 
-        header('Location: playlists.php?gespeichert=1');
+        if (!empty($_POST['bleiben'])) {
+            header('Location: playlist-editor.php?id=' . $id . '&gespeichert=1');
+        } else {
+            header('Location: playlists.php?gespeichert=1');
+        }
         exit;
     }
 }
@@ -154,6 +158,10 @@ function pl_modul_icon(string $icon): string
 ?>
 
 <p><a href="playlists.php" class="adm-zurueck">← zurück zu den Playlists</a></p>
+
+<?php if (isset($_GET['gespeichert'])): ?>
+    <div class="adm-flash">Playlist gespeichert.</div>
+<?php endif; ?>
 
 <?php foreach ($fehler as $f): ?>
     <div class="adm-flash adm-flash-fehler"><?= htmlspecialchars($f) ?></div>
@@ -243,7 +251,8 @@ function pl_modul_icon(string $icon): string
     </p>
 
     <div class="adm-aktionsleiste">
-        <button type="submit" class="adm-btn-primary">Speichern</button>
+        <button type="submit" name="bleiben" value="1" class="adm-btn-primary">Speichern</button>
+        <button type="submit" class="adm-btn-primary">Speichern &amp; schließen</button>
         <a href="playlists.php" class="adm-btn adm-btn-grau">Abbrechen</a>
     </div>
 </form>
@@ -268,6 +277,7 @@ function pl_modul_icon(string $icon): string
     var START = <?= json_encode($inhalteFuerJs, JSON_UNESCAPED_UNICODE) ?>;
     var ICONS = { clock:'🕒', image:'🖼️', calendar:'📅', megaphone:'📢', music:'🎵' };
 
+    var _dirty = false;
     var spaltenWrap   = document.getElementById('spalten');
     var breitenBlock  = document.getElementById('breiten-block');
     var slider        = document.getElementById('spalte1_breite');
@@ -423,11 +433,9 @@ function pl_modul_icon(string $icon): string
     function fuegeEinSpalte(spalteNr, data) {
         var col = spaltenWrap.querySelector('.adm-spalte[data-spalte="' + spalteNr + '"]');
         if (!col) { return false; }
-        // Dieselbe Instanz darf mehrfach in einer Spalte stehen (A → B → A → C).
-        // data-mid bleibt informativ am Eintrag, wird aber nicht mehr als
-        // Eindeutigkeit erzwungen — DOM-Elemente sind ohnehin unterschiedlich.
         col.querySelector('.adm-spalte-liste').appendChild(baueEintrag(data));
         pruefeLeer(col);
+        _dirty = true;
         return true;
     }
 
@@ -443,12 +451,12 @@ function pl_modul_icon(string $icon): string
         if (!eintrag) { return; }
         var akt = e.target.getAttribute('data-akt');
         var liste = eintrag.parentElement;
-        if (akt === 'weg')    { eintrag.remove(); pruefeLeer(liste.closest('.adm-spalte')); }
+        if (akt === 'weg')    { eintrag.remove(); pruefeLeer(liste.closest('.adm-spalte')); _dirty = true; }
         if (akt === 'hoch'   && eintrag.previousElementSibling && eintrag.previousElementSibling.classList.contains('adm-spalte-eintrag')) {
-            liste.insertBefore(eintrag, eintrag.previousElementSibling);
+            liste.insertBefore(eintrag, eintrag.previousElementSibling); _dirty = true;
         }
         if (akt === 'runter' && eintrag.nextElementSibling) {
-            liste.insertBefore(eintrag.nextElementSibling, eintrag);
+            liste.insertBefore(eintrag.nextElementSibling, eintrag); _dirty = true;
         }
     });
 
@@ -511,8 +519,7 @@ function pl_modul_icon(string $icon): string
     spaltenWrap.addEventListener('drop', function (e) {
         if (!gezogen) { return; }
         e.preventDefault();
-        // Duplikate sind erlaubt — Drop ohne weitere Prüfung akzeptieren.
-        // Position wurde bereits in dragover per DOM-Insertion gesetzt.
+        _dirty = true;
     });
 
     spaltenWrap.addEventListener('dragend', function () {
@@ -604,8 +611,17 @@ function pl_modul_icon(string $icon): string
             .catch(function () { liste.innerHTML = '<p class="adm-leer">Netzwerkfehler.</p>'; });
     }
 
+    // ---- Dirty-Guard: Warnung bei ungespeicherten Änderungen ----
+    var plForm = document.getElementById('playlist-form');
+    plForm.addEventListener('input', function () { _dirty = true; });
+    plForm.addEventListener('change', function () { _dirty = true; });
+    window.addEventListener('beforeunload', function (e) {
+        if (_dirty) { e.preventDefault(); }
+    });
+
     // ---- Vor dem Absenden: Spalte + Feldnamen sequenziell vergeben ----
-    document.getElementById('playlist-form').addEventListener('submit', function () {
+    plForm.addEventListener('submit', function () {
+        _dirty = false;
         var i = 0;
         spaltenWrap.querySelectorAll('.adm-spalte').forEach(function (col) {
             var s = col.getAttribute('data-spalte');
