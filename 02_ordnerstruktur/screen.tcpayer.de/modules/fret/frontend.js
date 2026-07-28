@@ -50,21 +50,10 @@
             var anzahlKommende = (settings.anzahl_kommende != null) ? settings.anzahl_kommende : 3;
             var pollSek        = (settings.poll_sek && settings.poll_sek >= 3) ? settings.poll_sek : 7;
             var dauerSek       = (settings.anzeige_dauer_sek > 0) ? settings.anzeige_dauer_sek : 30;
-            var debug          = /[?&]fretdebug=1/.test(window.location.search);
 
             var el = document.createElement('div');
             el.className = 'tm-modul-fret';
             el.style.cssText = 'width:100%;height:100%;';
-
-            var dbgEl = null;
-            if (debug) {
-                dbgEl = document.createElement('div');
-                dbgEl.style.cssText = 'position:fixed;left:0;top:0;z-index:99999;'
-                    + 'background:rgba(0,0,0,.85);color:#0f0;font:12px/1.4 monospace;'
-                    + 'padding:8px 10px;white-space:pre;max-width:70vw;pointer-events:none;';
-                document.body.appendChild(dbgEl);
-            }
-            function dbg(zeilen) { if (dbgEl) { dbgEl.textContent = zeilen.join('\n'); } }
 
             if (!computerId) {
                 el.innerHTML = '<div class="tm-song-heading">' + escapeHtml(titel) + '</div>'
@@ -91,6 +80,20 @@
             var poll       = null;
             var raf        = null;
             var countdowns = [];
+            var nachpoll   = null;  // Timeout für Extra-Poll (Songende / Wechsel-Settling)
+
+            // Songwechsel-Settling: FRET meldet nach einem Wechsel kurz den neuen
+            // Titel mit der ALTEN startTime → remaining ≈ 0 → Balken fälschlich
+            // voll. Solange die Werte für den neuen Song unplausibel sind, wird
+            // der Wert verworfen und schnell nachgepollt.
+            var UNPLAUSIBEL_ELAPSED_S = 30;  // neuer Song mit elapsed > 30s = startTime noch nicht nachgezogen
+            var MAX_WECHSEL_VERSUCHE  = 6;   // danach best effort (Song beginnt jetzt)
+            var wechselVersuche       = 0;
+
+            function planeNachpoll(ms) {
+                if (nachpoll) { clearTimeout(nachpoll); }
+                nachpoll = setTimeout(function () { nachpoll = null; holeDaten(); }, ms);
+            }
 
             // Fortschritts-Zustand. Kern ist EIN absoluter Endzeitpunkt
             // (bar.endeAm, lokale Uhr in ms) statt „Rest + Empfangszeit" — das
@@ -104,7 +107,8 @@
                 endeAm:      null,  // absoluter Songend-Zeitpunkt (Date.now()-Basis, ms)
                 quelle:      null,  // 'rs' (remainingSeconds) | 'start' (startTime)
                 letzterWert: 0,     // letzter gezeichneter Fortschritt (0–1), für Einfrieren
-                laeuft:      false  // true nur wenn isPlaying + Positionsdaten vorhanden
+                laeuft:      false, // true nur wenn isPlaying + Positionsdaten vorhanden
+                gesettled:   false  // false bis für den aktuellen Song ein plausibler Wert ankam
             };
 
             function zeichneBalken(anteil) {
@@ -118,7 +122,8 @@
                     zeichneBalken(1);
                     bar.letzterWert = 1;
                     bar.laeuft = false;
-                    return; // Song abgelaufen — nächster Poll bringt neuen Song
+                    planeNachpoll(1500); // Song müsste zu Ende sein → neuen sofort holen
+                    return;
                 }
                 var anteil = bar.dauer ? (1 - restSek / bar.dauer) : bar.letzterWert;
                 bar.letzterWert = anteil;
@@ -145,28 +150,14 @@
                     + '<div class="tm-song-artist">' + escapeHtml(s.artist) + '</div>'
                     + '<div class="tm-song-badges">' + badges(s.taenze) + '</div>';
 
-                if (dbgEl) {
-                    var elapsedDbg = s.startTime
-                        ? ((Date.now() - Date.parse(s.startTime)) / 1000).toFixed(1) : '–';
-                    dbg([
-                        'isPlaying=' + data.isPlaying + '  pos=' + s.position,
-                        'title=' + (s.title || '').slice(0, 28),
-                        'duration=' + s.duration,
-                        'remainingSeconds(proxy)=' + s.remainingSeconds,
-                        'startTime=' + s.startTime,
-                        'elapsed(client)=' + elapsedDbg + 's',
-                        'now=' + new Date().toISOString(),
-                        'kommende[0].estim=' + ((data.kommende || [])[0] || {}).estimatedSecondsUntilStart,
-                        'kommende[0].dur=' + ((data.kommende || [])[0] || {}).duration
-                    ]);
-                }
-
                 // Songwechsel erkennen → Balken auf 0 zurücksetzen
                 var neueSongId = s.songId || (s.title + '|' + s.artist);
                 var istWechsel = (neueSongId !== bar.songId);
                 if (istWechsel) {
                     bar.songId      = neueSongId;
                     bar.letzterWert = 0;
+                    bar.gesettled   = false;
+                    wechselVersuche = 0;
                     zeichneBalken(0);
                 }
 
@@ -197,6 +188,30 @@
                         return;
                     }
 
+                    // Plausibilitäts-Check nach einem Songwechsel: Ein gerade
+                    // gestarteter Song muss elapsed ≈ 0 haben. Ist elapsed
+                    // unplausibel groß, hat FRET den neuen Titel noch mit der
+                    // alten startTime gemeldet (→ remaining ≈ 0 → voller Balken).
+                    // Dann Wert verwerfen, Balken bei 0 lassen und schnell
+                    // nachpollen, bis die Daten konsistent sind.
+                    var restKandidatSek = (kandidatEnde - Date.now()) / 1000;
+                    var elapsedKandidat = s.duration - restKandidatSek;
+                    if (!bar.gesettled && elapsedKandidat > UNPLAUSIBEL_ELAPSED_S) {
+                        wechselVersuche++;
+                        if (wechselVersuche <= MAX_WECHSEL_VERSUCHE) {
+                            bar.laeuft = false;
+                            if (raf) { cancelAnimationFrame(raf); }
+                            bar.letzterWert = 0;
+                            zeichneBalken(0);
+                            planeNachpoll(2000);
+                            return;
+                        }
+                        // Zu lange unplausibel → best effort: Song beginnt jetzt.
+                        kandidatEnde = Date.now() + s.duration * 1000;
+                        quelle       = 'start';
+                    }
+                    bar.gesettled = true;
+
                     // Neu ankern nur wenn nötig — sonst springt der Balken bei
                     // jedem Poll durch Netz-Jitter. Regeln:
                     //  • Songwechsel oder noch kein Anker → immer setzen
@@ -205,7 +220,9 @@
                     //  • sonst nur bei echter Korrektur (> Toleranz), z.B. Seek
                     var abweichung = Math.abs(kandidatEnde - bar.endeAm);
                     var ankern;
-                    if (istWechsel || bar.endeAm == null) {
+                    if (bar.ankerSongId !== neueSongId || bar.endeAm == null) {
+                        // Für diesen Song noch kein Anker gesetzt (Wechsel-Poll,
+                        // oder erster plausibler Wert nach dem Settling) → setzen
                         ankern = true;
                     } else if (quelle === 'start' && bar.quelle === 'rs') {
                         ankern = false;
@@ -363,11 +380,11 @@
                 el:       el,
                 dauerSek: dauerSek,
                 destroy:  function () {
-                    if (poll) { clearInterval(poll); poll = null; }
-                    if (raf)  { cancelAnimationFrame(raf); raf = null; }
+                    if (poll)     { clearInterval(poll); poll = null; }
+                    if (raf)      { cancelAnimationFrame(raf); raf = null; }
+                    if (nachpoll) { clearTimeout(nachpoll); nachpoll = null; }
                     countdowns.forEach(function (id) { clearInterval(id); });
                     countdowns = [];
-                    if (dbgEl && dbgEl.parentNode) { dbgEl.parentNode.removeChild(dbgEl); }
                 }
             }]);
         }
