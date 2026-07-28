@@ -192,7 +192,7 @@
     zpForm.addEventListener('input', function () { _dirty = true; });
     zpForm.addEventListener('change', function () { _dirty = true; });
     window.addEventListener('beforeunload', function (e) {
-        if (_dirty) { e.preventDefault(); }
+        if (_dirty) { e.preventDefault(); e.returnValue = ''; }
     });
 
     // ---- Vor dem Absenden: Feldnamen je Liste sequenziell vergeben ----

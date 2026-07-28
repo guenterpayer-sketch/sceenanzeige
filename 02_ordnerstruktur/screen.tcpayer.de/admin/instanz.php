@@ -454,7 +454,7 @@ admin_header(($istNeu ? 'Neue ' : '') . $meta['label'] . '-Instanz', 'bibliothek
     instForm.addEventListener('input', function () { _dirty = true; });
     instForm.addEventListener('change', function () { _dirty = true; });
     window.addEventListener('beforeunload', function (e) {
-        if (_dirty) { e.preventDefault(); }
+        if (_dirty) { e.preventDefault(); e.returnValue = ''; }
     });
 
     // ---- Bild-Picker ----
@@ -656,6 +656,21 @@ admin_header(($istNeu ? 'Neue ' : '') . $meta['label'] . '-Instanz', 'bibliothek
             img.removeAttribute('src');
             wrap.querySelector('.adm-setting-bild-entfernen').hidden = true;
         });
+    });
+})();
+</script>
+<?php endif; ?>
+
+<?php if (!$hasInhalte): ?>
+<script>
+(function () {
+    var _dirty = false;
+    var instForm = document.getElementById('instanz-form');
+    instForm.addEventListener('input', function () { _dirty = true; });
+    instForm.addEventListener('change', function () { _dirty = true; });
+    instForm.addEventListener('submit', function () { _dirty = false; });
+    window.addEventListener('beforeunload', function (e) {
+        if (_dirty) { e.preventDefault(); e.returnValue = ''; }
     });
 })();
 </script>

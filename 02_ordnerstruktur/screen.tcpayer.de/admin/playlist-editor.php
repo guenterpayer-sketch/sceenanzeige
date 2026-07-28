@@ -616,7 +616,7 @@ function pl_modul_icon(string $icon): string
     plForm.addEventListener('input', function () { _dirty = true; });
     plForm.addEventListener('change', function () { _dirty = true; });
     window.addEventListener('beforeunload', function (e) {
-        if (_dirty) { e.preventDefault(); }
+        if (_dirty) { e.preventDefault(); e.returnValue = ''; }
     });
 
     // ---- Vor dem Absenden: Spalte + Feldnamen sequenziell vergeben ----
