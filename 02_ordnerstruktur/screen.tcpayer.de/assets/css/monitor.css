@@ -298,6 +298,9 @@ html, body {
     font-weight: 700;
     line-height: 1.3;
     text-wrap: balance;
+    /* Absätze/Zeilenumbrüche aus der Textarea 1:1 übernehmen; lange Zeilen
+       brechen weiter automatisch um. Zentrierung bleibt (Eltern-text-align). */
+    white-space: pre-wrap;
 }
 
 .tm-ank-leer {
