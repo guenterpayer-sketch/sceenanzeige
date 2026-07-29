@@ -112,6 +112,33 @@ final class Monitor
         return (int)$stmt->fetchColumn() > 0;
     }
 
+    /**
+     * IDs aller Monitore, in deren Zeitplan die Playlist vorkommt
+     * (für das Badge-Highlight „auf N Monitoren" → monitore.php).
+     * @return int[]
+     */
+    public static function idsMitPlaylist(int $playlistId): array
+    {
+        $stmt = get_pdo()->prepare(
+            'SELECT DISTINCT monitor_id FROM monitor_zeitplan WHERE playlist_id = :id'
+        );
+        $stmt->execute([':id' => $playlistId]);
+        return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+    }
+
+    /**
+     * IDs aller Monitore, in deren Ticker-Zeitplan der Ticker vorkommt.
+     * @return int[]
+     */
+    public static function idsMitTicker(int $tickerPlaylistId): array
+    {
+        $stmt = get_pdo()->prepare(
+            'SELECT DISTINCT monitor_id FROM ticker_zeitplan WHERE ticker_playlist_id = :id'
+        );
+        $stmt->execute([':id' => $tickerPlaylistId]);
+        return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+    }
+
     // ------------------------------------------------------------------
     // Zeitplan-Auswahl „was gilt JETZT" — EINZIGE Wahrheitsquelle.
     //

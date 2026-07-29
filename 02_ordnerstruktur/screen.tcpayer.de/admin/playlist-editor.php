@@ -41,6 +41,19 @@ if ($id > 0) {
 }
 $istNeu = ($playlist === null);
 
+// --- Badge-Highlight durchschleifen: kommt der Aufruf aus einer markierten
+// Playlist-Übersicht (hl_instanz), bleibt der Parameter über Speichern &
+// schließen / Abbrechen erhalten. (Formular postet auf die eigene URL inkl.
+// Query-String, daher überlebt $_GET den POST.)
+$hlQuery  = '';
+$hlLeiste = null;
+$hlIn = (int)($_GET['hl_instanz'] ?? 0);
+if ($hlIn > 0 && ($hlObj = ModulInstanz::find($hlIn))) {
+    $hlQuery  = '&hl_instanz=' . $hlIn;
+    $hlLeiste = 'Du prüfst gerade: Modul-Instanz „<strong>' . htmlspecialchars($hlObj['name'])
+              . '</strong>" — zurück/schließen führt zur markierten Playlist-Übersicht';
+}
+
 $layouts = LayoutRegistry::getAll();
 
 // --- Vorbelegung ---
@@ -137,9 +150,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'speic
         Playlist::ersetzeSpaltenInhalte($id, $inhalte);
 
         if (!empty($_POST['bleiben'])) {
-            header('Location: playlist-editor.php?id=' . $id . '&gespeichert=1');
+            header('Location: playlist-editor.php?id=' . $id . '&gespeichert=1' . $hlQuery);
         } else {
-            header('Location: playlists.php?gespeichert=1');
+            // id mitgeben: der Flash-Aktions-Link auf playlists.php kann dann
+            // drüben direkt die Monitore dieser Playlist hervorheben.
+            header('Location: playlists.php?gespeichert=1&id=' . $id . $hlQuery);
         }
         exit;
     }
@@ -157,7 +172,9 @@ function pl_modul_icon(string $icon): string
 }
 ?>
 
-<p><a href="playlists.php" class="adm-zurueck">← zurück zu den Playlists</a></p>
+<?php if ($hlLeiste !== null) { admin_hl_leiste($hlLeiste, 'playlist-editor.php' . ($id > 0 ? '?id=' . $id : '')); } ?>
+
+<p><a href="playlists.php<?= $hlQuery !== '' ? htmlspecialchars('?' . substr($hlQuery, 1)) : '' ?>" class="adm-zurueck">← zurück zu den Playlists</a></p>
 
 <?php if (isset($_GET['gespeichert'])): ?>
     <div class="adm-flash">Playlist gespeichert.</div>
@@ -253,7 +270,7 @@ function pl_modul_icon(string $icon): string
     <div class="adm-aktionsleiste">
         <button type="submit" name="bleiben" value="1" class="adm-btn-primary">Speichern</button>
         <button type="submit" class="adm-btn-primary">Speichern &amp; schließen</button>
-        <a href="playlists.php" class="adm-btn adm-btn-grau">Abbrechen</a>
+        <a href="playlists.php<?= $hlQuery !== '' ? htmlspecialchars('?' . substr($hlQuery, 1)) : '' ?>" class="adm-btn adm-btn-grau">Abbrechen</a>
     </div>
 </form>
 

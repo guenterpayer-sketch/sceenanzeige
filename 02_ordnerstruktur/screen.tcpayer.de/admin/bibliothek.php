@@ -192,7 +192,8 @@ if ($istTypAnsicht) {
             <?= instanz_vorschau($inst, $meta, $uploadsBasis, $fretMap) ?>
             <?php if ($verw['anzahl'] > 0): ?>
             <div class="adm-kachel-badges">
-                <a class="adm-meta-badge adm-playlists-badge--aktiv" href="playlists.php"
+                <a class="adm-meta-badge adm-playlists-badge--aktiv"
+                   href="playlists.php?hl_instanz=<?= (int)$inst['id'] ?>"
                    data-playlists="<?= htmlspecialchars($verw['namen']) ?>">🗂️ in <?= $verw['anzahl'] ?> Playlist<?= $verw['anzahl'] === 1 ? '' : 's' ?></a>
             </div>
             <?php endif; ?>

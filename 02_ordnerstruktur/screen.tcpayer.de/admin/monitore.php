@@ -82,8 +82,33 @@ $monitore     = Monitor::listAll();
 $istEditieren = ($formId > 0);
 $zeigeForm    = $istEditieren || isset($_GET['neu']) || !empty($fehler);
 
+// --- Badge-Highlight: „auf N Monitoren"-Badge (Playlists/Ticker) markiert
+// hier die betroffenen Kacheln. Bleibt, solange der Parameter in der URL
+// steht; die Zeitplan-Links schleifen ihn durch den Editor zurück.
+$hlIds    = [];   // hervorzuhebende Monitor-IDs
+$hlQuery  = '';   // an Zeitplan-Links anhängen (Durchschleifen)
+$hlLeiste = null; // Text der Hinweisleiste (HTML, Namen escaped)
+$hlPl = (int)($_GET['hl_playlist'] ?? 0);
+$hlTk = (int)($_GET['hl_ticker'] ?? 0);
+if ($hlPl > 0 && ($hlObj = Playlist::find($hlPl))) {
+    $hlIds    = Monitor::idsMitPlaylist($hlPl);
+    $hlQuery  = '&hl_playlist=' . $hlPl;
+    $hlLeiste = 'Hervorgehoben: Monitore mit Playlist „<strong>'
+              . htmlspecialchars($hlObj['name']) . '</strong>"';
+} elseif ($hlTk > 0 && ($hlObj = TickerPlaylist::find($hlTk))) {
+    $hlIds    = Monitor::idsMitTicker($hlTk);
+    $hlQuery  = '&hl_ticker=' . $hlTk;
+    $hlLeiste = 'Hervorgehoben: Monitore mit Ticker „<strong>'
+              . htmlspecialchars($hlObj['name']) . '</strong>"';
+}
+if ($hlLeiste !== null && empty($hlIds)) {
+    $hlLeiste .= ' — derzeit auf keinem Monitor eingeplant';
+}
+
 admin_header('Monitore', 'monitore');
 ?>
+
+<?php if ($hlLeiste !== null) { admin_hl_leiste($hlLeiste, 'monitore.php'); } ?>
 
 <?php if ($flash): ?>
     <div class="adm-flash"><?= htmlspecialchars($flash) ?></div>
@@ -139,9 +164,11 @@ admin_header('Monitore', 'monitore');
     <p class="adm-leer">Noch kein Monitor angelegt. Mit dem Button oben anlegen.</p>
 <?php else: ?>
 <div class="adm-kachelgrid">
-    <?php foreach ($monitore as $m): ?>
-        <div class="adm-kachel">
-            <a class="adm-kachel-vorschau info adm-kachel-link" href="monitor-zeitplan.php?id=<?= (int)$m['id'] ?>"
+    <?php foreach ($monitore as $m):
+        $istHl = in_array((int)$m['id'], $hlIds, true);
+    ?>
+        <div class="adm-kachel<?= $istHl ? ' adm-kachel--highlight' : '' ?>">
+            <a class="adm-kachel-vorschau info adm-kachel-link" href="monitor-zeitplan.php?id=<?= (int)$m['id'] . htmlspecialchars($hlQuery) ?>"
                title="Zeitplan von <?= htmlspecialchars($m['name']) ?> bearbeiten">
                 <span class="adm-kachel-icon">🖥️</span>
                 <span class="adm-kachel-info">
@@ -153,7 +180,7 @@ admin_header('Monitore', 'monitore');
             <div class="adm-kachel-body">
                 <div class="adm-kachel-name"><?= htmlspecialchars($m['name']) ?></div>
                 <div class="adm-kachel-aktionen">
-                    <a class="adm-btn adm-btn-primary" href="monitor-zeitplan.php?id=<?= (int)$m['id'] ?>">Zeitplan</a>
+                    <a class="adm-btn adm-btn-primary" href="monitor-zeitplan.php?id=<?= (int)$m['id'] . htmlspecialchars($hlQuery) ?>">Zeitplan</a>
                     <button class="adm-btn adm-vorschau-btn"
                             data-url="https://<?= htmlspecialchars($m['subdomain']) ?>"
                             data-name="<?= htmlspecialchars($m['name']) ?>">Vorschau</button>

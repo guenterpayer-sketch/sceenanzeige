@@ -104,6 +104,20 @@ final class Playlist
         return get_pdo()->query($sql)->fetchAll();
     }
 
+    /**
+     * IDs aller Playlists, die eine Modul-Instanz enthalten
+     * (für das Badge-Highlight „in N Playlists" → playlists.php).
+     * @return int[]
+     */
+    public static function idsMitInstanz(int $modulInstanzId): array
+    {
+        $stmt = get_pdo()->prepare(
+            'SELECT DISTINCT playlist_id FROM playlist_spalten_inhalte WHERE modul_instanz_id = :id'
+        );
+        $stmt->execute([':id' => $modulInstanzId]);
+        return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+    }
+
     // ------------------------------------------------------------------
     // Layout (playlist_layout, 1:1)
     // ------------------------------------------------------------------

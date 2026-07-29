@@ -43,6 +43,16 @@ $schnellzugriffe = [
 admin_header('Übersicht', 'dashboard');
 ?>
 
+<div class="adm-typgrid adm-dash-schnell">
+    <?php foreach ($schnellzugriffe as [$icon, $label, $link]): ?>
+        <a class="adm-typkachel" href="<?= htmlspecialchars($link) ?>">
+            <span class="adm-typ-icon"><?= $icon ?></span>
+            <span class="adm-typ-label"><?= htmlspecialchars($label) ?></span>
+        </a>
+    <?php endforeach; ?>
+</div>
+
+<h2 class="adm-dash-abschnitt">Monitore</h2>
 <p class="adm-hilfe">
     Was läuft gerade auf welchem Monitor? Die Anzeige nutzt dieselbe
     Zeitplan-Logik wie die Monitore selbst. Seite neu laden (F5) für den
@@ -100,16 +110,6 @@ admin_header('Übersicht', 'dashboard');
     <?php endforeach; ?>
 </div>
 <?php endif; ?>
-
-<h2 class="adm-dash-abschnitt">Schnellzugriffe</h2>
-<div class="adm-typgrid adm-dash-schnell">
-    <?php foreach ($schnellzugriffe as [$icon, $label, $link]): ?>
-        <a class="adm-typkachel" href="<?= htmlspecialchars($link) ?>">
-            <span class="adm-typ-icon"><?= $icon ?></span>
-            <span class="adm-typ-label"><?= htmlspecialchars($label) ?></span>
-        </a>
-    <?php endforeach; ?>
-</div>
 
 <?php
 admin_footer();

@@ -95,10 +95,34 @@ function admin_header(string $titel, string $aktiv = ''): void
 <?php
 }
 
+/**
+ * Hinweisleiste für das Badge-Highlight („Hervorgehoben: …").
+ * Bleibt stehen, solange der highlight-Parameter in der URL ist; der
+ * Entfernen-Link lädt die Seite ohne Parameter. $textHtml darf Markup
+ * enthalten — Namen vom Aufrufer mit htmlspecialchars() escapen!
+ */
+function admin_hl_leiste(string $textHtml, string $entfernenUrl): void
+{
+    ?>
+    <div class="adm-hl-leiste">
+        <span class="adm-hl-text">🔦 <?= $textHtml ?></span>
+        <a class="adm-hl-entfernen" href="<?= htmlspecialchars($entfernenUrl) ?>">Hervorhebung entfernen</a>
+    </div>
+    <?php
+}
+
 function admin_footer(): void
 {
     ?>
 </main>
+
+<script>
+// Badge-Highlight: erste markierte Kachel in den Blick fahren
+(function () {
+    var el = document.querySelector('.adm-kachel--highlight');
+    if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+})();
+</script>
 
 <!-- ===== Vorschau-Modal (global, für alle Seiten) ===== -->
 <div id="adm-vm-overlay" class="adm-vm-overlay" hidden>

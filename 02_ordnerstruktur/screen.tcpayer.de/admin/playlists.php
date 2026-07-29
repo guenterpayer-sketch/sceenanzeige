@@ -38,10 +38,31 @@ if (isset($_GET['geloescht']))   { $hinweis = 'Playlist gelöscht.'; }
 if (isset($_GET['gespeichert'])) {
     $hinweis       = 'Playlist gespeichert. Eingeplante Monitore übernehmen Änderungen '
                    . 'innerhalb von ca. 1 Minute — oder sofort über „↺ Monitore neu laden" oben.';
-    $hinweisAktion = ['monitore.php', '→ Jetzt auf einem Monitor einplanen'];
+    // Kommt die gespeicherte Playlist-ID mit, hebt der Aktions-Link drüben
+    // gleich die Monitore hervor, auf denen sie schon eingeplant ist.
+    $gespId        = (int)($_GET['id'] ?? 0);
+    $hinweisAktion = [
+        $gespId > 0 ? 'monitore.php?hl_playlist=' . $gespId : 'monitore.php',
+        '→ Jetzt auf einem Monitor einplanen',
+    ];
 }
 
 $playlists = Playlist::listAll();
+
+// --- Badge-Highlight: „in N Playlists"-Badge (Bibliothek) markiert hier die
+// Playlists, die die Modul-Instanz enthalten. Die Bearbeiten-Links schleifen
+// den Parameter durch den Playlist-Editor zurück.
+$hlIds    = [];
+$hlQuery  = '';
+$hlLeiste = null;
+$hlIn = (int)($_GET['hl_instanz'] ?? 0);
+if ($hlIn > 0 && ($hlObj = ModulInstanz::find($hlIn))) {
+    $hlIds    = Playlist::idsMitInstanz($hlIn);
+    $hlQuery  = '&hl_instanz=' . $hlIn;
+    $hlLeiste = 'Hervorgehoben: Playlists mit Modul-Instanz „<strong>'
+              . htmlspecialchars($hlObj['name']) . '</strong>"';
+    if (empty($hlIds)) { $hlLeiste .= ' — derzeit in keiner Playlist enthalten'; }
+}
 
 /** Kurzbeschreibung des Layouts aus den gespeicherten Werten. */
 function pl_layout_text(array $p): string
@@ -60,6 +81,8 @@ function pl_layout_text(array $p): string
 
 admin_header('Playlists', 'playlists');
 ?>
+
+<?php if ($hlLeiste !== null) { admin_hl_leiste($hlLeiste, 'playlists.php'); } ?>
 
 <?php if ($hinweis): ?>
     <div class="adm-flash<?= $hinweisAktion ? ' adm-flash--mit-aktion' : '' ?>">
@@ -84,8 +107,10 @@ admin_header('Playlists', 'playlists');
     <p class="adm-leer">Noch keine Playlist angelegt. Mit dem Button oben anlegen.</p>
 <?php else: ?>
 <div class="adm-kachelgrid">
-    <?php foreach ($playlists as $p): ?>
-        <div class="adm-kachel <?= $p['aktiv'] ? '' : 'inaktiv' ?>">
+    <?php foreach ($playlists as $p):
+        $istHl = in_array((int)$p['id'], $hlIds, true);
+    ?>
+        <div class="adm-kachel <?= $p['aktiv'] ? '' : 'inaktiv' ?><?= $istHl ? ' adm-kachel--highlight' : '' ?>">
             <div class="adm-kachel-vorschau info">
                 <span class="adm-kachel-icon">🗂️</span>
                 <span class="adm-kachel-info">
@@ -95,7 +120,7 @@ admin_header('Playlists', 'playlists');
             </div>
             <div class="adm-kachel-badges">
                 <a class="adm-meta-badge adm-monitore-badge<?= (int)$p['anzahl_monitore'] > 0 ? ' adm-monitore-badge--aktiv' : '' ?>"
-                   href="monitore.php"
+                   href="monitore.php<?= (int)$p['anzahl_monitore'] > 0 ? '?hl_playlist=' . (int)$p['id'] : '' ?>"
                    data-monitore="<?= htmlspecialchars($p['monitor_namen'] ?? '') ?>">🖥️ auf <?= (int)$p['anzahl_monitore'] ?> Monitor<?= (int)$p['anzahl_monitore'] === 1 ? '' : 'en' ?><?= (int)$p['anzahl_monitore'] === 0 ? ' — einplanen' : '' ?></a>
             </div>
             <div class="adm-kachel-body">
@@ -104,7 +129,7 @@ admin_header('Playlists', 'playlists');
                     <?php if (!$p['aktiv']): ?><span class="adm-badge-pause">pausiert</span><?php endif; ?>
                 </div>
                 <div class="adm-kachel-aktionen">
-                    <a class="adm-btn" href="playlist-editor.php?id=<?= (int)$p['id'] ?>">Bearbeiten</a>
+                    <a class="adm-btn" href="playlist-editor.php?id=<?= (int)$p['id'] . htmlspecialchars($hlQuery) ?>">Bearbeiten</a>
                     <button type="button" class="adm-btn adm-vorschau-btn"
                             data-url="playlist-preview.php?id=<?= (int)$p['id'] ?>"
                             data-name="<?= htmlspecialchars($p['name']) ?>">Vorschau</button>
