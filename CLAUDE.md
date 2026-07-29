@@ -309,10 +309,10 @@ FRET-Polling 5–10 Sek., Ticker unabhängig.
 | 22 | Playlist-Editor: Duplikat-Sperre entfernt — Instanzen mehrfach in Spalte und über Spalten hinweg (A → B → A → C) | ✅ live |
 | 23 | Monitor-Zeitplan: Wochenkalender-Ansicht in Etappen — A: nur lesen, B: bearbeiten (Klick/Drag), C: Politur (Lanes, Tag-Drag, Resize oben, Ganztags-Zeile in Tagesspalten) | ✅ komplett live |
 | 24 | Globaler Wochenplan (`admin/wochenplan.php`): Zeitpläne ALLER Monitore in einem Kalender, nur lesen; identische Einträge monitorübergreifend zu einem Block zusammengefasst, Monitor-Filter-Checkboxen, Ganztags-Zeile | ✅ live |
-| 25 | Dashboard-Startseite (`admin/dashboard.php`) + Nav-Umbau (Workflow-Reihenfolge, Gruppen-Trenner) + zentrale Zeitplan-Auswahl in `Monitor.php` (eine Wahrheitsquelle für Proxy + Dashboard) | ⏳ Staging, zu testen |
-| 26 | Geführte Workflows (Flash-Aktions-Links, klickbare Badges inkl. Ticker-Tooltip) + einheitliche Editor-Buttons (Speichern bleibt / Speichern & schließen / Abbrechen in allen drei Editoren) | ⏳ Staging, zu testen |
-| 27 | Admin-JS-Auslagerung (`instanz.js`, `playlist-editor.js`) + gemeinsame Bausteine `editor-core.js` (`TMAdmin.dirtyGuard`/`escapeHtml` — eine Implementierung statt drei) | ⏳ Staging, zu testen |
-| 28 | Badge-Highlight: Klick auf „auf N Monitoren"/„in N Playlists" markiert Ziel-Kacheln dauerhaft (Hinweisleiste + „Hervorhebung entfernen", Scroll zur Kachel, Durchschleifen durch Zeitplan-/Playlist-Editor) + Dashboard-Schnellzugriffe nach oben | ⏳ Staging, zu testen |
+| 25 | Dashboard-Startseite (`admin/dashboard.php`) + Nav-Umbau (Workflow-Reihenfolge, Gruppen-Trenner) + zentrale Zeitplan-Auswahl in `Monitor.php` (eine Wahrheitsquelle für Proxy + Dashboard) | ✅ Staging getestet, bereit für Live-Merge |
+| 26 | Geführte Workflows (Flash-Aktions-Links, klickbare Badges inkl. Ticker-Tooltip) + einheitliche Editor-Buttons (Speichern bleibt / Speichern & schließen / Abbrechen in allen drei Editoren) | ✅ Staging getestet, bereit für Live-Merge |
+| 27 | Admin-JS-Auslagerung (`instanz.js`, `playlist-editor.js`) + gemeinsame Bausteine `editor-core.js` (`TMAdmin.dirtyGuard`/`escapeHtml` — eine Implementierung statt drei) | ✅ Staging getestet, bereit für Live-Merge |
+| 28 | Badge-Highlight: Klick auf „auf N Monitoren"/„in N Playlists" markiert Ziel-Kacheln dauerhaft (Hinweisleiste + „Hervorhebung entfernen", Scroll zur Kachel, Durchschleifen durch Zeitplan-/Playlist-Editor) + Dashboard-Schnellzugriffe nach oben | ✅ Staging getestet, bereit für Live-Merge |
 
 ---
 
