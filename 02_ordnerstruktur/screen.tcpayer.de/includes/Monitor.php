@@ -112,6 +112,158 @@ final class Monitor
         return (int)$stmt->fetchColumn() > 0;
     }
 
+    /**
+     * IDs aller Monitore, in deren Zeitplan die Playlist vorkommt
+     * (für das Badge-Highlight „auf N Monitoren" → monitore.php).
+     * @return int[]
+     */
+    public static function idsMitPlaylist(int $playlistId): array
+    {
+        $stmt = get_pdo()->prepare(
+            'SELECT DISTINCT monitor_id FROM monitor_zeitplan WHERE playlist_id = :id'
+        );
+        $stmt->execute([':id' => $playlistId]);
+        return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+    }
+
+    /**
+     * IDs aller Monitore, in deren Ticker-Zeitplan der Ticker vorkommt.
+     * @return int[]
+     */
+    public static function idsMitTicker(int $tickerPlaylistId): array
+    {
+        $stmt = get_pdo()->prepare(
+            'SELECT DISTINCT monitor_id FROM ticker_zeitplan WHERE ticker_playlist_id = :id'
+        );
+        $stmt->execute([':id' => $tickerPlaylistId]);
+        return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+    }
+
+    // ------------------------------------------------------------------
+    // Zeitplan-Auswahl „was gilt JETZT" — EINZIGE Wahrheitsquelle.
+    //
+    // ⚠️ Diese Methoden werden vom Monitor-Proxy (proxies/monitor.php,
+    // versorgt die echten Saal-Bildschirme!) UND vom Admin-Dashboard
+    // benutzt. Es gibt bewusst KEINE zweite Kopie dieser Regeln — wer die
+    // Semantik ändert, ändert sie für Monitore und Dashboard zugleich.
+    // Regeln (CLAUDE.md Abschnitt 10/12):
+    //   - Wochentag ISO 1=Mo…7=So via FIND_IN_SET (Spalte wochentage="1,2,5")
+    //   - Uhrzeit im Fenster ODER von/bis beide NULL (= Fallback/dauerhaft)
+    //   - Playlist: nur aktive; höchste Priorität gewinnt, bei Gleichstand
+    //     bleiben alle (das Frontend rotiert durch sie)
+    //   - Ticker: nur aktive; ALLE passenden, KEINE Priorität (Mischung)
+    // ------------------------------------------------------------------
+
+    /**
+     * Liefert die JETZT gültigen Playlist-Zeitplan-Einträge des Monitors —
+     * nur die mit der höchsten Priorität (leer, wenn nichts passt).
+     *
+     * @return array<int,array{playlist_id:int|string,name:string,prioritaet:int|string,dauer_sek:int|string,von_uhrzeit:?string,bis_uhrzeit:?string}>
+     */
+    public static function aktuellePlaylistFuer(int $monitorId, ?DateTimeImmutable $zeit = null): array
+    {
+        $zeit ??= new DateTimeImmutable('now');
+        // Hinweis EMULATE_PREPARES=false: jeder benannte Platzhalter darf im
+        // Statement nur einmal vorkommen (daher :zeit_von/:zeit_bis).
+        $stmt = get_pdo()->prepare(
+            'SELECT z.playlist_id, z.prioritaet, z.dauer_sek, z.von_uhrzeit, z.bis_uhrzeit,
+                    p.name
+             FROM monitor_zeitplan z
+             JOIN playlists p ON p.id = z.playlist_id AND p.aktiv = 1
+             WHERE z.monitor_id = :mid
+               AND FIND_IN_SET(:tag, z.wochentage) > 0
+               AND (
+                     (z.von_uhrzeit IS NULL AND z.bis_uhrzeit IS NULL)
+                  OR (:zeit_von >= z.von_uhrzeit AND :zeit_bis <= z.bis_uhrzeit)
+               )
+             ORDER BY z.prioritaet DESC'
+        );
+        $stmt->execute([
+            ':mid'      => $monitorId,
+            ':tag'      => $zeit->format('N'),
+            ':zeit_von' => $zeit->format('H:i:s'),
+            ':zeit_bis' => $zeit->format('H:i:s'),
+        ]);
+        $rows = $stmt->fetchAll();
+
+        // Nur Einträge mit höchster Priorität behalten
+        $maxPrio = null;
+        foreach ($rows as $row) {
+            $p = (int)$row['prioritaet'];
+            if ($maxPrio === null || $p > $maxPrio) { $maxPrio = $p; }
+        }
+        return ($maxPrio !== null)
+            ? array_values(array_filter($rows, static fn($r) => (int)$r['prioritaet'] === $maxPrio))
+            : [];
+    }
+
+    /**
+     * Liefert die JETZT aktiven Ticker des Monitors (alle passenden, ohne
+     * Priorität). DISTINCT: derselbe Ticker zählt nur einmal, auch wenn
+     * mehrere Zeitplan-Zeilen gleichzeitig passen.
+     *
+     * @return array<int,array{ticker_playlist_id:int|string,name:string}>
+     */
+    public static function aktiveTickerFuer(int $monitorId, ?DateTimeImmutable $zeit = null): array
+    {
+        $zeit ??= new DateTimeImmutable('now');
+        $stmt = get_pdo()->prepare(
+            'SELECT DISTINCT z.ticker_playlist_id, tp.name
+             FROM ticker_zeitplan z
+             JOIN ticker_playlists tp ON tp.id = z.ticker_playlist_id AND tp.aktiv = 1
+             WHERE z.monitor_id = :mid
+               AND FIND_IN_SET(:tag, z.wochentage) > 0
+               AND (
+                     (z.von_uhrzeit IS NULL AND z.bis_uhrzeit IS NULL)
+                  OR (:t_von >= z.von_uhrzeit AND :t_bis <= z.bis_uhrzeit)
+               )
+             ORDER BY tp.name'
+        );
+        $stmt->execute([
+            ':mid'   => $monitorId,
+            ':tag'   => $zeit->format('N'),
+            ':t_von' => $zeit->format('H:i:s'),
+            ':t_bis' => $zeit->format('H:i:s'),
+        ]);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Nächste Uhrzeit HEUTE (Format "HH:MM"), zu der sich die
+     * Playlist-Auswahl dieses Monitors ändern kann: kleinstes
+     * von_uhrzeit/bis_uhrzeit aller heutigen Einträge (aktive Playlists),
+     * das noch in der Zukunft liegt. NULL wenn keins.
+     */
+    public static function naechsterWechselFuer(int $monitorId, ?DateTimeImmutable $zeit = null): ?string
+    {
+        $zeit ??= new DateTimeImmutable('now');
+        $stmt = get_pdo()->prepare(
+            'SELECT MIN(x.t) FROM (
+                SELECT z.von_uhrzeit AS t
+                 FROM monitor_zeitplan z
+                 JOIN playlists p ON p.id = z.playlist_id AND p.aktiv = 1
+                 WHERE z.monitor_id = :mid1 AND FIND_IN_SET(:tag1, z.wochentage) > 0
+                   AND z.von_uhrzeit IS NOT NULL
+                UNION ALL
+                SELECT z.bis_uhrzeit
+                 FROM monitor_zeitplan z
+                 JOIN playlists p ON p.id = z.playlist_id AND p.aktiv = 1
+                 WHERE z.monitor_id = :mid2 AND FIND_IN_SET(:tag2, z.wochentage) > 0
+                   AND z.bis_uhrzeit IS NOT NULL
+             ) x
+             WHERE x.t > :uhr'
+        );
+        $stmt->execute([
+            ':mid1' => $monitorId,
+            ':mid2' => $monitorId,
+            ':tag1' => $zeit->format('N'),
+            ':tag2' => $zeit->format('N'),
+            ':uhr'  => $zeit->format('H:i:s'),
+        ]);
+        $t = $stmt->fetchColumn();
+        return ($t !== false && $t !== null) ? substr((string)$t, 0, 5) : null;
+    }
+
     // ------------------------------------------------------------------
     // Zeitplan (monitor_zeitplan)
     // ------------------------------------------------------------------

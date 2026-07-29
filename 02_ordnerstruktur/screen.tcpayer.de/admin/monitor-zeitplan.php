@@ -36,6 +36,25 @@ if (!$monitor) {
 
 $fehler = [];
 
+// --- Badge-Highlight durchschleifen: kommt der Aufruf aus einer markierten
+// Monitor-Übersicht (hl_playlist/hl_ticker), bleibt der Parameter über
+// Speichern & schließen / Abbrechen erhalten — die Markierung der übrigen
+// Monitore geht durch die Bearbeitung nicht verloren. (Das Formular postet
+// auf die eigene URL inkl. Query-String, daher überlebt $_GET den POST.)
+$hlQuery  = '';
+$hlLeiste = null;
+$hlPl = (int)($_GET['hl_playlist'] ?? 0);
+$hlTk = (int)($_GET['hl_ticker'] ?? 0);
+if ($hlPl > 0 && ($hlObj = Playlist::find($hlPl))) {
+    $hlQuery  = '&hl_playlist=' . $hlPl;
+    $hlLeiste = 'Du prüfst gerade: Playlist „<strong>' . htmlspecialchars($hlObj['name'])
+              . '</strong>" — zurück/schließen führt zur markierten Monitor-Übersicht';
+} elseif ($hlTk > 0 && ($hlObj = TickerPlaylist::find($hlTk))) {
+    $hlQuery  = '&hl_ticker=' . $hlTk;
+    $hlLeiste = 'Du prüfst gerade: Ticker „<strong>' . htmlspecialchars($hlObj['name'])
+              . '</strong>" — zurück/schließen führt zur markierten Monitor-Übersicht';
+}
+
 $playlists = Playlist::listAll();
 $gueltigePlaylists = [];
 foreach ($playlists as $p) { $gueltigePlaylists[(int)$p['id']] = true; }
@@ -120,7 +139,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'speic
     if (empty($fehler)) {
         Monitor::ersetzeZeitplan($id, $eintraege);
         Monitor::ersetzeTickerZeitplan($id, $tickerEintraege);
-        header('Location: monitore.php?gespeichert=1');
+        if (!empty($_POST['schliessen'])) {
+            // „Speichern & schließen" — zurück zur Monitor-Übersicht
+            header('Location: monitore.php?zeitplan_gespeichert=1' . $hlQuery);
+        } else {
+            // „Speichern" — auf der Seite bleiben
+            header('Location: monitor-zeitplan.php?id=' . $id . '&gespeichert=1' . $hlQuery);
+        }
         exit;
     }
 }
@@ -191,12 +216,18 @@ $tickersFuerJs = array_map(static fn($t) => [
 admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
 ?>
 
+<?php if ($hlLeiste !== null) { admin_hl_leiste($hlLeiste, 'monitor-zeitplan.php?id=' . $id); } ?>
+
 <div class="adm-zeitplan-kopf">
-    <a href="monitore.php" class="adm-zurueck">← zurück zu den Monitoren</a>
+    <a href="monitore.php<?= $hlQuery !== '' ? htmlspecialchars('?' . substr($hlQuery, 1)) : '' ?>" class="adm-zurueck">← zurück zu den Monitoren</a>
     <button class="adm-btn adm-vorschau-btn"
             data-url="https://<?= htmlspecialchars($monitor['subdomain']) ?>"
             data-name="<?= htmlspecialchars($monitor['name']) ?>">Vorschau</button>
 </div>
+
+<?php if (isset($_GET['gespeichert'])): ?>
+    <div class="adm-flash">Zeitplan gespeichert. Die Monitore übernehmen die Änderung innerhalb von ca. 1 Minute — oder sofort über den Button „↺ Monitore neu laden" oben.</div>
+<?php endif; ?>
 
 <?php foreach ($fehler as $f): ?>
     <div class="adm-flash adm-flash-fehler"><?= $f ?></div>
@@ -269,7 +300,8 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
 
     <div class="adm-aktionsleiste">
         <button type="submit" class="adm-btn-primary">Speichern</button>
-        <a href="monitore.php" class="adm-btn adm-btn-grau">Abbrechen</a>
+        <button type="submit" name="schliessen" value="1" class="adm-btn-primary">Speichern &amp; schließen</button>
+        <a href="monitore.php<?= $hlQuery !== '' ? htmlspecialchars('?' . substr($hlQuery, 1)) : '' ?>" class="adm-btn adm-btn-grau">Abbrechen</a>
     </div>
 </form>
 
@@ -332,6 +364,7 @@ window.TM_ZP = {
     tickers:    <?= json_encode($tickersFuerJs, JSON_UNESCAPED_UNICODE) ?>
 };
 </script>
+<script src="/assets/js/admin/editor-core.js?v=<?= @filemtime(__DIR__ . '/../assets/js/admin/editor-core.js') ?: time() ?>"></script>
 <script src="/assets/js/admin/monitor-zeitplan.js?v=<?= @filemtime(__DIR__ . '/../assets/js/admin/monitor-zeitplan.js') ?: time() ?>"></script>
 
 <?php

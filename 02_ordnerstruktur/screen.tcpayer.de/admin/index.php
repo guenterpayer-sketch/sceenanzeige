@@ -1,3 +1,3 @@
 <?php
-header('Location: /admin/bibliothek.php');
+header('Location: /admin/dashboard.php');
 exit;

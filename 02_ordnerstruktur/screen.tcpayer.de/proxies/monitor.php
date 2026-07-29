@@ -15,22 +15,21 @@
  *                                inkl. dauer_sek; das Frontend rotiert durch sie
  *   ticker        array          gemischte Textzeilen aller aktiven Ticker
  *
- * Zeitplan-Logik:
+ * Zeitplan-Logik: zentral in Monitor::aktuellePlaylistFuer() /
+ * Monitor::aktiveTickerFuer() (includes/Monitor.php) — EINZIGE
+ * Wahrheitsquelle, gemeinsam mit dem Admin-Dashboard. Regeln:
  *   - Wochentag: ISO-Format 1=Mo … 7=So (FIND_IN_SET, Spalte wochentage = "1,2,5")
  *   - Uhrzeit: NULL/NULL = dauerhaft (Fallback); sonst aktuell im Fenster
  *   - Playlist: alle passenden mit höchster prioritaet; bei Gleichstand rotieren sie
  *   - Ticker: ALLE passenden gemischt (kein Prioritätsfeld)
  *
  * CORS: Access-Control-Allow-Origin: * (kein sensibler Inhalt in der Antwort)
- *
- * Hinweis MariaDB EMULATE_PREPARES=false: jeder benannte Platzhalter
- * darf im selben Statement nur einmal vorkommen (deshalb :zeit_von/:zeit_bis
- * statt zweimal :zeit).
  */
 
 declare(strict_types=1);
 
 require __DIR__ . '/../config.php';
+require __DIR__ . '/../includes/Monitor.php';
 require __DIR__ . '/_cors.php';
 
 // CORS wird zentral per .htaccess gesetzt (Header set Access-Control-Allow-Origin "*").
@@ -58,45 +57,16 @@ if (!$monitor) {
                      'playlists' => [], 'ticker' => []]);
 }
 
-$monitorId  = (int)$monitor['id'];
-$isoTag     = (string)(int)date('N'); // 1=Mo … 7=So
-$jetztZeit  = date('H:i:s');
+$monitorId = (int)$monitor['id'];
 
-// ── 2. Alle passenden Zeitplan-Einträge holen, höchste Priorität filtern ──
+// ── 2. „Welche Playlist gilt jetzt?" — zentrale Auswahl-Logik ────────────
+// (Monitor::aktuellePlaylistFuer = gemeinsame Wahrheitsquelle mit dem
+//  Admin-Dashboard; Wochentag + Uhrzeitfenster/Fallback + max. Priorität)
 
-$stmt = $pdo->prepare(
-    'SELECT z.playlist_id, z.prioritaet, z.dauer_sek
-     FROM monitor_zeitplan z
-     JOIN playlists p ON p.id = z.playlist_id AND p.aktiv = 1
-     WHERE z.monitor_id = :mid
-       AND FIND_IN_SET(:tag, z.wochentage) > 0
-       AND (
-             (z.von_uhrzeit IS NULL AND z.bis_uhrzeit IS NULL)
-          OR (:zeit_von >= z.von_uhrzeit AND :zeit_bis <= z.bis_uhrzeit)
-       )
-     ORDER BY z.prioritaet DESC'
-);
-$stmt->execute([
-    ':mid'      => $monitorId,
-    ':tag'      => $isoTag,
-    ':zeit_von' => $jetztZeit,
-    ':zeit_bis' => $jetztZeit,
-]);
-$zeitplanRows = $stmt->fetchAll();
-
-// Nur Einträge mit höchster Priorität behalten
-$maxPrio = null;
-foreach ($zeitplanRows as $row) {
-    $p = (int)$row['prioritaet'];
-    if ($maxPrio === null || $p > $maxPrio) { $maxPrio = $p; }
-}
-$aktivZeitplan = ($maxPrio !== null)
-    ? array_values(array_filter($zeitplanRows, static fn($r) => (int)$r['prioritaet'] === $maxPrio))
-    : [];
+$aktivZeitplan = Monitor::aktuellePlaylistFuer($monitorId);
 
 // ── 3. Playlist-Daten für jeden aktiven Eintrag laden ────────────────────
 
-$stmtName = $pdo->prepare('SELECT name FROM playlists WHERE id = :id');
 $stmtLayout = $pdo->prepare('SELECT * FROM playlist_layout WHERE playlist_id = :id');
 $stmtSpalten = $pdo->prepare(
     'SELECT s.spalte, s.reihenfolge, m.id AS instanz_id, m.modul_typ, m.einstellungen
@@ -124,9 +94,6 @@ foreach ($aktivZeitplan as $zeitplanRow) {
     $playlistId = (int)$zeitplanRow['playlist_id'];
     $dauerSek   = max(10, (int)$zeitplanRow['dauer_sek']);
 
-    $stmtName->execute([':id' => $playlistId]);
-    $playlist = $stmtName->fetch();
-
     $stmtLayout->execute([':id' => $playlistId]);
     $layout = $stmtLayout->fetch();
 
@@ -148,7 +115,7 @@ foreach ($aktivZeitplan as $zeitplanRow) {
 
     $playlistsData[] = [
         'id'             => $playlistId,
-        'name'           => $playlist['name'] ?? '',
+        'name'           => $zeitplanRow['name'] ?? '',
         'dauer_sek'      => $dauerSek,
         'spalten_anzahl' => (int)($layout['spalten_anzahl'] ?? 1),
         'spalte1_breite' => isset($layout['spalte1_breite']) ? (int)$layout['spalte1_breite'] : null,
@@ -161,27 +128,24 @@ foreach ($aktivZeitplan as $zeitplanRow) {
 }
 
 // ── 4. Aktive Ticker (ALLE passenden, dann mischen) ──────────────────────
+// Auswahl über die zentrale Wahrheitsquelle; die Texteinträge der
+// passenden Ticker werden anschließend gesammelt und gemischt.
 
-$stmt = $pdo->prepare(
-    'SELECT te.text, te.dauer_sek
-     FROM ticker_zeitplan z
-     JOIN ticker_playlists tp ON tp.id = z.ticker_playlist_id AND tp.aktiv = 1
-     JOIN ticker_eintraege te ON te.ticker_playlist_id = tp.id
-     WHERE z.monitor_id = :mid
-       AND FIND_IN_SET(:tag, z.wochentage) > 0
-       AND (
-             (z.von_uhrzeit IS NULL AND z.bis_uhrzeit IS NULL)
-          OR (:t_von >= z.von_uhrzeit AND :t_bis <= z.bis_uhrzeit)
-       )
-     ORDER BY te.reihenfolge, te.id'
-);
-$stmt->execute([
-    ':mid'   => $monitorId,
-    ':tag'   => $isoTag,
-    ':t_von' => $jetztZeit,
-    ':t_bis' => $jetztZeit,
-]);
-$tickerEintraege = $stmt->fetchAll();
+$aktiveTicker = Monitor::aktiveTickerFuer($monitorId);
+
+$tickerEintraege = [];
+if (!empty($aktiveTicker)) {
+    $tickerIds   = array_map(static fn($t) => (int)$t['ticker_playlist_id'], $aktiveTicker);
+    $platzhalter = implode(',', array_fill(0, count($tickerIds), '?'));
+    $stmt = $pdo->prepare(
+        "SELECT te.text, te.dauer_sek
+         FROM ticker_eintraege te
+         WHERE te.ticker_playlist_id IN ($platzhalter)
+         ORDER BY te.reihenfolge, te.id"
+    );
+    $stmt->execute($tickerIds);
+    $tickerEintraege = $stmt->fetchAll();
+}
 
 shuffle($tickerEintraege);
 

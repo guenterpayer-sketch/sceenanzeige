@@ -637,6 +637,33 @@ body {
     opacity: 1;
 }
 
+/* Playlist-Badge mit Hover-Tooltip (Playlist-Namen) */
+.adm-playlists-badge--aktiv {
+    position: relative;
+    cursor: default;
+}
+.adm-playlists-badge--aktiv::after {
+    content: attr(data-playlists);
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1c2733;
+    color: #fff;
+    font-size: 12px;
+    white-space: nowrap;
+    padding: 5px 10px;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 150ms;
+    z-index: 100;
+}
+.adm-playlists-badge--aktiv:hover::after {
+    opacity: 1;
+}
+
 /* Zeitplan-Editor: Playlist-Auswahl je Zeile */
 .adm-zr-playlist label { display: flex; flex-direction: column; font-size: 13px; color: #33424f; gap: 3px; }
 .adm-zr-playlist select {
@@ -1235,3 +1262,74 @@ a.adm-kachel-link:hover { background: #fbeaea; }
     100% { box-shadow: 0 0 0 0 rgba(173,33,33,0),   0 12px 40px rgba(0,0,0,.25); }
 }
 .adm-dialog.zd-flash { animation: zdFlash .6s ease-out; }
+
+/* ===== Dashboard (Übersicht) + Nav-Gruppen-Trenner (Schritt 25) ===== */
+
+/* Schmaler vertikaler Strich zwischen Nav-Gruppen */
+.adm-nav-sep {
+    width: 1px;
+    align-self: stretch;
+    margin: 6px 6px;
+    background: rgba(255, 255, 255, 0.18);
+}
+
+/* Status-Zeilen in der Monitor-Kachel */
+.adm-dash-status { font-size: 13.5px; line-height: 1.65; color: #2c3947; }
+.adm-dash-zeile  { display: block; }
+.adm-dash-label  { color: #6b7a8d; margin-right: 4px; }
+.adm-dash-leer   { color: #93a1af; }
+
+/* Abschnitts-Überschrift + kompaktere Schnellzugriff-Kacheln */
+.adm-dash-abschnitt { margin: 28px 0 12px; font-size: 19px; }
+.adm-dash-schnell { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.adm-dash-schnell .adm-typkachel { min-height: 110px; padding: 18px 12px; }
+.adm-dash-schnell .adm-typ-icon { font-size: 32px; }
+.adm-dash-schnell .adm-typ-label { font-size: 15px; }
+@media (max-width: 900px) {
+    .adm-dash-schnell { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* ===== Geführte nächste Schritte + klickbare Badges (Schritt 26) ===== */
+
+/* Flash-Meldung mit Aktions-Button („→ nächster Schritt") */
+.adm-flash--mit-aktion { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.adm-flash-btn {
+    background: #1e6b34; color: #fff; border: none;
+    padding: 6px 12px; font-size: 13px; border-radius: 6px; text-decoration: none;
+}
+.adm-flash-btn:hover { background: #175427; color: #fff; }
+
+/* Badges als Links (Kachel-Badges führen zum passenden Bereich) */
+a.adm-meta-badge { text-decoration: none; cursor: pointer; }
+a.adm-meta-badge:hover { background: #dde3ea; }
+
+/* Hinweistext neben „+ Neue Instanz anlegen" im Picker-Dialog */
+.adm-dialog-aktionen--mit-hinweis { align-items: center; }
+.adm-picker-hinweis { font-size: 12px; color: #6b7a8d; flex: 1; }
+
+/* ===== Badge-Highlight (Schritt 28): dauerhafte Kachel-Markierung ===== */
+
+/* Hinweisleiste oben: erklärt die Markierung, Link entfernt sie */
+.adm-hl-leiste {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    background: #fdf6e3; border: 1px solid #e8cf8a; border-left: 4px solid #d4a017;
+    color: #6b5310; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px;
+    font-size: 14px;
+}
+.adm-hl-text strong { color: #4d3a06; }
+.adm-hl-entfernen {
+    margin-left: auto; white-space: nowrap;
+    background: #fff; border: 1px solid #d4a017; color: #8a6a0e;
+    padding: 5px 12px; font-size: 13px; border-radius: 6px; text-decoration: none;
+}
+.adm-hl-entfernen:hover { background: #d4a017; color: #fff; }
+
+/* Markierte Kachel: dauerhafter goldener Rahmen + Schein, sanftes Einblenden */
+.adm-kachel--highlight {
+    border-color: #d4a017;
+    box-shadow: 0 0 0 2px #d4a017, 0 4px 18px rgba(212, 160, 23, 0.35);
+    animation: admHlEin 0.7s ease-out;
+}
+@keyframes admHlEin {
+    from { box-shadow: 0 0 0 0 rgba(212, 160, 23, 0), 0 0 0 rgba(212, 160, 23, 0); }
+}

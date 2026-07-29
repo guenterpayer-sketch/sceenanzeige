@@ -44,6 +44,28 @@ final class ModulInstanz
         ]);
     }
 
+    /**
+     * Liefert die Playlists, in denen eine Instanz verwendet wird.
+     * @return array{anzahl:int, namen:string} anzahl = Anzahl Playlists, namen = komma-getrennt
+     */
+    public static function verwendetInPlaylists(int $id): array
+    {
+        $pdo = get_pdo();
+        $stmt = $pdo->prepare(
+            'SELECT COUNT(DISTINCT p.id) AS anzahl,
+                    GROUP_CONCAT(DISTINCT p.name ORDER BY p.name SEPARATOR \', \') AS namen
+             FROM playlist_spalten_inhalte psi
+             JOIN playlists p ON p.id = psi.playlist_id
+             WHERE psi.modul_instanz_id = :id'
+        );
+        $stmt->execute([':id' => $id]);
+        $row = $stmt->fetch();
+        return [
+            'anzahl' => (int)($row['anzahl'] ?? 0),
+            'namen'  => (string)($row['namen'] ?? ''),
+        ];
+    }
+
     public static function delete(int $id): void
     {
         // ON DELETE CASCADE räumt modul_instanz_inhalte automatisch mit ab.

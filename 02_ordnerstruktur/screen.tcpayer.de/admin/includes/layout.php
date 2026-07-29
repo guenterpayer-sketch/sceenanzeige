@@ -17,18 +17,23 @@ declare(strict_types=1);
  */
 function admin_header(string $titel, string $aktiv = ''): void
 {
-    // Nav-Punkte: key => [Label, Link, aktiv?]. Noch nicht gebaute Bereiche
-    // sind als "kommt später" deaktiviert.
+    // Nav-Punkte in Workflow-Reihenfolge: key => [Label, Link, sichtbar?].
+    // null-Einträge sind optische Gruppen-Trenner (schmaler vertikaler Strich).
+    // Gruppen: Inhalte pflegen | zusammenstellen | ausspielen | Geräte.
     $istAdmin = tm_ist_admin();
     $nav = [
-        'bibliothek'   => ['Bibliothek',  'bibliothek.php',   true],
+        'dashboard'    => ['Übersicht',   'dashboard.php',    true],
         'mediathek'    => ['Mediathek',   'mediathek.php',    true],
         'videos'       => ['Videos',      'videothek.php',    true],
+        'bibliothek'   => ['Bibliothek',  'bibliothek.php',   true],
+        'sep1'         => null,
         'playlists'    => ['Playlists',   'playlists.php',    true],
         'ticker'       => ['Ticker',      'ticker.php',       true],
-        'vorschau'     => ['Vorschau',    'monitor-vorschau.php', true],
-        'wochenplan'   => ['Wochenplan',  'wochenplan.php',   true],
+        'sep2'         => null,
         'monitore'     => ['Monitore',    'monitore.php',     $istAdmin],
+        'wochenplan'   => ['Wochenplan',  'wochenplan.php',   true],
+        'vorschau'     => ['Vorschau',    'monitor-vorschau.php', true],
+        'sep3'         => null,
         'fret-geraete' => ['FRET-Geräte', 'fret-geraete.php', $istAdmin],
     ];
     $kommtNoch = [];
@@ -45,11 +50,15 @@ function admin_header(string $titel, string $aktiv = ''): void
 <header class="adm-topbar">
     <div class="adm-brand">Tanzschule&nbsp;·&nbsp;Monitor-Backend</div>
     <nav class="adm-nav">
-        <?php foreach ($nav as $key => [$label, $link, $verfuegbar]): ?>
-            <?php if ($verfuegbar): ?>
-                <a href="<?= htmlspecialchars($link) ?>" class="<?= $key === $aktiv ? 'aktiv' : '' ?>"><?= htmlspecialchars($label) ?></a>
-            <?php else: ?>
-                <span class="adm-nav-disabled"><?= htmlspecialchars($label) ?></span>
+        <?php foreach ($nav as $key => $eintrag): ?>
+            <?php if ($eintrag === null): ?>
+                <span class="adm-nav-sep" aria-hidden="true"></span>
+            <?php else: [$label, $link, $verfuegbar] = $eintrag; ?>
+                <?php if ($verfuegbar): ?>
+                    <a href="<?= htmlspecialchars($link) ?>" class="<?= $key === $aktiv ? 'aktiv' : '' ?>"><?= htmlspecialchars($label) ?></a>
+                <?php else: ?>
+                    <span class="adm-nav-disabled"><?= htmlspecialchars($label) ?></span>
+                <?php endif; ?>
             <?php endif; ?>
         <?php endforeach; ?>
         <?php foreach ($kommtNoch as $label): ?>
@@ -86,10 +95,34 @@ function admin_header(string $titel, string $aktiv = ''): void
 <?php
 }
 
+/**
+ * Hinweisleiste für das Badge-Highlight („Hervorgehoben: …").
+ * Bleibt stehen, solange der highlight-Parameter in der URL ist; der
+ * Entfernen-Link lädt die Seite ohne Parameter. $textHtml darf Markup
+ * enthalten — Namen vom Aufrufer mit htmlspecialchars() escapen!
+ */
+function admin_hl_leiste(string $textHtml, string $entfernenUrl): void
+{
+    ?>
+    <div class="adm-hl-leiste">
+        <span class="adm-hl-text">🔦 <?= $textHtml ?></span>
+        <a class="adm-hl-entfernen" href="<?= htmlspecialchars($entfernenUrl) ?>">Hervorhebung entfernen</a>
+    </div>
+    <?php
+}
+
 function admin_footer(): void
 {
     ?>
 </main>
+
+<script>
+// Badge-Highlight: erste markierte Kachel in den Blick fahren
+(function () {
+    var el = document.querySelector('.adm-kachel--highlight');
+    if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+})();
+</script>
 
 <!-- ===== Vorschau-Modal (global, für alle Seiten) ===== -->
 <div id="adm-vm-overlay" class="adm-vm-overlay" hidden>

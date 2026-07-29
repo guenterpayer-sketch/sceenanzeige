@@ -77,15 +77,19 @@ final class TickerPlaylist
     }
 
     /**
-     * Alle Ticker inkl. Anzahl Texteinträge und auf wie vielen Monitoren der
-     * Ticker eingeplant ist (für die Kachel-Übersicht).
+     * Alle Ticker inkl. Anzahl Texteinträge, auf wie vielen Monitoren der
+     * Ticker eingeplant ist und deren Namen (für Kachel-Badge + Tooltip;
+     * Muster wie Playlist::listAll, SEPARATOR-Quotes mit \' escapen).
      * @return array<int,array>
      */
     public static function listAll(): array
     {
         $sql = 'SELECT t.id, t.name, t.aktiv, t.erstellt_am,
                        (SELECT COUNT(*) FROM ticker_eintraege e WHERE e.ticker_playlist_id = t.id) AS anzahl_eintraege,
-                       (SELECT COUNT(DISTINCT z.monitor_id) FROM ticker_zeitplan z WHERE z.ticker_playlist_id = t.id) AS anzahl_monitore
+                       (SELECT COUNT(DISTINCT z.monitor_id) FROM ticker_zeitplan z WHERE z.ticker_playlist_id = t.id) AS anzahl_monitore,
+                       (SELECT GROUP_CONCAT(DISTINCT m.name ORDER BY m.name SEPARATOR \', \')
+                        FROM ticker_zeitplan z2 JOIN monitore m ON m.id = z2.monitor_id
+                        WHERE z2.ticker_playlist_id = t.id) AS monitor_namen
                 FROM ticker_playlists t
                 ORDER BY t.name';
         return get_pdo()->query($sql)->fetchAll();
