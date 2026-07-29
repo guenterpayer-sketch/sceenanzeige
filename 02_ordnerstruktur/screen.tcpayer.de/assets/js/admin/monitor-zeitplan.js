@@ -14,7 +14,7 @@
     var TICKERPLAN = window.TM_ZP.tickerplan;
     var PLAYLISTS  = window.TM_ZP.playlists;
     var TICKERS    = window.TM_ZP.tickers;
-    var _dirty = false;
+    var guard = TMAdmin.dirtyGuard(document.getElementById('zeitplan-form'));
     var TAGE    = [ [1,'Mo'], [2,'Di'], [3,'Mi'], [4,'Do'], [5,'Fr'], [6,'Sa'], [7,'So'] ];
     var PRESETS = { alle:[1,2,3,4,5,6,7], woche:[1,2,3,4,5], we:[6,7] };
     var META = {
@@ -22,11 +22,7 @@
         ticker:   { items: TICKERS,   icon: '📰', label: 'Ticker',   titel: 'Ticker wählen',   leer: 'Ticker wählen …' }
     };
 
-    function escapeHtml(s) {
-        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-            return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
-        });
-    }
+    var escapeHtml = TMAdmin.escapeHtml;
     function itemName(art, idVal) {
         var items = META[art].items, n = null;
         items.forEach(function (it) { if (it.id === parseInt(idVal, 10)) { n = it; } });
@@ -99,20 +95,20 @@
 
     function bindeListe(liste, hinzuBtn) {
         function neueZeile(data) { liste.appendChild(baueZeile(liste, data)); }
-        if (hinzuBtn) { hinzuBtn.addEventListener('click', function () { neueZeile({}); _dirty = true; }); }
+        if (hinzuBtn) { hinzuBtn.addEventListener('click', function () { neueZeile({}); guard.markiere(); }); }
 
         liste.addEventListener('click', function (e) {
             var zeile = e.target.closest('.adm-zeitregel');
             if (!zeile) { return; }
-            if (e.target.closest('.adm-zr-weg')) { zeile.remove(); _dirty = true; return; }
+            if (e.target.closest('.adm-zr-weg')) { zeile.remove(); guard.markiere(); return; }
             if (e.target.closest('.adm-zr-hoch')) {
                 var prev = zeile.previousElementSibling;
-                if (prev && prev.classList.contains('adm-zeitregel')) { liste.insertBefore(zeile, prev); _dirty = true; }
+                if (prev && prev.classList.contains('adm-zeitregel')) { liste.insertBefore(zeile, prev); guard.markiere(); }
                 return;
             }
             if (e.target.closest('.adm-zr-runter')) {
                 var next = zeile.nextElementSibling;
-                if (next && next.classList.contains('adm-zeitregel')) { liste.insertBefore(next, zeile); _dirty = true; }
+                if (next && next.classList.contains('adm-zeitregel')) { liste.insertBefore(next, zeile); guard.markiere(); }
                 return;
             }
             if (e.target.closest('.adm-auswahl-kachel')) { oeffnePicker(liste, zeile); return; }
@@ -172,7 +168,7 @@
     function waehle(it) {
         if (aktiveCallback) { var cb = aktiveCallback; schliessePicker(); cb(it); return; }
         if (!aktiveZeile || !aktiveListe) { return; }
-        _dirty = true;
+        guard.markiere();
         var art = aktiveListe.getAttribute('data-art');
         var idFeld = aktiveListe.getAttribute('data-idfeld');
         aktiveZeile.querySelector('[data-feld="' + idFeld + '"]').value = it.id;
@@ -187,17 +183,10 @@
     document.getElementById('picker-abbrechen').addEventListener('click', schliessePicker);
     overlay.addEventListener('click', function (e) { if (e.target === overlay) { schliessePicker(); } });
 
-    // ---- Dirty-Guard: Warnung bei ungespeicherten Änderungen ----
     var zpForm = document.getElementById('zeitplan-form');
-    zpForm.addEventListener('input', function (e) { if (e.isTrusted) { _dirty = true; } });
-    zpForm.addEventListener('change', function (e) { if (e.isTrusted) { _dirty = true; } });
-    window.addEventListener('beforeunload', function (e) {
-        if (_dirty) { e.preventDefault(); e.returnValue = ''; }
-    });
 
     // ---- Vor dem Absenden: Feldnamen je Liste sequenziell vergeben ----
     zpForm.addEventListener('submit', function () {
-        _dirty = false;
         [pl, tk].forEach(function (cfg) {
             var prefix = cfg.liste.getAttribute('data-prefix');
             cfg.liste.querySelectorAll('.adm-zeitregel').forEach(function (zeile, j) {
@@ -390,7 +379,7 @@
     function schreibeZeile(zid, patch) {
         var z = findeZeile(zid);
         if (!z) { return; }
-        _dirty = true;
+        guard.markiere();
         if (patch.playlist_id !== undefined) {
             z.querySelector('[data-feld="playlist_id"]').value = patch.playlist_id;
             var it = itemName('playlist', patch.playlist_id);
@@ -426,14 +415,14 @@
             dauer_sek: parseInt((z.querySelector('[data-feld="dauer_sek"]') || {}).value || '300', 10) || 300
         };
     }
-    function loescheZeile(zid) { var z = findeZeile(zid); if (z) { z.remove(); _dirty = true; } }
+    function loescheZeile(zid) { var z = findeZeile(zid); if (z) { z.remove(); guard.markiere(); } }
     function legeNeuZeileAn(daten) {
         pl.neu(daten);
         var zeilen = pl.liste.querySelectorAll('.adm-zeitregel');
         var neu = zeilen[zeilen.length - 1];
         var zid = neueZeitId();
         neu.setAttribute('data-zeit-id', zid);
-        _dirty = true;
+        guard.markiere();
         return zid;
     }
 
@@ -897,8 +886,8 @@
         });
     });
 
-    // Initialaufbau abgeschlossen — ein evtl. programmatisch gesetztes _dirty
-    // zurücksetzen, damit der Guard nicht ohne echte Nutzer-Änderung warnt.
-    _dirty = false;
+    // Initialaufbau abgeschlossen — programmatische Markierungen zurücksetzen,
+    // damit der Guard nicht ohne echte Nutzer-Änderung warnt.
+    guard.reset();
 
 })();

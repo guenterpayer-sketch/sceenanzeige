@@ -323,6 +323,7 @@ window.TM_INST = {
     start:    <?= json_encode($inhalteFuerJs, JSON_UNESCAPED_UNICODE) ?>
 };
 </script>
+<script src="/assets/js/admin/editor-core.js?v=<?= @filemtime(__DIR__ . '/../assets/js/admin/editor-core.js') ?: time() ?>"></script>
 <script src="/assets/js/admin/instanz.js?v=<?= @filemtime(__DIR__ . '/../assets/js/admin/instanz.js') ?: time() ?>"></script>
 
 <?php

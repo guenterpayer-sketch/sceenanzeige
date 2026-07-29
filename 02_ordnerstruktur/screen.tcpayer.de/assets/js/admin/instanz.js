@@ -21,13 +21,9 @@
     var STD_DAUER = window.TM_INST.stdDauer;
     var START     = window.TM_INST.start;
 
-    var _dirty = false;
+    var guard = TMAdmin.dirtyGuard(document.getElementById('instanz-form'));
 
-    function escapeHtml(s) {
-        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-        });
-    }
+    var escapeHtml = TMAdmin.escapeHtml;
 
     function bildVorschau(url) {
         return url
@@ -143,10 +139,10 @@
     // Startdaten rendern
     START.forEach(neueZeile);
     // Initialaufbau zählt nicht als Nutzer-Änderung.
-    _dirty = false;
+    guard.reset();
 
     document.getElementById('zeile-hinzu').addEventListener('click', function () {
-        neueZeile({}); _dirty = true;
+        neueZeile({}); guard.markiere();
     });
 
     // Zeilen-Aktionen (Delegation)
@@ -158,34 +154,28 @@
         if (e.target.closest('.adm-bild-entfernen')) {
             zeile.querySelector('[data-feld="mediathek_id"]').value = '';
             zeile.querySelector('.adm-inhalt-vorschau').innerHTML = bildVorschau(null);
-            _dirty = true;
+            guard.markiere();
             return;
         }
         if (e.target.closest('.adm-video-waehlen')) { oeffneVideoPicker(zeile); return; }
         var akt = e.target.getAttribute('data-akt');
         if (akt === 'weg') {
-            admBestaetigen('Diesen Eintrag entfernen?', function (ok) { if (ok) { zeile.remove(); _dirty = true; } }, 'Entfernen');
+            admBestaetigen('Diesen Eintrag entfernen?', function (ok) { if (ok) { zeile.remove(); guard.markiere(); } }, 'Entfernen');
             return;
         }
-        if (akt === 'hoch'   && zeile.previousElementSibling) { liste.insertBefore(zeile, zeile.previousElementSibling); _dirty = true; }
-        if (akt === 'runter' && zeile.nextElementSibling)     { liste.insertBefore(zeile.nextElementSibling, zeile); _dirty = true; }
+        if (akt === 'hoch'   && zeile.previousElementSibling) { liste.insertBefore(zeile, zeile.previousElementSibling); guard.markiere(); }
+        if (akt === 'runter' && zeile.nextElementSibling)     { liste.insertBefore(zeile.nextElementSibling, zeile); guard.markiere(); }
     });
 
     // Vor dem Absenden: Feldnamen sequenziell nach DOM-Reihenfolge vergeben
     var instForm = document.getElementById('instanz-form');
     instForm.addEventListener('submit', function () {
-        _dirty = false;
         var zeilen = liste.querySelectorAll('.adm-inhalt-zeile');
         zeilen.forEach(function (zeile, i) {
             zeile.querySelectorAll('[data-feld]').forEach(function (feld) {
                 feld.setAttribute('name', 'inhalt[' + i + '][' + feld.getAttribute('data-feld') + ']');
             });
         });
-    });
-    instForm.addEventListener('input', function (e) { if (e.isTrusted) { _dirty = true; } });
-    instForm.addEventListener('change', function (e) { if (e.isTrusted) { _dirty = true; } });
-    window.addEventListener('beforeunload', function (e) {
-        if (_dirty) { e.preventDefault(); e.returnValue = ''; }
     });
 
     // ---- Bild-Picker ----
@@ -249,7 +239,7 @@
         if (!zielZeile) { return; }
         zielZeile.querySelector('[data-feld="mediathek_id"]').value = b.id;
         zielZeile.querySelector('.adm-inhalt-vorschau').innerHTML = '<img src="' + escapeHtml(b.url) + '" alt="">';
-        _dirty = true;
+        guard.markiere();
         schliessePicker();
     }
 
@@ -308,14 +298,7 @@
 // ---- Dirty-Guard für Module OHNE Inhalte (uhrzeit, stundenplan, fret, …) ----
 (function () {
     if (document.getElementById('inhalte-liste')) { return; } // hat schon einen Guard oben
-    var _dirty = false;
-    var instForm = document.getElementById('instanz-form');
-    instForm.addEventListener('input', function (e) { if (e.isTrusted) { _dirty = true; } });
-    instForm.addEventListener('change', function (e) { if (e.isTrusted) { _dirty = true; } });
-    instForm.addEventListener('submit', function () { _dirty = false; });
-    window.addEventListener('beforeunload', function (e) {
-        if (_dirty) { e.preventDefault(); e.returnValue = ''; }
-    });
+    TMAdmin.dirtyGuard(document.getElementById('instanz-form'));
 })();
 
 // ---- Bild-Picker für mediathek_bild-Einstellungsfelder (z.B. Uhr-Hintergrund) ----
@@ -328,11 +311,7 @@
     var zielWrap = null;
     var timer    = null;
 
-    function esc(s) {
-        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-        });
-    }
+    var esc = TMAdmin.escapeHtml;
 
     function schliesse() { overlay.hidden = true; zielWrap = null; }
 
@@ -400,11 +379,7 @@
     if (!Array.isArray(selected)) { selected = []; }
     selected = selected.map(Number);
 
-    function escHtml(s) {
-        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-        });
-    }
+    var escHtml = TMAdmin.escapeHtml;
 
     function syncHidden() {
         var ids = [];

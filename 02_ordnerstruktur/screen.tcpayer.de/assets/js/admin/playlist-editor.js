@@ -13,7 +13,7 @@
     var START = window.TM_PLED.start;
     var ICONS = { clock:'🕒', image:'🖼️', calendar:'📅', megaphone:'📢', music:'🎵' };
 
-    var _dirty = false;
+    var guard = TMAdmin.dirtyGuard(document.getElementById('playlist-form'));
     var spaltenWrap   = document.getElementById('spalten');
     var breitenBlock  = document.getElementById('breiten-block');
     var slider        = document.getElementById('spalte1_breite');
@@ -23,11 +23,7 @@
     var vHeader       = document.getElementById('vorschau-header');
     var vFooter       = document.getElementById('vorschau-footer');
 
-    function escapeHtml(s) {
-        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-            return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
-        });
-    }
+    var escapeHtml = TMAdmin.escapeHtml;
     function icon(name) { return ICONS[name] || '🧩'; }
 
     function aktivesLayout() {
@@ -171,7 +167,7 @@
         if (!col) { return false; }
         col.querySelector('.adm-spalte-liste').appendChild(baueEintrag(data));
         pruefeLeer(col);
-        _dirty = true;
+        guard.markiere();
         return true;
     }
 
@@ -187,12 +183,12 @@
         if (!eintrag) { return; }
         var akt = e.target.getAttribute('data-akt');
         var liste = eintrag.parentElement;
-        if (akt === 'weg')    { eintrag.remove(); pruefeLeer(liste.closest('.adm-spalte')); _dirty = true; }
+        if (akt === 'weg')    { eintrag.remove(); pruefeLeer(liste.closest('.adm-spalte')); guard.markiere(); }
         if (akt === 'hoch'   && eintrag.previousElementSibling && eintrag.previousElementSibling.classList.contains('adm-spalte-eintrag')) {
-            liste.insertBefore(eintrag, eintrag.previousElementSibling); _dirty = true;
+            liste.insertBefore(eintrag, eintrag.previousElementSibling); guard.markiere();
         }
         if (akt === 'runter' && eintrag.nextElementSibling) {
-            liste.insertBefore(eintrag.nextElementSibling, eintrag); _dirty = true;
+            liste.insertBefore(eintrag.nextElementSibling, eintrag); guard.markiere();
         }
     });
 
@@ -255,7 +251,7 @@
     spaltenWrap.addEventListener('drop', function (e) {
         if (!gezogen) { return; }
         e.preventDefault();
-        _dirty = true;
+        guard.markiere();
     });
 
     spaltenWrap.addEventListener('dragend', function () {
@@ -347,17 +343,10 @@
             .catch(function () { liste.innerHTML = '<p class="adm-leer">Netzwerkfehler.</p>'; });
     }
 
-    // ---- Dirty-Guard: Warnung bei ungespeicherten Änderungen ----
     var plForm = document.getElementById('playlist-form');
-    plForm.addEventListener('input', function (e) { if (e.isTrusted) { _dirty = true; } });
-    plForm.addEventListener('change', function (e) { if (e.isTrusted) { _dirty = true; } });
-    window.addEventListener('beforeunload', function (e) {
-        if (_dirty) { e.preventDefault(); e.returnValue = ''; }
-    });
 
     // ---- Vor dem Absenden: Spalte + Feldnamen sequenziell vergeben ----
     plForm.addEventListener('submit', function () {
-        _dirty = false;
         var i = 0;
         spaltenWrap.querySelectorAll('.adm-spalte').forEach(function (col) {
             var s = col.getAttribute('data-spalte');
@@ -378,8 +367,8 @@
     // Startdaten in ihre Spalten einsortieren
     START.forEach(function (d) { fuegeEinSpalte(Math.min(d.spalte, anzSpalten()), d); });
     aktualisiereVorschau();
-    // Der programmatische Aufbau oben (fuegeEinSpalte) hat _dirty gesetzt — das ist
-    // KEINE Nutzer-Änderung. Zurücksetzen, sonst warnt der Guard schon beim Laden
-    // und nach jedem Speichern (Reload). Ab hier zählen nur echte Interaktionen.
-    _dirty = false;
+    // Der programmatische Aufbau oben (fuegeEinSpalte) hat den Guard markiert —
+    // das ist KEINE Nutzer-Änderung. Zurücksetzen: ab hier zählen nur echte
+    // Interaktionen (sonst warnt der Guard schon beim Laden/nach dem Speichern).
+    guard.reset();
 })();

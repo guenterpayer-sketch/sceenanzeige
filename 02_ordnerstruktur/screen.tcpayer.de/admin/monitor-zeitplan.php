@@ -343,6 +343,7 @@ window.TM_ZP = {
     tickers:    <?= json_encode($tickersFuerJs, JSON_UNESCAPED_UNICODE) ?>
 };
 </script>
+<script src="/assets/js/admin/editor-core.js?v=<?= @filemtime(__DIR__ . '/../assets/js/admin/editor-core.js') ?: time() ?>"></script>
 <script src="/assets/js/admin/monitor-zeitplan.js?v=<?= @filemtime(__DIR__ . '/../assets/js/admin/monitor-zeitplan.js') ?: time() ?>"></script>
 
 <?php
