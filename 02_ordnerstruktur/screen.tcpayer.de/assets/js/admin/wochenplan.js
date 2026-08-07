@@ -274,7 +274,9 @@
             }));
             b.style.top = ((vClamp - startMin) / 60 * KAL_ROW_H) + 'px';
             b.style.height = ((bClamp - vClamp) / 60 * KAL_ROW_H) + 'px';
-            b.style.zIndex = String(50 + g.prio);
+            // Termine über dem Regelbetrieb (der nutzt 10 + Priorität),
+            // aber weit unter den Dialog-Overlays (1000).
+            b.style.zIndex = String(20 + g.prio);
             b.setAttribute('data-prio', String(g.prio));
             col.appendChild(b);
         });

@@ -219,9 +219,11 @@ body {
 .adm-bild-edit:hover { background: #ad2121; }
 
 /* --- Bearbeiten-Dialog --- */
+/* z-index bewusst hoch: Dialoge müssen IMMER über Seiteninhalten liegen —
+   Kalender-Blöcke tragen eigene z-index-Werte (Schicht + Priorität). */
 .adm-overlay {
     position: fixed; inset: 0; background: rgba(20,28,38,.55);
-    display: flex; align-items: center; justify-content: center; z-index: 50;
+    display: flex; align-items: center; justify-content: center; z-index: 1000;
 }
 /* hidden-Attribut muss display:flex sicher übersteuern, sonst ist der Dialog
    beim Laden sichtbar (display der .adm-overlay-Regel schlägt sonst den
