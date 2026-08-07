@@ -47,14 +47,17 @@ admin_header('Ticker', 'ticker');
     <div class="adm-flash"><?= htmlspecialchars($hinweis) ?></div>
 <?php endif; ?>
 
-<p class="adm-hilfe">
-    Ticker laufen als Lauftext im Footer der Monitore — unabhängig von den
-    Playlists. Ein Ticker ist eine benannte Sammlung von Textzeilen (mit
-    Anzeigedauer). <strong>Wann</strong> ein Ticker auf <strong>welchem
-    Monitor</strong> läuft, legst du unter <a href="monitore.php">Monitore</a>
-    → „Zeitplan" fest. Sind mehrere Ticker gleichzeitig aktiv, werden ihre
-    Texte <strong>gemischt</strong> nacheinander angezeigt (keine Priorität).
-</p>
+<details class="adm-hilfe-klapp">
+    <summary><span class="adm-hk-zu">ℹ️ Erklärung anzeigen</span><span class="adm-hk-auf">ℹ️ Erklärung verbergen</span></summary>
+    <p class="adm-hilfe">
+        Ticker laufen als Lauftext im Footer der Monitore — unabhängig von den
+        Playlists. Ein Ticker ist eine benannte Sammlung von Textzeilen (mit
+        Anzeigedauer). <strong>Wann</strong> ein Ticker auf <strong>welchem
+        Monitor</strong> läuft, legst du unter <a href="monitore.php">Monitore</a>
+        → „Zeitplan" fest. Sind mehrere Ticker gleichzeitig aktiv, werden ihre
+        Texte <strong>gemischt</strong> nacheinander angezeigt (keine Priorität).
+    </p>
+</details>
 
 <div class="adm-neuzeile">
     <a class="adm-btn-primary" href="ticker-edit.php">+ Neuer Ticker</a>

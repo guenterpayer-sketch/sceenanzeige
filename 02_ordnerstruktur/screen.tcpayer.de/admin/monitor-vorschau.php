@@ -46,10 +46,13 @@ admin_header('Live-Vorschau', 'vorschau');
             title="Vorschau <?= htmlspecialchars($aktuell['name']) ?>">
     </iframe>
 </div>
-<p class="adm-hilfe" style="margin-top:10px">
-    Die Vorschau zeigt den aktuellen Live-Stand des Monitors. Inhalte rotieren und
-    der Ticker läuft — genauso wie auf dem echten TV.
-</p>
+<details class="adm-hilfe-klapp" style="margin-top:10px">
+    <summary><span class="adm-hk-zu">ℹ️ Erklärung anzeigen</span><span class="adm-hk-auf">ℹ️ Erklärung verbergen</span></summary>
+    <p class="adm-hilfe">
+        Die Vorschau zeigt den aktuellen Live-Stand des Monitors. Inhalte rotieren und
+        der Ticker läuft — genauso wie auf dem echten TV.
+    </p>
+</details>
 <script>
 (function () {
     var rahmen = document.getElementById('vorschau-rahmen');

@@ -246,13 +246,16 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
 
     <div class="adm-card adm-pl-ansicht" data-ansicht="klassisch" hidden>
         <h2>Playlist-Zeitplan</h2>
-        <p class="adm-hilfe">
-            Lege fest, welche Playlist wann auf diesem Monitor läuft. Playlist auswählen,
-            Wochentage anklicken, und optional ein Uhrzeit-Fenster angeben.
-            <strong>Ohne Uhrzeit</strong> läuft der Eintrag ganztags (Fallback).
-            Bei mehreren passenden Einträgen gewinnt die <strong>höhere Priorität</strong>.
-            Mit ↑/↓ die Reihenfolge bei gleicher Priorität festlegen.
-        </p>
+        <details class="adm-hilfe-klapp">
+            <summary><span class="adm-hk-zu">ℹ️ Erklärung anzeigen</span><span class="adm-hk-auf">ℹ️ Erklärung verbergen</span></summary>
+            <p class="adm-hilfe">
+                Lege fest, welche Playlist wann auf diesem Monitor läuft. Playlist auswählen,
+                Wochentage anklicken, und optional ein Uhrzeit-Fenster angeben.
+                <strong>Ohne Uhrzeit</strong> läuft der Eintrag ganztags (Fallback).
+                Bei mehreren passenden Einträgen gewinnt die <strong>höhere Priorität</strong>.
+                Mit ↑/↓ die Reihenfolge bei gleicher Priorität festlegen.
+            </p>
+        </details>
         <?php if (empty($playlists)): ?>
             <p class="adm-hilfe">Es gibt noch keine Playlists. Lege zuerst unter
                 <a href="playlists.php">Playlists</a> eine an.</p>
@@ -264,31 +267,37 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
 
     <div class="adm-card adm-pl-ansicht" data-ansicht="kalender">
         <h2>Playlist-Zeitplan · Wochenkalender</h2>
-        <p class="adm-hilfe">
-            Klick auf eine freie Stelle legt einen neuen Eintrag an, Klick auf einen
-            Block öffnet ihn zum Bearbeiten. Blöcke lassen sich <strong>ziehen</strong>
-            (Uhrzeit ändern, quer = Wochentag tauschen) und an <strong>Ober-/Unterkante</strong>
-            in 15-Minuten-Schritten anpassen. Ganztägige Einträge (Fallback) stehen in der
-            <strong>Ganztags-Zeile</strong> oben in ihrer Tagesspalte — Klick auf eine
-            freie Stelle dort legt einen neuen Fallback für den Tag an.
-            Überlappende Einträge stehen nebeneinander —
-            der mit höherer Priorität (P-Badge) links, er gewinnt auf dem Monitor.
-            Änderungen gelten erst nach <strong>Speichern</strong>.
-        </p>
+        <details class="adm-hilfe-klapp">
+            <summary><span class="adm-hk-zu">ℹ️ Erklärung anzeigen</span><span class="adm-hk-auf">ℹ️ Erklärung verbergen</span></summary>
+            <p class="adm-hilfe">
+                Klick auf eine freie Stelle legt einen neuen Eintrag an, Klick auf einen
+                Block öffnet ihn zum Bearbeiten. Blöcke lassen sich <strong>ziehen</strong>
+                (Uhrzeit ändern, quer = Wochentag tauschen) und an <strong>Ober-/Unterkante</strong>
+                in 15-Minuten-Schritten anpassen. Ganztägige Einträge (Fallback) stehen in der
+                <strong>Ganztags-Zeile</strong> oben in ihrer Tagesspalte — Klick auf eine
+                freie Stelle dort legt einen neuen Fallback für den Tag an.
+                Überlappende Einträge stehen nebeneinander —
+                der mit höherer Priorität (P-Badge) links, er gewinnt auf dem Monitor.
+                Änderungen gelten erst nach <strong>Speichern</strong>.
+            </p>
+        </details>
         <div id="pl-kalender-grid" class="adm-kal-grid"></div>
         <div id="pl-kalender-legende" class="adm-kal-legende"></div>
     </div>
 
     <div class="adm-card">
         <h2>Ticker-Zeitplan</h2>
-        <p class="adm-hilfe">
-            Lege fest, welcher Ticker wann im Footer dieses Monitors läuft. Pro
-            Eintrag: Ticker (Kachel anklicken) + Wochentage + <strong>optional</strong>
-            ein Uhrzeit-Fenster. <strong>Ohne Uhrzeit läuft der Ticker
-            dauerhaft</strong> an den gewählten Tagen. Sind mehrere Ticker
-            gleichzeitig aktiv, werden ihre Texte <strong>gemischt</strong>
-            nacheinander angezeigt — <strong>keine Priorität</strong>.
-        </p>
+        <details class="adm-hilfe-klapp">
+            <summary><span class="adm-hk-zu">ℹ️ Erklärung anzeigen</span><span class="adm-hk-auf">ℹ️ Erklärung verbergen</span></summary>
+            <p class="adm-hilfe">
+                Lege fest, welcher Ticker wann im Footer dieses Monitors läuft. Pro
+                Eintrag: Ticker (Kachel anklicken) + Wochentage + <strong>optional</strong>
+                ein Uhrzeit-Fenster. <strong>Ohne Uhrzeit läuft der Ticker
+                dauerhaft</strong> an den gewählten Tagen. Sind mehrere Ticker
+                gleichzeitig aktiv, werden ihre Texte <strong>gemischt</strong>
+                nacheinander angezeigt — <strong>keine Priorität</strong>.
+            </p>
+        </details>
         <?php if (empty($ticker)): ?>
             <p class="adm-hilfe">Es gibt noch keine Ticker. Lege zuerst unter
                 <a href="ticker.php">Ticker</a> einen an.</p>

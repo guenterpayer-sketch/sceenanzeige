@@ -1353,3 +1353,20 @@ a.adm-meta-badge:hover { background: #dde3ea; }
     border-left: 4px solid #d4a017;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
+
+/* Aufklappbare Erklärtexte: zugeklappt als Standard, nichts geht verloren */
+details.adm-hilfe-klapp { margin: 0 0 14px; }
+details.adm-hilfe-klapp > summary {
+    cursor: pointer; font-size: 13px; color: #5a6b7d; user-select: none;
+    list-style: none; display: inline-block;
+}
+details.adm-hilfe-klapp > summary::-webkit-details-marker { display: none; }
+details.adm-hilfe-klapp > summary:hover { color: #1c2733; }
+details.adm-hilfe-klapp[open] > summary { margin-bottom: 6px; }
+details.adm-hilfe-klapp .adm-hilfe { margin-top: 0; }
+details.adm-hilfe-klapp .adm-hk-auf { display: none; }
+details.adm-hilfe-klapp[open] .adm-hk-zu { display: none; }
+details.adm-hilfe-klapp[open] .adm-hk-auf { display: inline; }
+
+/* Kalender: Schalter „Regelbetrieb einblenden" rechts im Filter */
+.adm-wp-filter-regel { margin-left: auto; color: #5a6b7d; }

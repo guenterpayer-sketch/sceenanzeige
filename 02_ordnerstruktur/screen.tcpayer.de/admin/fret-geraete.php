@@ -46,11 +46,14 @@ admin_header('FRET-Geräte', 'fret-geraete');
     <div class="adm-flash <?= $flashFehler ? 'adm-flash-fehler' : '' ?>"><?= htmlspecialchars($flash) ?></div>
 <?php endif; ?>
 
-<p class="adm-hilfe">
-    FRET meldet alle Computer mit aktiver API. Hier legst du fest, welche davon
-    im FRET-Modul auswählbar sind („freigegeben") und unter welchem Anzeigenamen.
-    Nur freigegebene Geräte erscheinen im Dropdown des Modul-Editors.
-</p>
+<details class="adm-hilfe-klapp">
+    <summary><span class="adm-hk-zu">ℹ️ Erklärung anzeigen</span><span class="adm-hk-auf">ℹ️ Erklärung verbergen</span></summary>
+    <p class="adm-hilfe">
+        FRET meldet alle Computer mit aktiver API. Hier legst du fest, welche davon
+        im FRET-Modul auswählbar sind („freigegeben") und unter welchem Anzeigenamen.
+        Nur freigegebene Geräte erscheinen im Dropdown des Modul-Editors.
+    </p>
+</details>
 
 <?php if (!$fretKonfiguriert): ?>
     <div class="adm-flash adm-flash-fehler">

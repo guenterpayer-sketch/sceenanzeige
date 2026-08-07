@@ -53,11 +53,14 @@ admin_header('Übersicht', 'dashboard');
 </div>
 
 <h2 class="adm-dash-abschnitt">Monitore</h2>
-<p class="adm-hilfe">
-    Was läuft gerade auf welchem Monitor? Die Anzeige nutzt dieselbe
-    Zeitplan-Logik wie die Monitore selbst. Seite neu laden (F5) für den
-    aktuellen Stand.
-</p>
+<details class="adm-hilfe-klapp">
+    <summary><span class="adm-hk-zu">ℹ️ Erklärung anzeigen</span><span class="adm-hk-auf">ℹ️ Erklärung verbergen</span></summary>
+    <p class="adm-hilfe">
+        Was läuft gerade auf welchem Monitor? Die Anzeige nutzt dieselbe
+        Zeitplan-Logik wie die Monitore selbst. Seite neu laden (F5) für den
+        aktuellen Stand.
+    </p>
+</details>
 
 <?php if (empty($monitore)): ?>
     <p class="adm-leer">Noch kein Monitor angelegt.</p>

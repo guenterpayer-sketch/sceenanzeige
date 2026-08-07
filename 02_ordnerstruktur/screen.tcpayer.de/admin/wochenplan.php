@@ -91,15 +91,19 @@ admin_header('Kalender', 'wochenplan');
         <span class="adm-wp-kw">KW <?= (int)$wochenStart->format('W') ?> ·
             <?= $wochenStart->format('d.m.') ?> – <?= $wochenEnde->format('d.m.Y') ?></span>
     </div>
-    <p class="adm-hilfe">
-        <strong>Kräftige Blöcke mit goldenem Rand</strong> sind Kalender-Termine
-        (konkretes Datum) — sie stechen den Regelbetrieb aus.
-        <strong>Blasse Blöcke</strong> sind der wöchentliche Regelbetrieb
-        (bearbeiten unter <a href="monitore.php">Monitore → Zeitplan</a>).
-        Läuft derselbe Eintrag auf mehreren Monitoren, wird er als ein Block
-        mit den Monitor-Namen angezeigt; Ganztägiges steht in der
-        Ganztags-Zeile oben.
-    </p>
+    <details class="adm-hilfe-klapp">
+        <summary><span class="adm-hk-zu">ℹ️ Erklärung anzeigen</span><span class="adm-hk-auf">ℹ️ Erklärung verbergen</span></summary>
+        <p class="adm-hilfe">
+            Der Kalender zeigt <strong>Kalender-Termine</strong> (konkretes Datum,
+            goldener Rand) — sie stechen den wöchentlichen Regelbetrieb aus.
+            Über <strong>„Regelbetrieb einblenden"</strong> lässt sich das
+            Wochenmuster blass dazuschalten (bearbeiten unter
+            <a href="monitore.php">Monitore → Zeitplan</a>).
+            Läuft derselbe Eintrag auf mehreren Monitoren, wird er als ein Block
+            mit den Monitor-Namen angezeigt; Ganztägiges steht in der
+            Ganztags-Zeile oben.
+        </p>
+    </details>
     <?php if (empty($monitore)): ?>
         <p class="adm-hilfe">Es gibt noch keine Monitore.</p>
     <?php else: ?>

@@ -66,17 +66,25 @@
     var TAG_DATEN = [];
     for (var td = 0; td < 7; td++) { TAG_DATEN.push(datumPlus(WSTART, td)); }
 
-    // ---- Monitor-Filter (Checkboxen, alle an) ------------------------------
+    // ---- Monitor-Filter (Checkboxen, alle an) + Regelbetrieb-Schalter -----
     var aktiveMonitore = {};
     MONITORE.forEach(function (m) { aktiveMonitore[m.id] = true; });
+    var zeigeRegel = false; // Regelbetrieb-Schicht: standardmäßig ausgeblendet
 
     filterEl.innerHTML = '<span class="adm-wp-filter-label">Monitore:</span>' +
         MONITORE.map(function (m) {
             return '<label class="adm-wp-filter-item">' +
                 '<input type="checkbox" data-mid="' + m.id + '" checked> ' +
                 escapeHtml(m.name) + '</label>';
-        }).join('');
+        }).join('') +
+        '<label class="adm-wp-filter-item adm-wp-filter-regel">' +
+        '<input type="checkbox" id="wp-zeige-regel"> Regelbetrieb einblenden</label>';
     filterEl.addEventListener('change', function (e) {
+        if (e.target.id === 'wp-zeige-regel') {
+            zeigeRegel = e.target.checked;
+            rendere();
+            return;
+        }
         var cb = e.target.closest('input[data-mid]');
         if (!cb) { return; }
         aktiveMonitore[parseInt(cb.getAttribute('data-mid'), 10)] = cb.checked;
@@ -265,6 +273,8 @@
         });
 
         // ==== Schicht 1: Regelbetrieb (blass) ===============================
+        // Standardmäßig ausgeblendet — Schalter „Regelbetrieb einblenden".
+        if (zeigeRegel) {
         // Ganztags-Einträge (Fallback): pro Tag + Playlist gruppieren
         var gzGruppen = {};
         eintraege.forEach(function (e) {
@@ -338,6 +348,7 @@
             b.setAttribute('data-prio', String(g.prio));
             col.appendChild(b);
         });
+        } // Ende Schicht 1 (zeigeRegel)
 
         verteileLanes();
 
