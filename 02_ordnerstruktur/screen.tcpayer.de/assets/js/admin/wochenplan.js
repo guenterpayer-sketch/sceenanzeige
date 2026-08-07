@@ -365,11 +365,22 @@
         });
     }
 
-    // Termin-Block mit seiner Gruppe verknüpfen (Klick → Dialog)
+    // Termin-Block mit seiner Gruppe verknüpfen (Klick → Dialog); zeit-
+    // gebundene Blöcke bekommen Resize-Handles (Etappe D: Drag/Resize).
     function terminKlickbar(g, block) {
         block.setAttribute('data-tdkey', g.key);
         block.classList.add('adm-kal-block--interaktiv');
         block.title += ' · Klicken zum Bearbeiten';
+        if (block.classList.contains('adm-kal-block')) {
+            var h = document.createElement('div');
+            h.className = 'adm-kal-block-resize';
+            h.title = 'Ende ziehen';
+            block.appendChild(h);
+            var ho = document.createElement('div');
+            ho.className = 'adm-kal-block-resize-oben';
+            ho.title = 'Beginn ziehen';
+            block.appendChild(ho);
+        }
         return block;
     }
 
@@ -586,7 +597,107 @@
         return String(h).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
     }
 
+    // ==== Etappe D: Termin-Blöcke ziehen (Uhrzeit/Tag) + Größe ändern ======
+    // Nach dem Loslassen wird sofort gespeichert (gleicher Endpunkt wie der
+    // Dialog); bei Fehlern stellt rendere() den alten Stand wieder her.
+    var drag = null;
+    var _suppressClickUntil = 0;
+
+    function speichereGruppeDirekt(g, neu) {
+        var p = new URLSearchParams();
+        p.append('aktion', 'speichern');
+        g.ids.forEach(function (id) { p.append('ids[]', String(id)); });
+        g.monitore.forEach(function (id) { p.append('monitor_ids[]', String(id)); });
+        p.append('playlist_id', String(g.t.playlist_id));
+        p.append('datum_von', neu.datum_von);
+        p.append('datum_bis', neu.datum_bis);
+        p.append('von', neu.von);
+        p.append('bis', neu.bis);
+        p.append('prio', String(g.t.prio));
+        p.append('dauer_sek', String(g.t.dauer_sek || 300));
+        tdRequest(p, function () {});
+    }
+
+    gridEl.addEventListener('mousedown', function (e) {
+        if (e.button !== 0) { return; }
+        var blk = e.target.closest('.adm-kal-block--termin[data-tdkey]');
+        if (!blk) { return; }
+        var art = e.target.classList.contains('adm-kal-block-resize') ? 'resize'
+                : e.target.classList.contains('adm-kal-block-resize-oben') ? 'resize-oben' : 'move';
+        var col = blk.closest('.adm-kal-tag');
+        if (!col) { return; }
+        drag = {
+            art: art, el: blk, key: blk.getAttribute('data-tdkey'),
+            startX: e.clientX, startY: e.clientY, moved: false,
+            origTop: parseFloat(blk.style.top) || 0,
+            origHeight: parseFloat(blk.style.height) || 0,
+            colW: col.offsetWidth
+        };
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', function (e) {
+        if (!drag) { return; }
+        var dy = e.clientY - drag.startY, dx = e.clientX - drag.startX;
+        if (!drag.moved && Math.abs(dy) < 4 && Math.abs(dx) < 4) { return; }
+        drag.moved = true;
+        var snapPx = function (px) { return snap15Min(px / KAL_ROW_H * 60) / 60 * KAL_ROW_H; };
+        if (drag.art === 'move') {
+            drag.tagDelta = Math.round(dx / drag.colW);
+            drag.el.style.top = Math.max(0, drag.origTop + snapPx(dy)) + 'px';
+            drag.el.style.transform = 'translateX(' + (drag.tagDelta * drag.colW) + 'px)';
+            drag.el.style.opacity = '0.75';
+        } else if (drag.art === 'resize') {
+            drag.el.style.height = Math.max(KAL_ROW_H / 4, drag.origHeight + snapPx(dy)) + 'px';
+        } else { // resize-oben
+            var d = Math.min(snapPx(dy), drag.origHeight - KAL_ROW_H / 4);
+            drag.el.style.top = (drag.origTop + d) + 'px';
+            drag.el.style.height = (drag.origHeight - d) + 'px';
+        }
+    });
+
+    document.addEventListener('mouseup', function (e) {
+        if (!drag) { return; }
+        var d = drag;
+        drag = null;
+        if (!d.moved) { return; } // reiner Klick → Klick-Handler öffnet Dialog
+        _suppressClickUntil = Date.now() + 300;
+
+        var g = terminGruppen[d.key];
+        if (!g) { rendere(); return; }
+        var vonMinAlt = zeitZuMin(g.t.von), bisMinAlt = zeitZuMin(g.t.bis);
+        if (vonMinAlt == null || bisMinAlt == null) { rendere(); return; }
+        var dauerMin = bisMinAlt - vonMinAlt;
+        var dyMin = snap15Min((e.clientY - d.startY) / KAL_ROW_H * 60);
+        var neu = { datum_von: g.t.datum_von, datum_bis: g.t.datum_bis, von: g.t.von, bis: g.t.bis };
+
+        if (d.art === 'move') {
+            var vonNeu = Math.max(0, Math.min(24 * 60 - dauerMin, vonMinAlt + dyMin));
+            neu.von = minZuHhmm(vonNeu);
+            neu.bis = minZuHhmm(vonNeu + dauerMin);
+            var tagDelta = Math.round((e.clientX - d.startX) / d.colW);
+            if (tagDelta !== 0) {
+                neu.datum_von = datumPlus(g.t.datum_von, tagDelta);
+                neu.datum_bis = datumPlus(g.t.datum_bis, tagDelta);
+            }
+        } else if (d.art === 'resize') {
+            var bisNeu = Math.max(vonMinAlt + 15, Math.min(24 * 60, bisMinAlt + dyMin));
+            neu.bis = minZuHhmm(bisNeu);
+        } else { // resize-oben
+            var vonNeuO = Math.min(bisMinAlt - 15, Math.max(0, vonMinAlt + dyMin));
+            neu.von = minZuHhmm(vonNeuO);
+        }
+
+        if (neu.von === g.t.von && neu.bis === g.t.bis
+            && neu.datum_von === g.t.datum_von && neu.datum_bis === g.t.datum_bis) {
+            rendere(); // nichts geändert → nur Optik zurücksetzen
+            return;
+        }
+        speichereGruppeDirekt(g, neu);
+    });
+
     gridEl.addEventListener('click', function (e) {
+        if (drag || Date.now() < _suppressClickUntil) { return; }
         // 1. Klick auf einen Termin-Block → bearbeiten
         var blk = e.target.closest('[data-tdkey]');
         if (blk) {

@@ -267,6 +267,31 @@ final class Monitor
     }
 
     /**
+     * Kommende Kalender-Termine EINES Monitors (heute oder später) — für den
+     * Hinweis im Zeitplan-Editor. Liefert Anzahl + nächstes Beginn-Datum.
+     * @return array{anzahl:int, naechster:?string}
+     */
+    public static function kommendeTermineFuer(int $monitorId): array
+    {
+        try {
+            $stmt = get_pdo()->prepare(
+                'SELECT COUNT(*) AS anzahl, MIN(GREATEST(datum_von, CURDATE())) AS naechster
+                 FROM monitor_termine
+                 WHERE monitor_id = :mid AND datum_bis >= CURDATE()'
+            );
+            $stmt->execute([':mid' => $monitorId]);
+            $row = $stmt->fetch();
+            return [
+                'anzahl'    => (int)($row['anzahl'] ?? 0),
+                'naechster' => $row['naechster'] !== null ? (string)$row['naechster'] : null,
+            ];
+        } catch (PDOException $e) {
+            if ($e->getCode() === '42S02') { return ['anzahl' => 0, 'naechster' => null]; }
+            throw $e;
+        }
+    }
+
+    /**
      * Termine eines Zeitraums in der normalisierten Form für den Kalender
      * (wochenplan.php + termin-aktion.php nutzen dieselbe Aufbereitung).
      * @return array<int,array>

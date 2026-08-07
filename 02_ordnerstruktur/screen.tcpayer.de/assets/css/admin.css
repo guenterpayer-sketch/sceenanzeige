@@ -1375,3 +1375,11 @@ details.adm-hilfe-klapp[open] .adm-hk-auf { display: inline; }
 .adm-td-monitore { display: flex; flex-wrap: wrap; gap: 8px 18px; }
 .adm-td-monitor  { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; }
 .adm-kal-block--termin, .adm-kal-gz-block--termin { cursor: pointer; }
+
+/* Termin-Hinweis im Monitor-Zeitplan-Editor (Schritt 29, Etappe D) */
+.adm-termin-hinweis {
+    background: #fdf6e3; border: 1px solid #e8cf8a; border-left: 4px solid #d4a017;
+    color: #6b5310; border-radius: 8px; padding: 10px 14px; margin: 0 0 14px;
+    font-size: 14px;
+}
+.adm-termin-hinweis a { color: #8a6a0e; font-weight: 600; }
