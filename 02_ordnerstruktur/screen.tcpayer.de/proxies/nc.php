@@ -18,11 +18,23 @@
  * Nicht-sensible Anzeige-Einstellungen (nur_heute, anzahl) dürfen als
  * Query-Parameter kommen, da sie ohnehin in den Modul-Instanz-Einstellungen
  * stehen. Der Key kommt getrennt serverseitig dazu.
+ *
+ * KONTINGENT (siehe includes/NcCache.php):
+ *   Die NC-Legacy-API hat ein begrenztes Monatskontingent. Die rohe
+ *   Event-Liste wird deshalb serverseitig bis Mitternacht gecacht —
+ *   geschlüsselt NUR nach den API-Parametern (Datum + Tagesanzahl), nicht
+ *   nach Standort-/Saal-Filter. Die Filter laufen danach über die
+ *   gecachten Daten, dadurch teilen sich alle Säle und alle Modul-
+ *   Instanzen EINEN Abruf pro Tag.
+ *   Frische Daten außer der Reihe gibt es über „Monitore neu laden" im
+ *   Admin — das leert den Cache (admin/reload_trigger.php). Bewusst kein
+ *   Query-Parameter dafür: dieser Endpunkt ist ohne Login erreichbar.
  */
 
 declare(strict_types=1);
 
 require __DIR__ . '/../config.php';
+require __DIR__ . '/../includes/NcCache.php';
 require __DIR__ . '/_cors.php';
 
 // CORS wird zentral per .htaccess gesetzt.
@@ -58,47 +70,68 @@ if ($apiKey === '') {
 }
 
 // ----------------------------------------------------------------------------
-// Legacy-API aufrufen: POST /timetable/data mit FORM-Parametern
+// Events besorgen: erst Cache, sonst Legacy-API (POST /timetable/data)
 // ----------------------------------------------------------------------------
 $dateMitternacht = strtotime('today midnight');
 
-$postFelder = http_build_query([
-    'apikey' => $apiKey,
-    'date'   => $dateMitternacht,
-    'days'   => $days,
-]);
+// Schlüssel nur aus den API-Parametern — die Standort-/Saal-Filter greifen
+// erst weiter unten, damit sich alle Instanzen einen Abruf teilen.
+$cacheSchluessel = $dateMitternacht . '_' . $days;
+$ausCache        = NcCache::lese($cacheSchluessel);
 
-$ch = curl_init(NC_API_BASE . '/timetable/data');
-curl_setopt_array($ch, [
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_POST           => true,
-    CURLOPT_POSTFIELDS     => $postFelder,
-    CURLOPT_TIMEOUT        => 12,
-    CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded'],
-]);
-$antwort   = curl_exec($ch);
-$httpCode  = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-$curlError = curl_error($ch);
-curl_close($ch);
+if ($ausCache !== null) {
+    $events   = $ausCache['events'];
+    $geholtAm = (int)$ausCache['geholt_am'];
+    $quelle   = 'cache';
+} else {
+    $postFelder = http_build_query([
+        'apikey' => $apiKey,
+        'date'   => $dateMitternacht,
+        'days'   => $days,
+    ]);
 
-if ($antwort === false) {
-    proxy_fehler('Verbindung zur Nimbuscloud fehlgeschlagen: ' . $curlError, 502);
-}
-if ($httpCode === 401) {
-    proxy_fehler('Nimbuscloud lehnt den API-Key ab (401).', 502);
-}
-if ($httpCode >= 400) {
-    proxy_fehler('Nimbuscloud-Fehler (HTTP ' . $httpCode . ').', 502);
-}
+    $ch = curl_init(NC_API_BASE . '/timetable/data');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => $postFelder,
+        CURLOPT_TIMEOUT        => 12,
+        CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded'],
+    ]);
+    $antwort   = curl_exec($ch);
+    $httpCode  = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
 
-$json = json_decode($antwort, true);
-if (!is_array($json)) {
-    proxy_fehler('Unerwartete Antwort von der Nimbuscloud.', 502);
-}
+    if ($antwort === false) {
+        proxy_fehler('Verbindung zur Nimbuscloud fehlgeschlagen: ' . $curlError, 502);
+    }
+    if ($httpCode === 401) {
+        proxy_fehler('Nimbuscloud lehnt den API-Key ab (401).', 502);
+    }
+    if ($httpCode >= 400) {
+        proxy_fehler('Nimbuscloud-Fehler (HTTP ' . $httpCode . ').', 502);
+    }
 
-// Legacy-API verpackt das Ergebnis in "content".
-$content = $json['content'] ?? $json;
-$events  = $content['events'] ?? [];
+    $json = json_decode($antwort, true);
+    if (!is_array($json)) {
+        proxy_fehler('Unerwartete Antwort von der Nimbuscloud.', 502);
+    }
+
+    // Legacy-API verpackt das Ergebnis in "content".
+    $content = $json['content'] ?? $json;
+    $events  = $content['events'] ?? [];
+
+    if (!is_array($events)) {
+        $events = [];
+    }
+
+    // Nur Erfolge cachen — Fehlerfälle steigen oben schon aus.
+    NcCache::schreibe($cacheSchluessel, $events, (int)strtotime('tomorrow midnight'));
+
+    $geholtAm = time();
+    $quelle   = 'api';
+}
 
 // ----------------------------------------------------------------------------
 // Auf die fürs Modul relevanten Felder reduzieren + filtern
@@ -137,4 +170,11 @@ foreach ($events as $ev) {
     ];
 }
 
-proxy_json_exit(['kurse' => $kurse]);
+// quelle/stand sind reine Diagnose-Felder (keine sensiblen Daten) — damit
+// im Browser-Netzwerktab sichtbar ist, ob gerade die API oder der Cache
+// geantwortet hat. Das Frontend wertet sie nicht aus.
+proxy_json_exit([
+    'kurse'  => $kurse,
+    'quelle' => $quelle,
+    'stand'  => date('c', $geholtAm),
+]);
