@@ -236,12 +236,22 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
 <h1 style="margin-top:0">Zeitplan: <?= htmlspecialchars($monitor['name']) ?>
     <span class="adm-eintrag-typ"><?= htmlspecialchars($monitor['subdomain']) ?></span></h1>
 
-<?php $kommende = Monitor::kommendeTermineFuer($id); ?>
+<?php
+$kommende = Monitor::kommendeTermineFuer($id);
+
+/** Datum mit deutschem Wochentags-Kürzel, z.B. „Mo 17.08.2026". */
+function zp_datum_mit_tag(string $iso): string
+{
+    $d = new DateTimeImmutable($iso);
+    $kuerzel = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'][(int)$d->format('N') - 1];
+    return $kuerzel . ' ' . $d->format('d.m.Y');
+}
+?>
 <?php if ($kommende['anzahl'] > 0): ?>
     <p class="adm-termin-hinweis">📅 Dieser Monitor hat
         <strong><?= $kommende['anzahl'] ?> kommende<?= $kommende['anzahl'] === 1 ? 'n' : '' ?> Kalender-Termin<?= $kommende['anzahl'] === 1 ? '' : 'e' ?></strong><?php
         if ($kommende['naechster'] !== null): ?> (nächster:
-        <?= (new DateTimeImmutable($kommende['naechster']))->format('d.m.Y') ?>)<?php endif; ?>
+        <?= zp_datum_mit_tag($kommende['naechster']) ?>)<?php endif; ?>
         — Termine stechen diesen Regelbetrieb aus.
         <a href="wochenplan.php<?= $kommende['naechster'] !== null ? '?w=' . $kommende['naechster'] : '' ?>">Im Kalender ansehen</a>
     </p>
