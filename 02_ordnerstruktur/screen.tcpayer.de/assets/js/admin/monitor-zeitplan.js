@@ -886,6 +886,12 @@
         });
     });
 
+    // Kalender-Tab ist Standard (Schritt 29) — beim Laden direkt rendern,
+    // nicht erst beim Tab-Wechsel.
+    if (!document.querySelector('.adm-pl-ansicht[data-ansicht="kalender"]').hidden) {
+        rendereKalender();
+    }
+
     // Initialaufbau abgeschlossen — programmatische Markierungen zurücksetzen,
     // damit der Guard nicht ohne echte Nutzer-Änderung warnt.
     guard.reset();

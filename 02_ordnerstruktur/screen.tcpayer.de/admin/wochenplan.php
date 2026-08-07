@@ -43,10 +43,10 @@ foreach ($monitore as $m) {
     }
 }
 
-admin_header('Wochenplan', 'wochenplan');
+admin_header('Kalender', 'wochenplan');
 ?>
 
-<h1 style="margin-top:0">Wochenplan — alle Monitore</h1>
+<h1 style="margin-top:0">Kalender — alle Monitore</h1>
 
 <div class="adm-card">
     <p class="adm-hilfe">

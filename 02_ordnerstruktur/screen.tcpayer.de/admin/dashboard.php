@@ -37,7 +37,7 @@ $schnellzugriffe = [
     ['🧩', 'Bibliothek',       'bibliothek.php'],
     ['🗂️', 'Playlists',        'playlists.php'],
     ['📰', 'Ticker',           'ticker.php'],
-    ['🗓️', 'Wochenplan',       'wochenplan.php'],
+    ['🗓️', 'Kalender',         'wochenplan.php'],
 ];
 
 admin_header('Übersicht', 'dashboard');

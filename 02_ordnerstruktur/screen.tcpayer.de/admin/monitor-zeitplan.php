@@ -240,11 +240,11 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
     <input type="hidden" name="aktion" value="speichern">
 
     <div class="adm-tabs adm-pl-tabs">
-        <button type="button" class="adm-tab an" data-tab="klassisch">Klassisch (Liste)</button>
-        <button type="button" class="adm-tab" data-tab="kalender">Wochenkalender</button>
+        <button type="button" class="adm-tab an" data-tab="kalender">Wochenkalender</button>
+        <button type="button" class="adm-tab" data-tab="klassisch">Klassisch (Liste)</button>
     </div>
 
-    <div class="adm-card adm-pl-ansicht" data-ansicht="klassisch">
+    <div class="adm-card adm-pl-ansicht" data-ansicht="klassisch" hidden>
         <h2>Playlist-Zeitplan</h2>
         <p class="adm-hilfe">
             Lege fest, welche Playlist wann auf diesem Monitor läuft. Playlist auswählen,
@@ -262,7 +262,7 @@ admin_header('Zeitplan — ' . $monitor['name'], 'monitore');
         <button type="button" id="zeitplan-hinzu" class="adm-btn" <?= empty($playlists) ? 'disabled' : '' ?>>+ Eintrag hinzufügen</button>
     </div>
 
-    <div class="adm-card adm-pl-ansicht" data-ansicht="kalender" hidden>
+    <div class="adm-card adm-pl-ansicht" data-ansicht="kalender">
         <h2>Playlist-Zeitplan · Wochenkalender</h2>
         <p class="adm-hilfe">
             Klick auf eine freie Stelle legt einen neuen Eintrag an, Klick auf einen

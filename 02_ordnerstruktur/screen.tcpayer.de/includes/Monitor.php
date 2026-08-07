@@ -146,23 +146,37 @@ final class Monitor
     // versorgt die echten Saal-Bildschirme!) UND vom Admin-Dashboard
     // benutzt. Es gibt bewusst KEINE zweite Kopie dieser Regeln — wer die
     // Semantik ändert, ändert sie für Monitore und Dashboard zugleich.
-    // Regeln (CLAUDE.md Abschnitt 10/12):
+    // Regeln (CLAUDE.md Abschnitt 10/12, Schritt 29):
+    //   - Zwei Ebenen: Kalender-Termine (monitor_termine, konkretes Datum)
+    //     stechen den Regelbetrieb (monitor_zeitplan, Wochenmuster) aus —
+    //     gibt es JETZT mindestens einen passenden Termin, wird der
+    //     Regelbetrieb komplett ignoriert.
     //   - Wochentag ISO 1=Mo…7=So via FIND_IN_SET (Spalte wochentage="1,2,5")
-    //   - Uhrzeit im Fenster ODER von/bis beide NULL (= Fallback/dauerhaft)
+    //   - Uhrzeit im Fenster ODER von/bis beide NULL (= Fallback/dauerhaft/
+    //     ganztags), gilt auf beiden Ebenen gleich
     //   - Playlist: nur aktive; höchste Priorität gewinnt, bei Gleichstand
     //     bleiben alle (das Frontend rotiert durch sie)
     //   - Ticker: nur aktive; ALLE passenden, KEINE Priorität (Mischung)
     // ------------------------------------------------------------------
 
     /**
-     * Liefert die JETZT gültigen Playlist-Zeitplan-Einträge des Monitors —
-     * nur die mit der höchsten Priorität (leer, wenn nichts passt).
+     * Liefert die JETZT gültigen Playlist-Einträge des Monitors — Kalender-
+     * Termine vor Regelbetrieb, jeweils nur die mit der höchsten Priorität
+     * (leer, wenn nichts passt).
      *
      * @return array<int,array{playlist_id:int|string,name:string,prioritaet:int|string,dauer_sek:int|string,von_uhrzeit:?string,bis_uhrzeit:?string}>
      */
     public static function aktuellePlaylistFuer(int $monitorId, ?DateTimeImmutable $zeit = null): array
     {
         $zeit ??= new DateTimeImmutable('now');
+
+        // Ebene 1: Kalender-Termine (konkretes Datum) — stechen den Regelbetrieb aus
+        $termine = self::termineJetzt($monitorId, $zeit);
+        if (!empty($termine)) {
+            return self::nurHoechstePrioritaet($termine);
+        }
+
+        // Ebene 2: Regelbetrieb (Wochenmuster)
         // Hinweis EMULATE_PREPARES=false: jeder benannte Platzhalter darf im
         // Statement nur einmal vorkommen (daher :zeit_von/:zeit_bis).
         $stmt = get_pdo()->prepare(
@@ -184,9 +198,50 @@ final class Monitor
             ':zeit_von' => $zeit->format('H:i:s'),
             ':zeit_bis' => $zeit->format('H:i:s'),
         ]);
-        $rows = $stmt->fetchAll();
+        return self::nurHoechstePrioritaet($stmt->fetchAll());
+    }
 
-        // Nur Einträge mit höchster Priorität behalten
+    /**
+     * JETZT passende Kalender-Termine des Monitors (Datum im Bereich,
+     * Uhrzeit im Fenster oder ganztags, nur aktive Playlists). Gleiche
+     * Zeilenform wie der Regelbetrieb (playlist_id, prioritaet, dauer_sek,
+     * von_uhrzeit, bis_uhrzeit, name).
+     */
+    private static function termineJetzt(int $monitorId, DateTimeImmutable $zeit): array
+    {
+        try {
+            $stmt = get_pdo()->prepare(
+                'SELECT t.playlist_id, t.prioritaet, t.dauer_sek, t.von_uhrzeit, t.bis_uhrzeit,
+                        p.name
+                 FROM monitor_termine t
+                 JOIN playlists p ON p.id = t.playlist_id AND p.aktiv = 1
+                 WHERE t.monitor_id = :mid
+                   AND :datum BETWEEN t.datum_von AND t.datum_bis
+                   AND (
+                         (t.von_uhrzeit IS NULL AND t.bis_uhrzeit IS NULL)
+                      OR (:zeit_von >= t.von_uhrzeit AND :zeit_bis <= t.bis_uhrzeit)
+                   )
+                 ORDER BY t.prioritaet DESC'
+            );
+            $stmt->execute([
+                ':mid'      => $monitorId,
+                ':datum'    => $zeit->format('Y-m-d'),
+                ':zeit_von' => $zeit->format('H:i:s'),
+                ':zeit_bis' => $zeit->format('H:i:s'),
+            ]);
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            // Migration 14 noch nicht eingespielt (Tabelle fehlt, SQLSTATE
+            // 42S02) → wie „keine Termine": Monitore laufen im Regelbetrieb
+            // weiter, statt mit einem 500er auszufallen.
+            if ($e->getCode() === '42S02') { return []; }
+            throw $e;
+        }
+    }
+
+    /** Nur die Einträge mit der höchsten Priorität behalten (leer bleibt leer). */
+    private static function nurHoechstePrioritaet(array $rows): array
+    {
         $maxPrio = null;
         foreach ($rows as $row) {
             $p = (int)$row['prioritaet'];
@@ -231,8 +286,9 @@ final class Monitor
     /**
      * Nächste Uhrzeit HEUTE (Format "HH:MM"), zu der sich die
      * Playlist-Auswahl dieses Monitors ändern kann: kleinstes
-     * von_uhrzeit/bis_uhrzeit aller heutigen Einträge (aktive Playlists),
-     * das noch in der Zukunft liegt. NULL wenn keins.
+     * von_uhrzeit/bis_uhrzeit aller heutigen Einträge (aktive Playlists,
+     * Regelbetrieb UND Kalender-Termine), das noch in der Zukunft liegt.
+     * NULL wenn keins.
      */
     public static function naechsterWechselFuer(int $monitorId, ?DateTimeImmutable $zeit = null): ?string
     {
@@ -261,7 +317,43 @@ final class Monitor
             ':uhr'  => $zeit->format('H:i:s'),
         ]);
         $t = $stmt->fetchColumn();
-        return ($t !== false && $t !== null) ? substr((string)$t, 0, 5) : null;
+        $kandidat = ($t !== false && $t !== null) ? (string)$t : null;
+
+        // Kalender-Termine, die heute gelten: deren Fenstergrenzen zählen mit.
+        try {
+            $stmt = get_pdo()->prepare(
+                'SELECT MIN(x.t) FROM (
+                    SELECT t1.von_uhrzeit AS t
+                     FROM monitor_termine t1
+                     JOIN playlists p ON p.id = t1.playlist_id AND p.aktiv = 1
+                     WHERE t1.monitor_id = :mid1 AND :dat1 BETWEEN t1.datum_von AND t1.datum_bis
+                       AND t1.von_uhrzeit IS NOT NULL
+                    UNION ALL
+                    SELECT t2.bis_uhrzeit
+                     FROM monitor_termine t2
+                     JOIN playlists p2 ON p2.id = t2.playlist_id AND p2.aktiv = 1
+                     WHERE t2.monitor_id = :mid2 AND :dat2 BETWEEN t2.datum_von AND t2.datum_bis
+                       AND t2.bis_uhrzeit IS NOT NULL
+                 ) x
+                 WHERE x.t > :uhr'
+            );
+            $stmt->execute([
+                ':mid1' => $monitorId,
+                ':mid2' => $monitorId,
+                ':dat1' => $zeit->format('Y-m-d'),
+                ':dat2' => $zeit->format('Y-m-d'),
+                ':uhr'  => $zeit->format('H:i:s'),
+            ]);
+            $tt = $stmt->fetchColumn();
+            if ($tt !== false && $tt !== null) {
+                $kandidat = ($kandidat === null || (string)$tt < $kandidat) ? (string)$tt : $kandidat;
+            }
+        } catch (PDOException $e) {
+            // Migration 14 noch nicht eingespielt → nur Regelbetrieb-Grenzen
+            if ($e->getCode() !== '42S02') { throw $e; }
+        }
+
+        return $kandidat !== null ? substr($kandidat, 0, 5) : null;
     }
 
     // ------------------------------------------------------------------
