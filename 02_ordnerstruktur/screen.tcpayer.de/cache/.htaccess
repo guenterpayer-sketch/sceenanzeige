@@ -1,0 +1,19 @@
+# ============================================================================
+# cache/ — serverseitiger Tages-Cache (siehe includes/NcCache.php)
+#
+# Enthält ausschließlich zwischengespeicherte API-Antworten. Kein Zugriff
+# von außen: weder direkt lesbar noch als PHP ausführbar.
+# ============================================================================
+
+Require all denied
+
+# Zusätzlicher Riegel, falls die Deny-Regel durch eine Hosting-Konfiguration
+# nicht greift: hier darf niemals PHP laufen (analog uploads/.htaccess).
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+
+RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .php8
+RemoveType .php .phtml .php3 .php4 .php5 .php7 .php8
+
+Options -Indexes

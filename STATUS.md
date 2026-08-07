@@ -1,9 +1,9 @@
 # STATUS — Tanzschule Monitor-System
 
-> **Branch:** `claude/intelligent-cray-im1xte`  
+> **Entwicklungs-Branch:** `claude/nifty-johnson-3q6u7g` (Push → Staging, Merge nach `main` → Live)  
 > Eine neue Session liest `CLAUDE.md` (Konzept) + diese Datei (Stand) und kann sofort weiterarbeiten.
 
-_Letzte Aktualisierung: Veranstaltung — Datum/Uhrzeit-Schrift vergrößert (nur noch geringfügig kleiner als der Titel). Zuvor: Schritt 23 (komplett) + 24 live — Wochenkalender mit Lanes/Tag-Drag/Resize oben, globaler Wochenplan, Ganztags-Zeile in beiden Kalendern._
+_Letzte Aktualisierung: **Schritt 30** — Bugfix „Kursanzeige hängt nach Monitore neu laden" + NC-Kontingent-Schonung (Fetch-Timeout, Retry, zwei Cache-Ebenen, Engine-Watchdog). Zuvor: Schritte 25–29 (Dashboard, geführte Workflows, Admin-JS-Auslagerung, Badge-Highlight, Kalender-Termine A–D)._
 
 ---
 
@@ -38,6 +38,12 @@ _Letzte Aktualisierung: Veranstaltung — Datum/Uhrzeit-Schrift vergrößert (nu
 | 22 | Playlist-Editor: Duplikat-Sperre entfernt — Instanzen mehrfach pro Spalte und über Spalten hinweg | ✅ live |
 | 23 | Monitor-Zeitplan: Wochenkalender-Ansicht (Etappe A + B: lesen + bearbeiten; Etappe C: Lanes bei Überlappung, Tag-Tausch per Quer-Drag, Resize oben, Ganztags-Zeile in Tagesspalten) | ✅ komplett live |
 | 24 | Globaler Wochenplan (`admin/wochenplan.php` + `assets/js/admin/wochenplan.js`): alle Monitore in einem Kalender (nur lesen), Gruppierung identischer Einträge mit Monitor-Badges, Filter-Checkboxen, Ganztags-Zeile | ✅ live |
+| 25 | Dashboard-Startseite + Nav-Umbau (Workflow-Reihenfolge) + zentrale Zeitplan-Auswahl in `Monitor.php` (eine Wahrheitsquelle für Proxy + Dashboard) | ✅ live |
+| 26 | Geführte Workflows (Flash-Aktions-Links, klickbare Badges) + einheitliche Editor-Buttons in allen drei Editoren | ✅ live |
+| 27 | Admin-JS-Auslagerung (`instanz.js`, `playlist-editor.js`) + gemeinsame Bausteine `editor-core.js` (`TMAdmin.dirtyGuard`/`escapeHtml`) | ✅ live |
+| 28 | Badge-Highlight: dauerhafte Kachel-Markierung + Durchschleifen durch die Editoren; Dashboard-Schnellzugriffe nach oben | ✅ live |
+| 29 | Kalender-Planungstool A–D: `monitor_termine` + zwei-Ebenen-Auswahl, echter Wochenkalender mit Datum, Termin-Dialog mit Sofort-Speichern, Ziehen/Resizen | ✅ live |
+| 30 | **Bugfix Kursanzeige „hängt" nach „Monitore neu laden"** + NC-Kontingent-Schonung (A: Modul-Fix, B: Engine-Watchdog, C: Server-Cache) | ⏳ Staging-Test offen |
 
 ---
 
@@ -52,6 +58,41 @@ _Letzte Aktualisierung: Veranstaltung — Datum/Uhrzeit-Schrift vergrößert (nu
 ---
 
 ## Was in den letzten Sessions erledigt wurde
+
+### Schritt 30 — Kursanzeige hängt nach „Monitore neu laden" + Kontingent (⏳ Staging-Test offen)
+
+**Fehlerbild:** Nach dem Reload zeigte die Kursanzeige nichts Neues mehr; nur ein
+manuelles Neuladen im Browser half. Andere Module liefen normal weiter.
+
+**Ursache:** `stundenplan` lieferte genau EINEN Slide und war als einziges Modul
+ohne Timeout, Retry und eigenen Refresh. Blieb der Abruf nach dem Reload stehen,
+wurde `fertig()` nie gerufen — `sammleSpaltenSlides` wartet aber auf **alle**
+Module einer Spalte, also blieb die Spalte dauerhaft leer. Zusätzlich: steht die
+Kursanzeige allein in ihrer Spalte, greift `neuSammeln` nicht (nur bei > 1 Slide),
+sie wurde also nie wieder aktualisiert. Andere Module heilen sich selbst —
+`fret` pollt ohnehin, `veranstaltung`/`bild`/`video` liefern mehrere Slides und
+werden pro Rotationsrunde neu gesammelt.
+
+| Datei | Was |
+|---|---|
+| `modules/stundenplan/frontend.js` | Fetch-Timeout 10 s (`AbortController`) + Sicherheitstimer → `fertig()` garantiert, Einmal-Guard; Retry 15/30/60 s, danach alle 10 min; **Anzeige tickt jede Minute lokal weiter ohne API-Abruf** (nur bei geändertem HTML neu schreiben → kein Flackern); Browser-Tages-Cache je Abfrage-URL + In-flight-Dedup; Kartenhöhen-Messung bis Höhe > 0 (max. 20 × 100 ms) |
+| `assets/js/monitor.js` | `MODUL_WATCHDOG_MS` (15 s) in `sammleModulSlides`: ein Modul, das nicht liefert, blockiert die Spalte nicht mehr; Einmal-Guard gegen doppeltes `fertig()` |
+| `includes/NcCache.php` | **Neu:** Server-Cache der rohen Event-Liste bis Mitternacht; Schlüssel nur aus den API-Parametern → alle Säle + alle Instanzen teilen sich EINEN Abruf/Tag; atomares Schreiben, Fallback `sys_get_temp_dir()` |
+| `proxies/nc.php` | Liest/schreibt den Cache, filtert Standort/Saal erst danach; Diagnosefelder `quelle` (`api`/`cache`) + `stand` |
+| `admin/reload_trigger.php` | „Monitore neu laden" ruft zusätzlich `NcCache::leeren()` → der bewusste Weg zu frischen NC-Daten |
+| `cache/.htaccess` | **Neu:** Ordner gesperrt (`Require all denied`, kein PHP, kein Listing); Laufzeitdateien via `.gitignore` ausgenommen |
+
+**Kontingent-Regel (wichtig für künftige Änderungen):** Anzeige-Refresh und
+API-Abruf sind getrennt. Abgerufen wird nur beim Seitenaufbau (= „Monitore neu
+laden"), beim Datumswechsel um Mitternacht und als Retry nach Fehler. **Kein
+`?frisch=1`-Parameter an `nc.php`** — der Endpunkt ist ohne Login erreichbar,
+ein Cache-Bypass von außen könnte das Monatskontingent leerrufen.
+
+**Getestet** mit virtueller Uhr + Mini-DOM (Timeout-, Retry-, Cache-, Watchdog-
+und Aufräum-Pfade). Steht noch aus: Verhalten auf dem echten Google-TV-Monitor
+nach „Monitore neu laden".
+
+---
 
 ### Schritt 20, Etappe 3 + Schritt 21 — Rest portiert, Adapter raus, Uhr-Ausbau (✅ live)
 
@@ -254,4 +295,7 @@ Vollständige Liste in `CLAUDE.md` Abschnitt 12. Highlights:
 ## Arbeitsregeln
 
 - **Kein Schreiben/Code ohne explizites „GO".** Lesen/Prüfen jederzeit ok.
-- Nach jedem Abschnitt committen + pushen + `STATUS.md` aktualisieren.
+- **Entwicklung ausschließlich auf `claude/nifty-johnson-3q6u7g`** — keinen zweiten Feature-Branch aufmachen.
+- **Push und Merge nur nach Rückfrage** — jeder Push deployt automatisch auf Staging, jeder Merge nach `main` auf Live.
+- Lieferung über Git/CI-CD; **ZIP nur auf ausdrückliche Anfrage** (siehe `CLAUDE.md`).
+- Nach jedem Abschnitt committen + `STATUS.md` aktualisieren.

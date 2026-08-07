@@ -252,6 +252,7 @@
     var FADE_MS                = 1500;          // Slide-/Modul-Überblendung
     var MODUL_SETTLE_MS        = 800;           // Pre-render unsichtbar, analog Playlist-SETTLE_MS
     var MELDET_ENDE_TIMEOUT_MS = 15 * 60 * 1000; // Sicherheits-Timeout für meldetEnde-Slides
+    var MODUL_WATCHDOG_MS      = 15000;         // Frist für getSlides → fertig()
 
     function modulAnzeigeDauer(mod) {
         if (mod.inhalte && mod.inhalte.length > 0) {
@@ -297,12 +298,37 @@
     /**
      * Sammelt die Slide-Descriptors einer Modul-Instanz (asynchron wegen
      * Script-Laden bzw. getSlides-Fetches). fertig(descriptors[]).
+     *
+     * Watchdog: sammleSpaltenSlides wartet auf ALLE Module einer Spalte —
+     * meldet sich eines nie (hängender Fetch ohne Timeout, Skript-Fehler),
+     * bliebe die komplette Spalte dauerhaft leer. Nach MODUL_WATCHDOG_MS
+     * läuft die Spalte deshalb ohne dieses Modul weiter. Der Einmal-Guard
+     * schützt zusätzlich davor, dass ein Modul fertig() doppelt ruft und
+     * die Spalte doppelt startet.
      */
     function sammleModulSlides(mod, factor, fertig) {
+        var erledigt = false;
+
+        var wachhund = setTimeout(function () {
+            if (erledigt) { return; }
+            erledigt = true;
+            console.error('[engine] Modul "' + mod.modul_typ + '" hat nach '
+                + (MODUL_WATCHDOG_MS / 1000) + ' s keine Slides geliefert — '
+                + 'Spalte läuft ohne dieses Modul weiter.');
+            fertig([]);
+        }, MODUL_WATCHDOG_MS);
+
+        function liefere(descriptors) {
+            if (erledigt) { return; }
+            erledigt = true;
+            clearTimeout(wachhund);
+            fertig(descriptors);
+        }
+
         window.TanzschuleLoader.lade(mod.modul_typ, function (def) {
             if (def && typeof def.getSlides === 'function') {
                 def.getSlides(mod.einstellungen || {}, mod.inhalte || [], function (slides) {
-                    fertig((slides || []).map(function (s) {
+                    liefere((slides || []).map(function (s) {
                         return slideDescriptor(s, factor);
                     }));
                 });
@@ -310,7 +336,7 @@
                 // Ladefehler oder Modul ohne getSlides → Instanz überspringen,
                 // die restlichen Module der Spalte laufen weiter.
                 console.error('[engine] Modul "' + mod.modul_typ + '" liefert keine Slides — übersprungen.');
-                fertig([]);
+                liefere([]);
             }
         });
     }

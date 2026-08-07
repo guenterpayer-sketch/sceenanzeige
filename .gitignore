@@ -4,6 +4,11 @@
 !02_ordnerstruktur/screen.tcpayer.de/uploads/.gitkeep
 !02_ordnerstruktur/screen.tcpayer.de/uploads/.htaccess
 
+# Serverseitiger Tages-Cache (includes/NcCache.php) — Laufzeitdaten,
+# nur die .htaccess des Ordners gehoert ins Repo.
+02_ordnerstruktur/screen.tcpayer.de/cache/*
+!02_ordnerstruktur/screen.tcpayer.de/cache/.htaccess
+
 # Lokale Konfiguration mit echten DB-Zugangsdaten NIEMALS einchecken.
 # Die im Repo liegende config.php enthaelt bewusst nur Platzhalter; eine
 # Kopie mit echten Zugangsdaten (z.B. config.local.php) bleibt lokal.
