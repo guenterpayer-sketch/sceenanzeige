@@ -4,9 +4,13 @@
 > **keine Datei erstellen, ändern oder Code schreiben, bevor der Nutzer
 > explizit „GO" sagt.** Lesen/Prüfen jederzeit ok.
 
-> **📦 Lieferung:** Neu erstellte oder geänderte Dateien immer als ZIP ausgeben,
-> in der korrekten Ordnerstruktur (entpackbar direkt im Stammordner der jeweiligen
-> Domain). Jede ZIP nur die tatsächlich geänderten Dateien enthalten.
+> **📦 Lieferung läuft über Git/CI-CD** (seit Schritt 15): Entwicklung auf
+> `claude/nifty-johnson-3q6u7g` → Push deployt automatisch auf Staging →
+> Merge nach `main` deployt auf Live. **Keine ZIP mehr als Standard** — sie
+> öffnet einen zweiten, manuellen Pfad an Git vorbei.
+> ZIP nur **auf ausdrückliche Anfrage** (z.B. Hotfix per FTP, wenn die CI/CD
+> ausfällt): korrekte Ordnerstruktur, entpackbar direkt im Stammordner der
+> jeweiligen Domain, nur die tatsächlich geänderten Dateien.
 
 > **⚠️ config.php:** Wird `config.php` geändert, den Nutzer explizit warnen —
 > die Datei enthält echte Zugangsdaten (DB, Passwörter, API-Keys) und darf
