@@ -1370,3 +1370,8 @@ details.adm-hilfe-klapp[open] .adm-hk-auf { display: inline; }
 
 /* Kalender: Schalter „Regelbetrieb einblenden" rechts im Filter */
 .adm-wp-filter-regel { margin-left: auto; color: #5a6b7d; }
+
+/* Termin-Dialog (Schritt 29, Etappe C): Monitor-Checkboxen + klickbare Termine */
+.adm-td-monitore { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+.adm-td-monitor  { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; }
+.adm-kal-block--termin, .adm-kal-gz-block--termin { cursor: pointer; }

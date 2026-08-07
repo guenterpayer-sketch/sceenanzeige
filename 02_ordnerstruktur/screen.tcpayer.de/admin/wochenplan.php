@@ -61,22 +61,16 @@ foreach ($monitore as $m) {
     }
 }
 
-// Kalender-Termine der angezeigten Woche (Schicht 2)
-$termineFuerJs = [];
-foreach (Monitor::termineImZeitraum($wochenStart->format('Y-m-d'), $wochenEnde->format('Y-m-d')) as $t) {
-    $termineFuerJs[] = [
-        'id'             => (int)$t['id'],
-        'monitor_id'     => (int)$t['monitor_id'],
-        'playlist_id'    => (int)$t['playlist_id'],
-        'playlist_name'  => $t['playlist_name'],
-        'playlist_aktiv' => (bool)$t['playlist_aktiv'],
-        'datum_von'      => (string)$t['datum_von'],
-        'datum_bis'      => (string)$t['datum_bis'],
-        'von'            => $t['von_uhrzeit'] !== null ? substr((string)$t['von_uhrzeit'], 0, 5) : '',
-        'bis'            => $t['bis_uhrzeit'] !== null ? substr((string)$t['bis_uhrzeit'], 0, 5) : '',
-        'prio'           => (int)$t['prioritaet'],
-    ];
-}
+// Kalender-Termine der angezeigten Woche (Schicht 2) — gleiche Aufbereitung
+// wie termin-aktion.php nach dem Speichern
+$termineFuerJs = Monitor::termineFuerKalender($wochenStart->format('Y-m-d'), $wochenEnde->format('Y-m-d'));
+
+// Playlists für den Termin-Dialog (Picker)
+$playlistsFuerJs = array_map(static fn($p) => [
+    'id'    => (int)$p['id'],
+    'name'  => $p['name'],
+    'aktiv' => (bool)$p['aktiv'],
+], Playlist::listAll());
 
 admin_header('Kalender', 'wochenplan');
 ?>
@@ -94,14 +88,16 @@ admin_header('Kalender', 'wochenplan');
     <details class="adm-hilfe-klapp">
         <summary><span class="adm-hk-zu">ℹ️ Erklärung anzeigen</span><span class="adm-hk-auf">ℹ️ Erklärung verbergen</span></summary>
         <p class="adm-hilfe">
-            Der Kalender zeigt <strong>Kalender-Termine</strong> (konkretes Datum,
-            goldener Rand) — sie stechen den wöchentlichen Regelbetrieb aus.
+            <strong>Klick auf eine freie Stelle</strong> legt einen neuen Termin an
+            (in der Ganztags-Zeile: ganztägig), <strong>Klick auf einen Termin</strong>
+            öffnet ihn zum Bearbeiten, Löschen oder Duplizieren — gespeichert wird
+            sofort. Termine (goldener Rand) gelten für ihr konkretes Datum und
+            stechen den wöchentlichen Regelbetrieb aus.
             Über <strong>„Regelbetrieb einblenden"</strong> lässt sich das
             Wochenmuster blass dazuschalten (bearbeiten unter
             <a href="monitore.php">Monitore → Zeitplan</a>).
-            Läuft derselbe Eintrag auf mehreren Monitoren, wird er als ein Block
-            mit den Monitor-Namen angezeigt; Ganztägiges steht in der
-            Ganztags-Zeile oben.
+            Ein Termin für mehrere Monitore wird als ein Block mit den
+            Monitor-Namen angezeigt; Ganztägiges steht in der Ganztags-Zeile oben.
         </p>
     </details>
     <?php if (empty($monitore)): ?>
@@ -112,11 +108,65 @@ admin_header('Kalender', 'wochenplan');
     <?php endif; ?>
 </div>
 
+<!-- Termin-Dialog (anlegen/bearbeiten, Sofort-Speichern) -->
+<div id="td-overlay" class="adm-overlay" hidden>
+    <div class="adm-dialog adm-dialog-breit">
+        <h3 id="td-titel">Termin</h3>
+        <div class="adm-feld">
+            <label>Playlist</label>
+            <button type="button" id="td-playlist" class="adm-auswahl-kachel">
+                <span class="adm-auswahl-leer">Playlist wählen …</span>
+            </button>
+        </div>
+        <div class="adm-feld">
+            <label>Monitore</label>
+            <div id="td-monitore" class="adm-td-monitore"></div>
+        </div>
+        <div class="adm-feld adm-feld-zeit">
+            <label>Datum von <input type="date" id="td-datum-von"></label>
+            <label>Datum bis <input type="date" id="td-datum-bis"></label>
+        </div>
+        <div class="adm-feld">
+            <label class="adm-inhalt-aktiv">
+                <input type="checkbox" id="td-ganztags"> Ganztags (verdrängt den Regelbetrieb den ganzen Tag)
+            </label>
+        </div>
+        <div class="adm-feld adm-feld-zeit">
+            <span id="td-zeitfelder">
+                <label>Von <input type="time" id="td-von" step="900"></label>
+                <label>Bis <input type="time" id="td-bis" step="900"></label>
+            </span>
+            <label>Priorität <input type="number" id="td-prio" step="1" min="0" value="1" style="width:5em"></label>
+            <label>Dauer&nbsp;(s) <input type="number" id="td-dauer" min="10" step="10" value="300" style="width:6em"></label>
+        </div>
+        <div class="adm-dialog-aktionen">
+            <button type="button" id="td-loeschen" class="adm-btn adm-btn-grau" hidden>Löschen</button>
+            <button type="button" id="td-duplizieren" class="adm-btn adm-btn-grau" hidden
+                    title="Diesen Termin als Vorlage übernehmen — anschließend Datum/Zeit anpassen und speichern">Duplizieren</button>
+            <span style="flex:1"></span>
+            <button type="button" id="td-abbrechen" class="adm-btn adm-btn-grau">Abbrechen</button>
+            <button type="button" id="td-speichern" class="adm-btn-primary">Speichern</button>
+        </div>
+    </div>
+</div>
+
+<!-- Playlist-Picker für den Termin-Dialog -->
+<div id="td-picker-overlay" class="adm-overlay" hidden>
+    <div class="adm-dialog adm-dialog-breit">
+        <h3>Playlist wählen</h3>
+        <div id="td-picker-liste" class="adm-picker-instanzen"></div>
+        <div class="adm-dialog-aktionen">
+            <button type="button" id="td-picker-abbrechen" class="adm-btn-grau">Schließen</button>
+        </div>
+    </div>
+</div>
+
 <script>
 window.TM_WP = {
     monitore:     <?= json_encode($monitoreFuerJs, JSON_UNESCAPED_UNICODE) ?>,
     eintraege:    <?= json_encode($eintraegeFuerJs, JSON_UNESCAPED_UNICODE) ?>,
     termine:      <?= json_encode($termineFuerJs, JSON_UNESCAPED_UNICODE) ?>,
+    playlists:    <?= json_encode($playlistsFuerJs, JSON_UNESCAPED_UNICODE) ?>,
     wochen_start: <?= json_encode($wochenStart->format('Y-m-d')) ?>,
     heute:        <?= json_encode($heute->format('Y-m-d')) ?>
 };

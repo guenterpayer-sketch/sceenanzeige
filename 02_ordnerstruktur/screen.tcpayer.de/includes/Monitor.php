@@ -266,6 +266,32 @@ final class Monitor
         }
     }
 
+    /**
+     * Termine eines Zeitraums in der normalisierten Form für den Kalender
+     * (wochenplan.php + termin-aktion.php nutzen dieselbe Aufbereitung).
+     * @return array<int,array>
+     */
+    public static function termineFuerKalender(string $vonDatum, string $bisDatum): array
+    {
+        $out = [];
+        foreach (self::termineImZeitraum($vonDatum, $bisDatum) as $t) {
+            $out[] = [
+                'id'             => (int)$t['id'],
+                'monitor_id'     => (int)$t['monitor_id'],
+                'playlist_id'    => (int)$t['playlist_id'],
+                'playlist_name'  => $t['playlist_name'],
+                'playlist_aktiv' => (bool)$t['playlist_aktiv'],
+                'datum_von'      => (string)$t['datum_von'],
+                'datum_bis'      => (string)$t['datum_bis'],
+                'von'            => $t['von_uhrzeit'] !== null ? substr((string)$t['von_uhrzeit'], 0, 5) : '',
+                'bis'            => $t['bis_uhrzeit'] !== null ? substr((string)$t['bis_uhrzeit'], 0, 5) : '',
+                'prio'           => (int)$t['prioritaet'],
+                'dauer_sek'      => (int)$t['dauer_sek'],
+            ];
+        }
+        return $out;
+    }
+
     /** Nur die Einträge mit der höchsten Priorität behalten (leer bleibt leer). */
     private static function nurHoechstePrioritaet(array $rows): array
     {
