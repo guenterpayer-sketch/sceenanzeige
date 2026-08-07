@@ -158,10 +158,13 @@ if ($istTypAnsicht) {
 
 <?php if (!$istTypAnsicht): ?>
 <!-- ===== Ebene 1: Modulart-Kacheln ===== -->
-<p class="adm-hilfe">
-    Wähle eine Modulart. Darin legst du benannte Instanzen an (z.&nbsp;B. eine Bild-Instanz
-    „Veranstaltungen"), die später in Playlists eingesetzt werden.
-</p>
+<details class="adm-hilfe-klapp">
+    <summary><span class="adm-hk-zu">ℹ️ Erklärung anzeigen</span><span class="adm-hk-auf">ℹ️ Erklärung verbergen</span></summary>
+    <p class="adm-hilfe">
+        Wähle eine Modulart. Darin legst du benannte Instanzen an (z.&nbsp;B. eine Bild-Instanz
+        „Veranstaltungen"), die später in Playlists eingesetzt werden.
+    </p>
+</details>
 <div class="adm-typgrid">
     <?php foreach ($module as $id => $meta): ?>
         <a class="adm-typkachel" href="bibliothek.php?typ=<?= urlencode($id) ?>">

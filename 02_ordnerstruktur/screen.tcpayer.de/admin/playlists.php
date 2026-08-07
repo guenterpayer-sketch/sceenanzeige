@@ -93,11 +93,14 @@ admin_header('Playlists', 'playlists');
     </div>
 <?php endif; ?>
 
-<p class="adm-hilfe">
-    Hier legst du Playlists an. Jede Playlist hat ein Layout (1–3 Spalten) mit
-    Modul-Instanzen je Spalte. Wann welche Playlist läuft, steuerst du unter
-    <a href="monitore.php">Monitore → Zeitplan</a>.
-</p>
+<details class="adm-hilfe-klapp">
+    <summary><span class="adm-hk-zu">ℹ️ Erklärung anzeigen</span><span class="adm-hk-auf">ℹ️ Erklärung verbergen</span></summary>
+    <p class="adm-hilfe">
+        Hier legst du Playlists an. Jede Playlist hat ein Layout (1–3 Spalten) mit
+        Modul-Instanzen je Spalte. Wann welche Playlist läuft, steuerst du unter
+        <a href="monitore.php">Monitore → Zeitplan</a>.
+    </p>
+</details>
 
 <div class="adm-neuzeile">
     <a class="adm-btn-primary" href="playlist-editor.php">+ Neue Playlist</a>

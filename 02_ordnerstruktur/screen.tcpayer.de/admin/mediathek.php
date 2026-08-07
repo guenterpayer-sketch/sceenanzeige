@@ -42,10 +42,13 @@ function cover_url(string $where, array $params, string $basis): ?string
 if ($view === 'uebersicht') {
     admin_header('Mediathek', 'mediathek');
     ?>
-    <p class="adm-hilfe">
-        Wähle einen Ordner oder „Alle Bilder". Bilder lädst du in der Ordner-Ansicht per
-        Drag&amp;Drop hoch; gleiche Bilder werden erkannt und nicht doppelt gespeichert.
-    </p>
+    <details class="adm-hilfe-klapp">
+        <summary><span class="adm-hk-zu">ℹ️ Erklärung anzeigen</span><span class="adm-hk-auf">ℹ️ Erklärung verbergen</span></summary>
+        <p class="adm-hilfe">
+            Wähle einen Ordner oder „Alle Bilder". Bilder lädst du in der Ordner-Ansicht per
+            Drag&amp;Drop hoch; gleiche Bilder werden erkannt und nicht doppelt gespeichert.
+        </p>
+    </details>
     <div class="adm-ordnergrid">
         <a class="adm-ordnerkachel" href="mediathek.php?ordner=alle">
             <span class="adm-ordner-cover" style="<?= ($c = cover_url('1=1', [], $uploadsBasis)) ? "background-image:url('" . htmlspecialchars($c) . "')" : '' ?>"><?= $c ? '' : '🖼️' ?></span>

@@ -118,12 +118,15 @@ admin_header('Monitore', 'monitore');
     <div class="adm-flash adm-flash-fehler"><?= $f ?></div>
 <?php endforeach; ?>
 
-<p class="adm-hilfe">
-    Jeder Monitor läuft unter einer eigenen Domain (z.&nbsp;B.
-    <code>saal1.tcpayer.de</code>). Die vollständige Domain wird beim Anlegen
-    eingetragen. Klicke eine Kachel an, um den <strong>Zeitplan</strong> dieses
-    Monitors zu pflegen (welche Playlist und welcher Ticker wann laufen).
-</p>
+<details class="adm-hilfe-klapp">
+    <summary><span class="adm-hk-zu">ℹ️ Erklärung anzeigen</span><span class="adm-hk-auf">ℹ️ Erklärung verbergen</span></summary>
+    <p class="adm-hilfe">
+        Jeder Monitor läuft unter einer eigenen Domain (z.&nbsp;B.
+        <code>saal1.tcpayer.de</code>). Die vollständige Domain wird beim Anlegen
+        eingetragen. Klicke eine Kachel an, um den <strong>Zeitplan</strong> dieses
+        Monitors zu pflegen (welche Playlist und welcher Ticker wann laufen).
+    </p>
+</details>
 
 <?php if ($zeigeForm): ?>
 <!-- ===== Anlegen / Bearbeiten ===== -->

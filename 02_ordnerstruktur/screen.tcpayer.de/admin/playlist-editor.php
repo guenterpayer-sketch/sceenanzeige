@@ -256,9 +256,12 @@ function pl_modul_icon(string $icon): string
 
     <div class="adm-card">
         <h2>Spalten-Inhalte</h2>
-        <p class="adm-hilfe">
-            Pro Spalte eine oder mehrere Modul-Instanzen aus der Bibliothek. Reihenfolge per ↑/↓ oder per Drag&amp;Drop. Mehrere Instanzen in einer Spalte rotieren automatisch.
-        </p>
+        <details class="adm-hilfe-klapp">
+            <summary><span class="adm-hk-zu">ℹ️ Erklärung anzeigen</span><span class="adm-hk-auf">ℹ️ Erklärung verbergen</span></summary>
+            <p class="adm-hilfe">
+                Pro Spalte eine oder mehrere Modul-Instanzen aus der Bibliothek. Reihenfolge per ↑/↓ oder per Drag&amp;Drop. Mehrere Instanzen in einer Spalte rotieren automatisch.
+            </p>
+        </details>
         <div class="adm-spalten" id="spalten"></div>
     </div>
 

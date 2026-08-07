@@ -21,11 +21,14 @@ $videos = Videothek::listAll();
 admin_header('Videos', 'videos');
 ?>
 
-<p class="adm-hilfe">
-    Eigene Videodateien (MP4/WebM) für das Video-Modul. Hier hochladen, danach im
-    Video-Modul-Editor in der <a href="bibliothek.php">Bibliothek</a> auswählen.
-    Gleiche Dateien werden erkannt und nicht doppelt gespeichert.
-</p>
+<details class="adm-hilfe-klapp">
+    <summary><span class="adm-hk-zu">ℹ️ Erklärung anzeigen</span><span class="adm-hk-auf">ℹ️ Erklärung verbergen</span></summary>
+    <p class="adm-hilfe">
+        Eigene Videodateien (MP4/WebM) für das Video-Modul. Hier hochladen, danach im
+        Video-Modul-Editor in der <a href="bibliothek.php">Bibliothek</a> auswählen.
+        Gleiche Dateien werden erkannt und nicht doppelt gespeichert.
+    </p>
+</details>
 
 <div id="dropzone" class="adm-dropzone">
     <p>Videos hierher ziehen oder <span class="adm-link">auswählen</span></p>
