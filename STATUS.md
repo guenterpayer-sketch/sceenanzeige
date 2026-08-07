@@ -3,7 +3,7 @@
 > **Entwicklungs-Branch:** `claude/nifty-johnson-3q6u7g` (Push → Staging, Merge nach `main` → Live)  
 > Eine neue Session liest `CLAUDE.md` (Konzept) + diese Datei (Stand) und kann sofort weiterarbeiten.
 
-_Letzte Aktualisierung: **Schritt 30** — Bugfix „Kursanzeige hängt nach Monitore neu laden" + NC-Kontingent-Schonung (Fetch-Timeout, Retry, zwei Cache-Ebenen, Engine-Watchdog). Zuvor: Schritte 25–29 (Dashboard, geführte Workflows, Admin-JS-Auslagerung, Badge-Highlight, Kalender-Termine A–D)._
+_Letzte Aktualisierung: **Schritt 30 live** (PR #20) — Bugfix „Kursanzeige hängt nach Monitore neu laden" + NC-Kontingent-Schonung (Fetch-Timeout, Retry, zwei Cache-Ebenen, Engine-Watchdog). Zuvor: Schritte 25–29 (Dashboard, geführte Workflows, Admin-JS-Auslagerung, Badge-Highlight, Kalender-Termine A–D)._
 
 ---
 
@@ -43,7 +43,7 @@ _Letzte Aktualisierung: **Schritt 30** — Bugfix „Kursanzeige hängt nach Mon
 | 27 | Admin-JS-Auslagerung (`instanz.js`, `playlist-editor.js`) + gemeinsame Bausteine `editor-core.js` (`TMAdmin.dirtyGuard`/`escapeHtml`) | ✅ live |
 | 28 | Badge-Highlight: dauerhafte Kachel-Markierung + Durchschleifen durch die Editoren; Dashboard-Schnellzugriffe nach oben | ✅ live |
 | 29 | Kalender-Planungstool A–D: `monitor_termine` + zwei-Ebenen-Auswahl, echter Wochenkalender mit Datum, Termin-Dialog mit Sofort-Speichern, Ziehen/Resizen | ✅ live |
-| 30 | **Bugfix Kursanzeige „hängt" nach „Monitore neu laden"** + NC-Kontingent-Schonung (A: Modul-Fix, B: Engine-Watchdog, C: Server-Cache) | ⏳ Staging-Test offen |
+| 30 | **Bugfix Kursanzeige „hängt" nach „Monitore neu laden"** + NC-Kontingent-Schonung (A: Modul-Fix, B: Engine-Watchdog, C: Server-Cache) | ✅ live |
 
 ---
 
@@ -59,7 +59,7 @@ _Letzte Aktualisierung: **Schritt 30** — Bugfix „Kursanzeige hängt nach Mon
 
 ## Was in den letzten Sessions erledigt wurde
 
-### Schritt 30 — Kursanzeige hängt nach „Monitore neu laden" + Kontingent (⏳ Staging-Test offen)
+### Schritt 30 — Kursanzeige hängt nach „Monitore neu laden" + Kontingent (✅ live, PR #20)
 
 **Fehlerbild:** Nach dem Reload zeigte die Kursanzeige nichts Neues mehr; nur ein
 manuelles Neuladen im Browser half. Andere Module liefen normal weiter.
@@ -89,8 +89,20 @@ laden"), beim Datumswechsel um Mitternacht und als Retry nach Fehler. **Kein
 ein Cache-Bypass von außen könnte das Monatskontingent leerrufen.
 
 **Getestet** mit virtueller Uhr + Mini-DOM (Timeout-, Retry-, Cache-, Watchdog-
-und Aufräum-Pfade). Steht noch aus: Verhalten auf dem echten Google-TV-Monitor
-nach „Monitore neu laden".
+und Aufräum-Pfade), danach auf Staging bestätigt und live gemergt.
+
+**Nachtrag zur Ursache:** Der Fehler trat auf einem **PC mit Chrome** auf, nicht
+auf einem Google-TV-Gerät (auf Saal 2 + 3 wird die Kursanzeige derzeit gar nicht
+eingeplant). Die eigentliche Ursache ist damit nicht ein stehengebliebener
+Netz-Abruf, sondern der **eingefrorene Schnappschuss**: Es gab nur drei Wege,
+die Kursanzeige neu zu bauen — Playlist-Wechsel (`doRender`, nur bei > 1
+Playlist), Spalten-Rotation (`neuSammeln`, nur bei > 1 Slide) und
+Zeitplan-Wechsel. Der 60-s-Poll baut nichts neu (`render()` steigt bei
+unveränderten Playlist-IDs sofort aus). Lief also **eine** Playlist und stand
+die Kursanzeige **allein** in ihrer Spalte, blieb der Stand vom Seitenaufbau bis
+zum nächsten Reload stehen — inklusive „Keine weiteren Kurse heute" oder einem
+Fehlertext von einem Aussetzer im Reload-Moment. Fetch-Timeout und Watchdog
+bleiben als Absicherung richtig, sind aber nicht der Auslöser gewesen.
 
 ---
 
