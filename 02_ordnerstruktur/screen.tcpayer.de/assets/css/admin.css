@@ -1333,3 +1333,23 @@ a.adm-meta-badge:hover { background: #dde3ea; }
 @keyframes admHlEin {
     from { box-shadow: 0 0 0 0 rgba(212, 160, 23, 0), 0 0 0 rgba(212, 160, 23, 0); }
 }
+
+/* ===== Kalender — alle Monitore (Schritt 29, Etappe B) ===== */
+
+/* Wochen-Navigation (← Heute →) + KW-Anzeige */
+.adm-wp-nav { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.adm-wp-kw { margin-left: auto; font-weight: 600; color: #33424f; font-size: 15px; }
+
+/* Heute-Markierung: Spaltenkopf rot, Spalte leicht getönt */
+.adm-kal-tagkopf--heute { color: #ad2121; font-weight: 700; }
+.adm-kal-tag--heute { background: #fdf6ee; }
+.adm-kal-gz-tag--heute { background: #fdf6ee; }
+
+/* Schicht 1 — Regelbetrieb: blass im Hintergrund */
+.adm-kal-block--regel, .adm-kal-gz-block--regel { opacity: 0.4; }
+
+/* Schicht 2 — Kalender-Termine: kräftig mit goldenem Rand */
+.adm-kal-block--termin, .adm-kal-gz-block--termin {
+    border-left: 4px solid #d4a017;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}

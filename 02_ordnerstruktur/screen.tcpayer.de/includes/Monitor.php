@@ -239,6 +239,33 @@ final class Monitor
         }
     }
 
+    /**
+     * Alle Kalender-Termine (aller Monitore), die einen Datumsbereich
+     * überlappen — für die Kalender-Ansicht (wochenplan.php). Inklusive
+     * pausierter Playlists (werden dort als „pausiert" markiert).
+     * @return array<int,array>
+     */
+    public static function termineImZeitraum(string $vonDatum, string $bisDatum): array
+    {
+        try {
+            $stmt = get_pdo()->prepare(
+                'SELECT t.id, t.monitor_id, t.playlist_id, t.datum_von, t.datum_bis,
+                        t.von_uhrzeit, t.bis_uhrzeit, t.prioritaet, t.dauer_sek,
+                        p.name AS playlist_name, p.aktiv AS playlist_aktiv
+                 FROM monitor_termine t
+                 JOIN playlists p ON p.id = t.playlist_id
+                 WHERE t.datum_von <= :bis AND t.datum_bis >= :von
+                 ORDER BY t.datum_von, t.von_uhrzeit, t.id'
+            );
+            $stmt->execute([':von' => $vonDatum, ':bis' => $bisDatum]);
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            // Migration 14 noch nicht eingespielt → keine Termine
+            if ($e->getCode() === '42S02') { return []; }
+            throw $e;
+        }
+    }
+
     /** Nur die Einträge mit der höchsten Priorität behalten (leer bleibt leer). */
     private static function nurHoechstePrioritaet(array $rows): array
     {
