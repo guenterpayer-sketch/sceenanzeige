@@ -1,6 +1,7 @@
 # STATUS — Tanzschule Monitor-System
 
-> **Entwicklungs-Branch:** `claude/nifty-johnson-3q6u7g` (Push → Staging, Merge nach `main` → Live)  
+> **Entwicklungs-Branch:** der Branch, den die Session zugewiesen bekommt (`claude/…`) —
+> jeder `claude/**`-Branch deployt auf Staging, Merge nach `main` auf Live.  
 > Eine neue Session liest `CLAUDE.md` (Konzept) + diese Datei (Stand) und kann sofort weiterarbeiten.
 
 _Letzte Aktualisierung: **Schritt 30 live** (PR #20) — Bugfix „Kursanzeige hängt nach Monitore neu laden" + NC-Kontingent-Schonung (Fetch-Timeout, Retry, zwei Cache-Ebenen, Engine-Watchdog). Zuvor: Schritte 25–29 (Dashboard, geführte Workflows, Admin-JS-Auslagerung, Badge-Highlight, Kalender-Termine A–D)._

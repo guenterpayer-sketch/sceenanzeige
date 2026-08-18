@@ -298,42 +298,50 @@ FRET-Polling 5–10 Sek., Ticker unabhängig.
 
 ## 13. Bauplan
 
-| Schritt | Inhalt | Status |
-|---|---|---|
-| 1 | SQL-Schema | ✅ live |
-| 2 | Ordnerstruktur + .htaccess | ✅ live |
-| 3 | Modul-Registry + `uhrzeit`, `bild` | ✅ live |
-| 4 | `stundenplan`, `ankuendigung`, `fret` + NC-/FRET-Proxy | ✅ live getestet |
-| 5 | Backend: Bibliothek + Mediathek | ✅ live getestet |
-| 6 | Backend: Playlist-Editor | ✅ live getestet |
-| 7 | Backend: Monitore + Zeitplan (monitor-zentrisch) | ✅ live getestet |
-| 8 | Backend: Ticker + Ticker-Zeitplan | ✅ live getestet |
-| 9 | Monitor-Frontend (Anzeige- + Zeitlogik) | ✅ live getestet |
-| 9b | Monitor-Frontend: `stundenplan` ✅ live (Standort-/Saal-Filter, responsive Schrift, feste Kartenhöhe); `fret` ✅ Fortschrittsbalken (rAF + startTime-Fallback), Layout Variante D, Countdown-Fallback | ✅ live |
-| 10 | Live-Vorschau (iFrame) + Playlist-Vorschau (`playlist-preview.php`) | ✅ live getestet |
-| 11 | Deployment-Guide | ✅ ersetzt durch CI/CD (Schritt 15) |
-| 12 | Livebetrieb-Feedback: Ticker 30 px/70 px, Pixel-Größen-Panel, Zeitplan-Sortierung, Endnutzer-Texte | ✅ live |
-| 13 | Modul `veranstaltung` (WP Events Calendar) + Vorschau-Schema-Fix | ✅ geliefert, noch nicht live getestet |
-| 17 | Modul `veranstaltung` — adaptives Layout: Hochkant / Querformat / Kein Bild; Proxy liefert `bild_breite`/`bild_hoehe`; Text ab 55 % von oben; Gradient 0–55 % transparent; Datum #e03535 38 px; padding-bottom auf Titel gegen Unterlängen-Clipping | ✅ live |
-| 18 | Playlist-Monitor-Tooltip (CSS + GROUP_CONCAT); Veranstaltung Glow via DOM-Element + `object-fit:contain`; Ankündigung Vollbild-Layout (Bild als BG + Text-Pill); Settings `schrift_groesse` + `pill_transparenz` | ✅ live |
-| 14 | Modul `video` (eigene Uploads + YouTube/PeerTube-Embeds, event-getrieben) + Videothek-Admin | ✅ live getestet |
-| 15 | CI/CD via GitHub Actions + Monitor-Domain (vollständig statt Subdomain) + Testmon-Frontend | ✅ live |
-| 16 | FRET-Modul Verbesserungen: Fortschrittsbalken (rAF + startTime-Fallback), Countdown-Fallback (akkumulierte Lieddauer), Layout Variante D, Admin-Versionsanzeige | ✅ Staging getestet, bereit für Live-Merge |
-| 19 | Modul-Übergänge: Overlay-Dissolve (deckende `.tm-modul-container` + `isolation:isolate`) + `MODUL_SETTLE_MS` + Rotation-Freeze; innere Layer-Transition-Fixes in `bild` + `ankuendigung` | ✅ live |
-| 20 | Slide-Engine: Module liefern nur Inhalt, Engine besitzt Präsentation (Konzept + Stand: `KONZEPT_SLIDE_ENGINE.md`) | ✅ live |
-| 21 | Uhr-Modul: Analog-Zifferblatt (SVG) + Hintergrundbild/Transparenz-Pill; neuer Setting-Typ `mediathek_bild` (Registry + Picker in `instanz.php`) | ✅ live |
-| 22 | Playlist-Editor: Duplikat-Sperre entfernt — Instanzen mehrfach in Spalte und über Spalten hinweg (A → B → A → C) | ✅ live |
-| 23 | Monitor-Zeitplan: Wochenkalender-Ansicht in Etappen — A: nur lesen, B: bearbeiten (Klick/Drag), C: Politur (Lanes, Tag-Drag, Resize oben, Ganztags-Zeile in Tagesspalten) | ✅ komplett live |
-| 24 | Globaler Wochenplan (`admin/wochenplan.php`): Zeitpläne ALLER Monitore in einem Kalender, nur lesen; identische Einträge monitorübergreifend zu einem Block zusammengefasst, Monitor-Filter-Checkboxen, Ganztags-Zeile | ✅ live |
-| 25 | Dashboard-Startseite (`admin/dashboard.php`) + Nav-Umbau (Workflow-Reihenfolge, Gruppen-Trenner) + zentrale Zeitplan-Auswahl in `Monitor.php` (eine Wahrheitsquelle für Proxy + Dashboard) | ✅ Staging getestet, bereit für Live-Merge |
-| 26 | Geführte Workflows (Flash-Aktions-Links, klickbare Badges inkl. Ticker-Tooltip) + einheitliche Editor-Buttons (Speichern bleibt / Speichern & schließen / Abbrechen in allen drei Editoren) | ✅ Staging getestet, bereit für Live-Merge |
-| 27 | Admin-JS-Auslagerung (`instanz.js`, `playlist-editor.js`) + gemeinsame Bausteine `editor-core.js` (`TMAdmin.dirtyGuard`/`escapeHtml` — eine Implementierung statt drei) | ✅ Staging getestet, bereit für Live-Merge |
-| 28 | Badge-Highlight: Klick auf „auf N Monitoren"/„in N Playlists" markiert Ziel-Kacheln dauerhaft (Hinweisleiste + „Hervorhebung entfernen", Scroll zur Kachel, Durchschleifen durch Zeitplan-/Playlist-Editor) + Dashboard-Schnellzugriffe nach oben | ✅ live |
-| 29 | Kalender-Planungstool in Etappen — **A:** Tabelle `monitor_termine` + Migration 14 + zwei-Ebenen-Auswahl in `Monitor.php` + Nav „Kalender" + Kalender-Tab als Standard im Zeitplan-Editor; **B:** `wochenplan.php` → echter Kalender mit Datum (?w=Datum → Montag normalisiert, ← Heute → + KW, Heute-Spalte getönt; Schicht 1 Regelbetrieb blass `--regel` opacity 0.4 — **standardmäßig ausgeblendet**, Schalter „Regelbetrieb einblenden" im Filter; Schicht 2 Termine kräftig `--termin` goldener Rand; mehrtägige Termine an jedem Tag ihres Zeitraums via ISO-String-Datumsvergleich; `Monitor::termineImZeitraum()`), nur lesen; **C:** Termin-Dialog `td-overlay` in `wochenplan.php` (Playlist-Picker, Monitor-Checkboxen — Standard KEINE angehakt, Datum von–bis mit Auto-Mitziehen, ganztags/Uhrzeit, Prio, Dauer; Löschen/Duplizieren); Sofort-Speichern per fetch → `admin/termin-aktion.php` (JSON; Gruppe-ersetzen-Prinzip: alte `ids[]` löschen + je gewähltem Monitor neue Zeile, Transaktion; Antwort enthält frische Wochen-Termine via `Monitor::termineFuerKalender()` → Re-Render ohne Reload). Block↔Gruppe über `data-tdkey` (Schlüssel enthält Playlist+Datum+Uhrzeit, `ids[]` = DB-Zeilen der Gruppe). Klick auf freie Stelle = neuer Termin (Tagesspalte: Uhrzeit von Klickhöhe, Ganztags-Zeile: ganztägig); Regelbetrieb-Blöcke nicht klickbar; **D:** Termin-Blöcke im Kalender per Maus verschieben (vertikal = Uhrzeit, quer = Datumsverschiebung um N Tage — bei mehrtägigen der ganze Zeitraum) + Resize oben/unten in 15-Min-Schritten, Sofort-Speichern nach Loslassen (`speichereGruppeDirekt`, Fehler → `rendere()` stellt alten Stand her); Klick-vs.-Drag via 4px-Schwelle + `_suppressClickUntil`; Monitor-Zeitplan-Editor zeigt Hinweis-Banner `adm-termin-hinweis` („N kommende Kalender-Termine, nächster: **Mo** 17.08.2026 — im Kalender ansehen"; Wochentags-Kürzel über eigenes Mapping auf `format('N')`, da PHPs `format('D')` englisch ist; Link mit `?w=` auf die richtige Woche; `Monitor::kommendeTermineFuer()`, 42S02-sicher) statt Termin-Blöcke im datumlosen Wochenmuster | ✅ A–D Staging getestet, bereit für Live-Merge |
+> **Status wird hier bewusst NICHT geführt.** Er würde sich durch den Merge
+> selbst ändern und wäre im Moment des Schreibens immer falsch. Wo ein Stand
+> liegt, sagen zwei zuverlässigere Quellen: **Git** (`main` = live, `claude/**`
+> = Staging; `git log origin/main..HEAD` zeigt das Offene) und die
+> **Versionsanzeige im Admin** (`version.php`: Hash · Datum · STAGING/LIVE,
+> von der CI beim Deploy geschrieben). Die Tabelle unten ist ein reines
+> Protokoll dessen, *was* gebaut wurde.
 
-| 30 | **Bugfix Kursanzeige „hängt" nach „Monitore neu laden"** + Kontingent-Schonung — **A:** `stundenplan/frontend.js` mit Fetch-Timeout (10 s, `AbortController`) → `fertig()` garantiert, Retry-Kaskade (15/30/60 s, dann 10 min), Browser-Tages-Cache + In-flight-Dedup, minütliches Neu-Rendern ohne API-Abruf, wiederholte Kartenhöhen-Messung; **B:** Engine-Watchdog in `monitor.js` (`MODUL_WATCHDOG_MS`) + Einmal-Guard gegen doppeltes `fertig()`; **C:** Server-Cache `includes/NcCache.php` (roh, bis Mitternacht, geteilt über alle Säle/Filter) + Invalidierung in `admin/reload_trigger.php` | ✅ live |
-| 31 | **CI/CD Branch-Trigger entkoppelt:** Staging-Deploy hört auf das Muster `claude/**` statt auf einen fest verdrahteten Branch-Namen; Staging-Jobs über `if: github.ref != 'refs/heads/main'`, Live-Job unverändert an `main`. Grund: Claude Code auf dem Web legt pro Aufgabe zwangsläufig einen neuen Session-Branch an — das manuelle Umschalten pro Session entfällt damit ersatzlos. | ✅ gepusht, bereit für Live-Merge |
-| 32 | Modul `veranstaltung` — Datumsformat kompakt: Wochentag auf 2 Zeichen gekürzt, Monat als Zahl mit führender Null (`Di, 15.09.2026` statt `Dienstag, 15. September 2026`); Konstante `MONATE` entfällt. Grund: lange Monatsnamen erzwangen Umbrüche in der Datumszeile (aufgefallen bei September). | ✅ gepusht, bereit für Live-Merge |
+| Schritt | Inhalt |
+|---|---|
+| 1 | SQL-Schema |
+| 2 | Ordnerstruktur + .htaccess |
+| 3 | Modul-Registry + `uhrzeit`, `bild` |
+| 4 | `stundenplan`, `ankuendigung`, `fret` + NC-/FRET-Proxy |
+| 5 | Backend: Bibliothek + Mediathek |
+| 6 | Backend: Playlist-Editor |
+| 7 | Backend: Monitore + Zeitplan (monitor-zentrisch) |
+| 8 | Backend: Ticker + Ticker-Zeitplan |
+| 9 | Monitor-Frontend (Anzeige- + Zeitlogik) |
+| 9b | Monitor-Frontend: `stundenplan` (Standort-/Saal-Filter, responsive Schrift, feste Kartenhöhe); `fret` Fortschrittsbalken (rAF + startTime-Fallback), Layout Variante D, Countdown-Fallback |
+| 10 | Live-Vorschau (iFrame) + Playlist-Vorschau (`playlist-preview.php`) |
+| 11 | Deployment-Guide |
+| 12 | Livebetrieb-Feedback: Ticker 30 px/70 px, Pixel-Größen-Panel, Zeitplan-Sortierung, Endnutzer-Texte |
+| 13 | Modul `veranstaltung` (WP Events Calendar) + Vorschau-Schema-Fix |
+| 17 | Modul `veranstaltung` — adaptives Layout: Hochkant / Querformat / Kein Bild; Proxy liefert `bild_breite`/`bild_hoehe`; Text ab 55 % von oben; Gradient 0–55 % transparent; Datum #e03535 38 px; padding-bottom auf Titel gegen Unterlängen-Clipping |
+| 18 | Playlist-Monitor-Tooltip (CSS + GROUP_CONCAT); Veranstaltung Glow via DOM-Element + `object-fit:contain`; Ankündigung Vollbild-Layout (Bild als BG + Text-Pill); Settings `schrift_groesse` + `pill_transparenz` |
+| 14 | Modul `video` (eigene Uploads + YouTube/PeerTube-Embeds, event-getrieben) + Videothek-Admin |
+| 15 | CI/CD via GitHub Actions + Monitor-Domain (vollständig statt Subdomain) + Testmon-Frontend |
+| 16 | FRET-Modul Verbesserungen: Fortschrittsbalken (rAF + startTime-Fallback), Countdown-Fallback (akkumulierte Lieddauer), Layout Variante D, Admin-Versionsanzeige |
+| 19 | Modul-Übergänge: Overlay-Dissolve (deckende `.tm-modul-container` + `isolation:isolate`) + `MODUL_SETTLE_MS` + Rotation-Freeze; innere Layer-Transition-Fixes in `bild` + `ankuendigung` |
+| 20 | Slide-Engine: Module liefern nur Inhalt, Engine besitzt Präsentation (Konzept + Stand: `KONZEPT_SLIDE_ENGINE.md`) |
+| 21 | Uhr-Modul: Analog-Zifferblatt (SVG) + Hintergrundbild/Transparenz-Pill; neuer Setting-Typ `mediathek_bild` (Registry + Picker in `instanz.php`) |
+| 22 | Playlist-Editor: Duplikat-Sperre entfernt — Instanzen mehrfach in Spalte und über Spalten hinweg (A → B → A → C) |
+| 23 | Monitor-Zeitplan: Wochenkalender-Ansicht in Etappen — A: nur lesen, B: bearbeiten (Klick/Drag), C: Politur (Lanes, Tag-Drag, Resize oben, Ganztags-Zeile in Tagesspalten) |
+| 24 | Globaler Wochenplan (`admin/wochenplan.php`): Zeitpläne ALLER Monitore in einem Kalender, nur lesen; identische Einträge monitorübergreifend zu einem Block zusammengefasst, Monitor-Filter-Checkboxen, Ganztags-Zeile |
+| 25 | Dashboard-Startseite (`admin/dashboard.php`) + Nav-Umbau (Workflow-Reihenfolge, Gruppen-Trenner) + zentrale Zeitplan-Auswahl in `Monitor.php` (eine Wahrheitsquelle für Proxy + Dashboard) |
+| 26 | Geführte Workflows (Flash-Aktions-Links, klickbare Badges inkl. Ticker-Tooltip) + einheitliche Editor-Buttons (Speichern bleibt / Speichern & schließen / Abbrechen in allen drei Editoren) |
+| 27 | Admin-JS-Auslagerung (`instanz.js`, `playlist-editor.js`) + gemeinsame Bausteine `editor-core.js` (`TMAdmin.dirtyGuard`/`escapeHtml` — eine Implementierung statt drei) |
+| 28 | Badge-Highlight: Klick auf „auf N Monitoren"/„in N Playlists" markiert Ziel-Kacheln dauerhaft (Hinweisleiste + „Hervorhebung entfernen", Scroll zur Kachel, Durchschleifen durch Zeitplan-/Playlist-Editor) + Dashboard-Schnellzugriffe nach oben |
+| 29 | Kalender-Planungstool in Etappen — **A:** Tabelle `monitor_termine` + Migration 14 + zwei-Ebenen-Auswahl in `Monitor.php` + Nav „Kalender" + Kalender-Tab als Standard im Zeitplan-Editor; **B:** `wochenplan.php` → echter Kalender mit Datum (?w=Datum → Montag normalisiert, ← Heute → + KW, Heute-Spalte getönt; Schicht 1 Regelbetrieb blass `--regel` opacity 0.4 — **standardmäßig ausgeblendet**, Schalter „Regelbetrieb einblenden" im Filter; Schicht 2 Termine kräftig `--termin` goldener Rand; mehrtägige Termine an jedem Tag ihres Zeitraums via ISO-String-Datumsvergleich; `Monitor::termineImZeitraum()`), nur lesen; **C:** Termin-Dialog `td-overlay` in `wochenplan.php` (Playlist-Picker, Monitor-Checkboxen — Standard KEINE angehakt, Datum von–bis mit Auto-Mitziehen, ganztags/Uhrzeit, Prio, Dauer; Löschen/Duplizieren); Sofort-Speichern per fetch → `admin/termin-aktion.php` (JSON; Gruppe-ersetzen-Prinzip: alte `ids[]` löschen + je gewähltem Monitor neue Zeile, Transaktion; Antwort enthält frische Wochen-Termine via `Monitor::termineFuerKalender()` → Re-Render ohne Reload). Block↔Gruppe über `data-tdkey` (Schlüssel enthält Playlist+Datum+Uhrzeit, `ids[]` = DB-Zeilen der Gruppe). Klick auf freie Stelle = neuer Termin (Tagesspalte: Uhrzeit von Klickhöhe, Ganztags-Zeile: ganztägig); Regelbetrieb-Blöcke nicht klickbar; **D:** Termin-Blöcke im Kalender per Maus verschieben (vertikal = Uhrzeit, quer = Datumsverschiebung um N Tage — bei mehrtägigen der ganze Zeitraum) + Resize oben/unten in 15-Min-Schritten, Sofort-Speichern nach Loslassen (`speichereGruppeDirekt`, Fehler → `rendere()` stellt alten Stand her); Klick-vs.-Drag via 4px-Schwelle + `_suppressClickUntil`; Monitor-Zeitplan-Editor zeigt Hinweis-Banner `adm-termin-hinweis` („N kommende Kalender-Termine, nächster: **Mo** 17.08.2026 — im Kalender ansehen"; Wochentags-Kürzel über eigenes Mapping auf `format('N')`, da PHPs `format('D')` englisch ist; Link mit `?w=` auf die richtige Woche; `Monitor::kommendeTermineFuer()`, 42S02-sicher) statt Termin-Blöcke im datumlosen Wochenmuster |
+
+| 30 | **Bugfix Kursanzeige „hängt" nach „Monitore neu laden"** + Kontingent-Schonung — **A:** `stundenplan/frontend.js` mit Fetch-Timeout (10 s, `AbortController`) → `fertig()` garantiert, Retry-Kaskade (15/30/60 s, dann 10 min), Browser-Tages-Cache + In-flight-Dedup, minütliches Neu-Rendern ohne API-Abruf, wiederholte Kartenhöhen-Messung; **B:** Engine-Watchdog in `monitor.js` (`MODUL_WATCHDOG_MS`) + Einmal-Guard gegen doppeltes `fertig()`; **C:** Server-Cache `includes/NcCache.php` (roh, bis Mitternacht, geteilt über alle Säle/Filter) + Invalidierung in `admin/reload_trigger.php` |
+| 31 | **CI/CD Branch-Trigger entkoppelt:** Staging-Deploy hört auf das Muster `claude/**` statt auf einen fest verdrahteten Branch-Namen; Staging-Jobs über `if: github.ref != 'refs/heads/main'`, Live-Job unverändert an `main`. Grund: Claude Code auf dem Web legt pro Aufgabe zwangsläufig einen neuen Session-Branch an — das manuelle Umschalten pro Session entfällt damit ersatzlos. |
+| 32 | Modul `veranstaltung` — Datumsformat kompakt: Wochentag auf 2 Zeichen gekürzt, Monat als Zahl mit führender Null (`Di, 15.09.2026` statt `Dienstag, 15. September 2026`); Konstante `MONATE` entfällt. Grund: lange Monatsnamen erzwangen Umbrüche in der Datumszeile (aufgefallen bei September). |
 
 **Zusatzprojekte (Backlog, unabhängig vom Bauplan):**
 - **FAQ-/Hilfe-Seite im Admin:** Die aufklappbaren Erklärtexte (`details.adm-hilfe-klapp`, Muster in allen Admin-Seiten) zu einer zentralen FAQ-Seite zusammenführen (Nav-Punkt „Hilfe"). Inhalte weitgehend aus den bestehenden `adm-hilfe`-Texten übernehmbar — gut geeignet als eigenständige Aufgabe.
