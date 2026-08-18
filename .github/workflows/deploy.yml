@@ -3,14 +3,14 @@ name: Deploy
 on:
   push:
     branches:
-      - claude/nifty-johnson-3q6u7g   # → Staging (test)
+      - 'claude/**'                  # → Staging (test) — jeder Session-Branch
       - main                           # → Live
 
 jobs:
   deploy-staging-backend:
     name: Deploy → screen.spass-am-tanzen.de (Staging Backend)
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/claude/nifty-johnson-3q6u7g'
+    if: github.ref != 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
 
@@ -35,7 +35,7 @@ jobs:
   deploy-staging-testmon:
     name: Deploy → testmon.spass-am-tanzen.de (Staging Monitor)
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/claude/nifty-johnson-3q6u7g'
+    if: github.ref != 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
 
