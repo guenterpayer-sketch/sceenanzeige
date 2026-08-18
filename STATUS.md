@@ -11,8 +11,9 @@
 > (`version.php`: Hash · Datum · STAGING/LIVE). Hier steht, *was gebaut wurde*,
 > *was offen ist* und *wo es weitergeht*.
 
-_Zuletzt bearbeitet: Datumsformat im Modul `veranstaltung` gekürzt (Schritt 32);
-davor CI/CD-Branch-Trigger entkoppelt (31) und Schritt 30 (Kursanzeige-Bugfix +
+_Zuletzt bearbeitet: Mobil-Ansicht `musik.tcpayer.de` (Schritt 33); davor
+Datumsformat im Modul `veranstaltung` gekürzt (32);
+CI/CD-Branch-Trigger entkoppelt (31) und Schritt 30 (Kursanzeige-Bugfix +
 NC-Kontingent-Schonung)._
 
 ---
@@ -35,6 +36,42 @@ dort gepflegt — eine zweite Kopie hier würde sofort auseinanderlaufen.
 ---
 
 ## Was in den letzten Sessions erledigt wurde
+
+### Schritt 33 — Mobil-Ansicht musik.tcpayer.de
+
+Songanzeige für Gäste am Telefon, gebaut auf der bestehenden Monitor-Infrastruktur:
+`musik.tcpayer.de` ist ein normaler Monitor-Eintrag, Inhalt kommt über Playlist +
+Zeitplan aus dem Backend. Gedacht als Ersatz für die alte, unkomfortable
+Musikanzeige im Kundenbereich.
+
+| Datei | Was |
+|---|---|
+| `assets/css/monitor.css` | Ein `@media (max-width: 700px)`-Block am Ende: Spalten untereinander (`grid-template-columns: 1fr !important` + `grid-auto-rows: 1fr`), Header/Footer ausgeblendet, `100dvh`, Trennlinie zwischen den Spalten, Mobil-Schriftgrößen für `fret` |
+| `02_ordnerstruktur/musik.tcpayer.de/index.html` | **Neu:** `width=device-width`, kein TV-Skalierungsblock; Header/Footer bleiben im DOM (sonst bricht `startTicker`) |
+| `02_ordnerstruktur/testmon.spass-am-tanzen.de/mobil/index.html` | **Neu:** Staging-Testkopie gegen das Staging-Backend — braucht keine neue Subdomain, wird vom bestehenden Testmon-Job mitgeliefert |
+| `.github/workflows/deploy.yml` | Neuer Job `deploy-live-musik` (nur `main`) |
+
+**Nicht angefasst:** PHP, `monitor.js`, Module, Datenbank.
+
+**Warum @media und nicht @container:** Container-Queries reagieren auf die
+Spaltenbreite; eine Spalte im 3-Spalten-Layout am Fernseher ist 640 px breit und
+würde von `@container (max-width: 700px)` mit erfasst — das würde die für 50 Zoll
+eingestellten Größen zerstören. Die Saal-Seiten melden per `width=1920` immer
+1920 px, der Media-Query-Block ist für sie unerreichbar.
+
+**Nachgemessen** in Chromium bei 390×844 und 360×780: drei gestapelte Säle,
+je 281 bzw. 260 px Höhe, Inhalt passt in beiden Fällen ohne Beschnitt.
+
+**Noch offen:** Nur `fret` hat Mobil-Größen. `veranstaltung` hat feste
+Fernseh-Pixelwerte und wäre am Telefon zu groß; `bild`/`video` skalieren von
+selbst, `uhrzeit` rechnet in `cqw`, `stundenplan` hat schon eine Container-Query,
+`ankuendigung` ist je Instanz einstellbar. Bei Bedarf nachziehen.
+
+**Von Hand im Backend:** Monitor `musik.tcpayer.de` anlegen, je Saal eine
+`fret`-Instanz mit `anzahl_kommende: 1`, dreispaltige Playlist, Zeitplan-Eintrag
+ohne Uhrzeit (Dauerbetrieb).
+
+---
 
 ### Schritte 31 + 32 — CI/CD-Branch entkoppelt, Veranstaltungs-Datum gekürzt
 

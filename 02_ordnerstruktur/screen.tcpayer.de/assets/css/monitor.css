@@ -769,3 +769,111 @@ html, body {
     white-space: nowrap;
     flex-shrink: 0;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOBIL-ANSICHT (musik.tcpayer.de) — Schritt 33
+   ───────────────────────────────────────────────────────────────────────────
+   Greift ausschließlich auf Seiten mit <meta name="viewport"
+   content="width=device-width">. Die Saal-Monitore melden per
+   content="width=1920" IMMER 1920 px Breite — dieser Block kann dort also
+   nicht ausgelöst werden, auch nicht auf einem Telefon. Deshalb bewusst
+   viewport-basiert (@media) und NICHT container-basiert (@container):
+   eine Spalte im 3-Spalten-Layout am Fernseher ist 640 px breit und würde
+   von einer Container-Query mit erfasst.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 700px) {
+
+    /* dvh statt vh: die einklappende Browserleiste am Telefon würde
+       sonst dauerhaft Höhe reservieren */
+    #tm-wrapper {
+        height: 100dvh;
+    }
+
+    /* Header + Ticker kosten auf kleinem Schirm zu viel Höhe. Die Elemente
+       bleiben im DOM (startTicker/doRender greifen ungeprüft darauf zu),
+       nur ihre Fläche fällt weg. */
+    #tm-header,
+    #tm-footer {
+        display: none !important;
+    }
+
+    /* Spalten untereinander. `!important`, weil buildLayout() die
+       Spaltenbreiten inline setzt (monitor.js). `grid-auto-rows: 1fr` ist
+       zwingend: die Modul-Container sind position:absolute, die Spalten
+       haben also keine eigene Inhaltshöhe — ohne feste Zeilenhöhe fallen
+       die Zeilen auf 0 zusammen und man sieht nichts. */
+    .tm-layout {
+        grid-template-columns: 1fr !important;
+        grid-auto-rows: 1fr;
+    }
+
+    /* Trennlinie zwischen den gestapelten Spalten (z.B. Saal 1 / 2 / 3) */
+    .tm-spalte + .tm-spalte {
+        border-top: 1px solid rgba(255, 255, 255, 0.14);
+    }
+
+    /* ── Modul fret auf Telefongröße ─────────────────────────────────────
+       Die Werte im Hauptteil sind für 50 Zoll aus ~4 m Entfernung gesetzt;
+       hier gilt ~390 px Breite aus ~30 cm. */
+
+    .tm-modul-fret {
+        padding: 8px 10px;
+        gap: 4px;
+    }
+
+    .tm-song-heading {
+        font-size: 15px;
+        letter-spacing: 0.08em;
+    }
+
+    /* Am Fernseher feste 23 % Höhe; auf dem Telefon nimmt der Block was er
+       braucht, damit die Warteliste den Rest bekommt */
+    .tm-song-aktuell {
+        flex: 0 0 auto;
+        border-left-width: 3px;
+        padding-left: 8px;
+    }
+
+    .tm-song-titel   { font-size: 19px; margin-bottom: 2px; }
+    .tm-song-artist  { font-size: 13px; }
+
+    .tm-song-badges,
+    .tm-song-k-badges { gap: 4px; margin-top: 2px; }
+
+    .tm-song-badge {
+        font-size: 14px;
+        padding: 2px 8px;
+        border-radius: 5px;
+    }
+
+    .tm-song-badge-sub {
+        font-size: 12px;
+        padding: 2px 6px;
+        border-width: 1px;
+    }
+
+    .tm-song-progress { height: 5px; }
+
+    .tm-song-label {
+        font-size: 9px;
+        letter-spacing: 0.08em;
+    }
+
+    .tm-song-kommende-liste { gap: 4px; }
+
+    .tm-song-kommende-eintrag { padding: 6px 8px; }
+
+    .tm-song-k-titel  { font-size: 14px; }
+    .tm-song-k-artist { font-size: 11px; margin-bottom: 3px; }
+
+    .tm-song-kommende .tm-song-badge     { font-size: 12px; padding: 2px 6px; }
+    .tm-song-kommende .tm-song-badge-sub { font-size: 10px; }
+
+    /* min-width 180px stammt von der Fernsehbreite und würde auf einem
+       390-px-Schirm den Titel daneben erdrücken */
+    .tm-song-k-countdown {
+        font-size: 13px;
+        min-width: 0;
+    }
+}

@@ -75,3 +75,25 @@ jobs:
             **/.git*
             **/.git*/**
             **/config.php
+
+  # musik.tcpayer.de — Mobil-Ansicht der Songanzeige (Schritt 33).
+  # Nur Live: die Staging-Erprobung läuft über den Unterordner
+  # testmon.spass-am-tanzen.de/mobil/, der vom Testmon-Job mitgeliefert wird.
+  deploy-live-musik:
+    name: Deploy → musik.tcpayer.de (Mobil-Ansicht)
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: FTP Deploy
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASS }}
+          local-dir: 02_ordnerstruktur/musik.tcpayer.de/
+          server-dir: musik.tcpayer.de/
+          exclude: |
+            **/.git*
+            **/.git*/**
