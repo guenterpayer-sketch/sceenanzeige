@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <!-- width=device-width (nicht width=1920 wie bei den Saal-Monitoren):
+         nur damit greift der Mobil-Block in monitor.css -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0a0a0a">
+    <title>Musik – Staging-Test</title>
+    <link rel="stylesheet" href="https://screen.spass-am-tanzen.de/assets/css/monitor.css">
+</head>
+<body>
+<div id="tm-wrapper">
+
+    <!-- Header und Footer bleiben im DOM, obwohl sie mobil nicht sichtbar sind:
+         startTicker() und doRender() in monitor.js greifen ungeprüft darauf zu.
+         Ausgeblendet werden sie per CSS (@media max-width: 700px). -->
+    <header id="tm-header" class="tm-hidden">
+        <div id="tm-header-logo">
+            <img src="https://screen.spass-am-tanzen.de/uploads/logo.png" alt="Logo">
+        </div>
+        <div id="tm-header-text"></div>
+        <div id="tm-header-uhrzeit">
+            <div id="tm-header-zeit"></div>
+            <div id="tm-header-datum"></div>
+        </div>
+    </header>
+
+    <main id="tm-main"></main>
+
+    <footer id="tm-footer" class="tm-hidden">
+        <div class="tm-ticker-text"></div>
+    </footer>
+
+</div>
+
+<script>
+    /* Leer lassen — der Monitor wird über den Hostnamen erkannt
+       (hier: testmon.spass-am-tanzen.de — Staging-Testkopie der Mobil-Ansicht). */
+    var MONITOR_SUBDOMAIN = '';
+    window.BACKEND_BASE  = 'https://screen.spass-am-tanzen.de';
+    window.UPLOADS_URL   = 'https://screen.tcpayer.de/uploads';
+
+    /* KEIN TV-Skalierungsblock wie in saalN/index.html — der nagelt auf
+       1920x1080 fest und skaliert herunter. Auf dem Telefon ist genau das
+       Gegenteil gewollt: echte Gerätebreite, Layout per Media Query. */
+</script>
+<script src="https://screen.spass-am-tanzen.de/assets/js/module-loader.js"></script>
+<script src="https://screen.spass-am-tanzen.de/assets/js/monitor.js"></script>
+</body>
+</html>

@@ -18,11 +18,9 @@
 (function () {
     window.TanzschuleModule = window.TanzschuleModule || {};
 
-    var WOCHENTAGE = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
-    var MONATE = [
-        'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
-        'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
-    ];
+    // Kurzform bewusst: ausgeschriebene Monatsnamen ("September") sprengen
+    // die Datumszeile und erzwingen unschöne Umbrüche.
+    var WOCHENTAGE = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
 
     function escapeHtml(s) {
         return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -39,8 +37,9 @@
     function formatDatum(d) {
         if (!d) { return ''; }
         return WOCHENTAGE[d.getDay()]
-            + ', ' + d.getDate() + '. '
-            + MONATE[d.getMonth()] + ' ' + d.getFullYear();
+            + ', ' + String(d.getDate()).padStart(2, '0')
+            + '.' + String(d.getMonth() + 1).padStart(2, '0')
+            + '.' + d.getFullYear();
     }
 
     function formatZeit(d) {
