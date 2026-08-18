@@ -4,47 +4,23 @@
 > jeder `claude/**`-Branch deployt auf Staging, Merge nach `main` auf Live.  
 > Eine neue Session liest `CLAUDE.md` (Konzept) + diese Datei (Stand) und kann sofort weiterarbeiten.
 
-_Letzte Aktualisierung: **Schritt 30 live** (PR #20) — Bugfix „Kursanzeige hängt nach Monitore neu laden" + NC-Kontingent-Schonung (Fetch-Timeout, Retry, zwei Cache-Ebenen, Engine-Watchdog). Zuvor: Schritte 25–29 (Dashboard, geführte Workflows, Admin-JS-Auslagerung, Badge-Highlight, Kalender-Termine A–D)._
+> **Diese Datei sagt NICHT, was wo deployt ist.** Solche Angaben veralten mit dem
+> nächsten Merge und stimmen im Moment des Schreibens ohnehin nicht. Wo ein Stand
+> liegt, beantworten **Git** (`main` = live, `claude/**` = Staging;
+> `git log origin/main..HEAD` zeigt das Offene) und die **Versionsanzeige im Admin**
+> (`version.php`: Hash · Datum · STAGING/LIVE). Hier steht, *was gebaut wurde*,
+> *was offen ist* und *wo es weitergeht*.
+
+_Zuletzt bearbeitet: Datumsformat im Modul `veranstaltung` gekürzt (Schritt 32);
+davor CI/CD-Branch-Trigger entkoppelt (31) und Schritt 30 (Kursanzeige-Bugfix +
+NC-Kontingent-Schonung)._
 
 ---
 
 ## Bauplan-Fortschritt
 
-| Schritt | Inhalt | Stand |
-|---|---|---|
-| 1 | DB-Schema | ✅ live |
-| 2 | Ordnerstruktur + .htaccess | ✅ live |
-| 3 | Modul-Registry + `uhrzeit`, `bild` | ✅ live |
-| 4 | `stundenplan`, `ankuendigung`, `fret` + NC-/FRET-Proxy | ✅ live getestet |
-| 5 | Backend: Bibliothek + Mediathek | ✅ live getestet |
-| 6 | Backend: Playlist-Editor | ✅ live getestet |
-| 7 | Backend: Monitore + Zeitplan | ✅ live getestet |
-| 8 | Backend: Ticker + Ticker-Zeitplan | ✅ live getestet |
-| 9 | Monitor-Frontend (Kern-Logik) | ✅ live getestet |
-| 9b-sp | Monitor-Frontend: Layout `stundenplan` | ✅ live getestet |
-| 9b-fret | Monitor-Frontend: Layout `fret` | ✅ live getestet |
-| 9c | TV-Skalierung (Google TV 720p → scale auf 1920px) | ✅ live getestet |
-| 10 | Live-Vorschau (iFrame) + Playlist-Vorschau | ✅ live getestet |
-| 11 | Deployment-Guide | ✅ ersetzt durch CI/CD (Schritt 15) |
-| 12 | Livebetrieb-Feedback: Ticker 30px/70px, Pixel-Panel, Zeitplan-Sortierung | ✅ live |
-| 13 | Modul `veranstaltung` (WP Events Calendar) + Vorschau-Schema-Fix | ✅ live |
-| 14 | Modul `video` (eigene Uploads + YouTube/PeerTube-Embeds) + Videothek-Admin | ✅ live getestet |
-| 15 | CI/CD via GitHub Actions + Monitor-Domain + Testmon-Frontend | ✅ live |
-| 16 | FRET-Modul: Layout Variante D, Countdown-Fallback, rAF-Fortschrittsbalken, Admin-Versionsanzeige | ✅ live |
-| 17 | Modul `veranstaltung`: adaptives Layout (Hochkant/Querformat/Kein Bild), Zyklusdauer-Fix in `monitor.js` | ✅ live |
-| 18 | Playlist-Monitor-Tooltip, Veranstaltung Glow (DOM-Element), Ankündigung Vollbild-Layout + einstellbare Pill-Transparenz | ✅ live |
-| 19 | Modul-Übergänge: Overlay-Dissolve (deckende Container) + Settle-Phase + Rotation-Freeze + `isolation:isolate` gegen z-index-Leak | ✅ live |
-| 20 | Slide-Engine: Trennung Inhalt/Präsentation (`KONZEPT_SLIDE_ENGINE.md`) | ✅ live |
-| 21 | Uhr-Modul: Analog-Zifferblatt (SVG, Ziffern 12/3/6/9, roter Sekundenzeiger) + Hintergrundbild mit Transparenz-Pill; Setting-Typ `mediathek_bild` | ✅ live |
-| 22 | Playlist-Editor: Duplikat-Sperre entfernt — Instanzen mehrfach pro Spalte und über Spalten hinweg | ✅ live |
-| 23 | Monitor-Zeitplan: Wochenkalender-Ansicht (Etappe A + B: lesen + bearbeiten; Etappe C: Lanes bei Überlappung, Tag-Tausch per Quer-Drag, Resize oben, Ganztags-Zeile in Tagesspalten) | ✅ komplett live |
-| 24 | Globaler Wochenplan (`admin/wochenplan.php` + `assets/js/admin/wochenplan.js`): alle Monitore in einem Kalender (nur lesen), Gruppierung identischer Einträge mit Monitor-Badges, Filter-Checkboxen, Ganztags-Zeile | ✅ live |
-| 25 | Dashboard-Startseite + Nav-Umbau (Workflow-Reihenfolge) + zentrale Zeitplan-Auswahl in `Monitor.php` (eine Wahrheitsquelle für Proxy + Dashboard) | ✅ live |
-| 26 | Geführte Workflows (Flash-Aktions-Links, klickbare Badges) + einheitliche Editor-Buttons in allen drei Editoren | ✅ live |
-| 27 | Admin-JS-Auslagerung (`instanz.js`, `playlist-editor.js`) + gemeinsame Bausteine `editor-core.js` (`TMAdmin.dirtyGuard`/`escapeHtml`) | ✅ live |
-| 28 | Badge-Highlight: dauerhafte Kachel-Markierung + Durchschleifen durch die Editoren; Dashboard-Schnellzugriffe nach oben | ✅ live |
-| 29 | Kalender-Planungstool A–D: `monitor_termine` + zwei-Ebenen-Auswahl, echter Wochenkalender mit Datum, Termin-Dialog mit Sofort-Speichern, Ziehen/Resizen | ✅ live |
-| 30 | **Bugfix Kursanzeige „hängt" nach „Monitore neu laden"** + NC-Kontingent-Schonung (A: Modul-Fix, B: Engine-Watchdog, C: Server-Cache) | ✅ live |
+Die Schritt-für-Schritt-Liste steht in **`CLAUDE.md` Abschnitt 13** und wird nur
+dort gepflegt — eine zweite Kopie hier würde sofort auseinanderlaufen.
 
 ---
 
@@ -60,8 +36,17 @@ _Letzte Aktualisierung: **Schritt 30 live** (PR #20) — Bugfix „Kursanzeige h
 
 ## Was in den letzten Sessions erledigt wurde
 
-### Schritt 30 — Kursanzeige hängt nach „Monitore neu laden" + Kontingent (✅ live, PR #20)
+### Schritte 31 + 32 — CI/CD-Branch entkoppelt, Veranstaltungs-Datum gekürzt
 
+| Datei | Was |
+|---|---|
+| `.github/workflows/deploy.yml` | Staging-Trigger auf das Muster `claude/**` statt eines fest verdrahteten Branch-Namens; beide Staging-Jobs über `if: github.ref != 'refs/heads/main'`, Live-Job unverändert an `main`. Grund: die Weboberfläche legt pro Aufgabe zwangsläufig einen neuen Session-Branch an — der gewählte Branch ist nur der Ausgangspunkt, einen Schalter dagegen gibt es nicht. Damit entfällt das Umschalten pro Session |
+| `modules/veranstaltung/frontend.js` | `formatDatum()` liefert `Di, 15.09.2026` statt `Dienstag, 15. September 2026` — Wochentag zweistellig, Monat als Zahl mit führender Null (konstante Breite). Konstante `MONATE` entfällt. Grund: lange Monatsnamen (aufgefallen bei „September") sprengten die Datumszeile und erzwangen Umbrüche |
+| `CLAUDE.md` / `STATUS.md` | Status-/Stand-Spalten entfernt (siehe Kasten oben); Branch-Regel an beiden Stellen nachgezogen |
+
+---
+
+### Schritt 30 — Kursanzeige hängt nach „Monitore neu laden" + Kontingent
 **Fehlerbild:** Nach dem Reload zeigte die Kursanzeige nichts Neues mehr; nur ein
 manuelles Neuladen im Browser half. Andere Module liefen normal weiter.
 
@@ -107,8 +92,7 @@ bleiben als Absicherung richtig, sind aber nicht der Auslöser gewesen.
 
 ---
 
-### Schritt 20, Etappe 3 + Schritt 21 — Rest portiert, Adapter raus, Uhr-Ausbau (✅ live)
-
+### Schritt 20, Etappe 3 + Schritt 21 — Rest portiert, Adapter raus, Uhr-Ausbau
 | Datei | Was |
 |---|---|
 | `assets/js/monitor.js` | Vertrag um `onMount(containerEl)` erweitert (Hook nach DOM-Einhängen); Adapter (`adapterDescriptor`/`renderModulInContainer`/`skaliereMod`) entfernt — Module ohne `getSlides` werden übersprungen; `modulAnzeigeDauer` bleibt als synchrone Schätzung |
@@ -124,8 +108,7 @@ bleiben als Absicherung richtig, sind aber nicht der Auslöser gewesen.
 
 ---
 
-### Schritt 20, Etappe 2 — Rotierer auf getSlides + Vorschau auf Engine (✅ Staging bestätigt)
-
+### Schritt 20, Etappe 2 — Rotierer auf getSlides + Vorschau auf Engine
 | Datei | Was |
 |---|---|
 | `modules/bild/frontend.js` | Rewrite: `getSlides` — ein Slide pro Bild (111→64 Zeilen); Bilder laden beim Sammeln vor |
@@ -138,8 +121,7 @@ bleiben als Absicherung richtig, sind aber nicht der Auslöser gewesen.
 
 ---
 
-### Schritt 20, Etappe 1 — Slide-Engine: Engine + Adapter (✅ Staging bestätigt)
-
+### Schritt 20, Etappe 1 — Slide-Engine: Engine + Adapter
 Umbau des Rendering-Kerns nach `KONZEPT_SLIDE_ENGINE.md` (dort auch die
 vier entschiedenen Design-Fragen). **Kein Modul wurde angefasst** — alle 7
 laufen über den Adapter unverändert weiter. Erfolgskriterium des
@@ -152,8 +134,7 @@ Staging-Tests: keinerlei sichtbare Veränderung.
 
 ---
 
-### Schritt 19 — Modul-Übergänge: Overlay-Dissolve + Settle-Phase (live ✅)
-
+### Schritt 19 — Modul-Übergänge: Overlay-Dissolve + Settle-Phase
 **Problemkette (drei Ursachen, nacheinander gefunden):**
 1. Innere Layer-Transitions in `bild`/`ankuendigung` kollidierten mit dem äußeren Container-Fade → multiplikative Opacity (0.5 × 0.5 = 0.25) → wirkte wie harter Schnitt. Fix: Transition erst per rAF nach dem ersten Render.
 2. Simultanes Kreuzblenden (alt 1→0, neu 0→1) ließ den dunklen Hintergrund durchscheinen („Dip to Black"). Fix: Overlay-Fade — alt bleibt sichtbar, neu blendet darüber ein.
@@ -170,8 +151,7 @@ Staging-Tests: keinerlei sichtbare Veränderung.
 
 ---
 
-### Schritt 18 — Playlist-Tooltip, Veranstaltung Glow, Ankündigung Redesign (live ✅)
-
+### Schritt 18 — Playlist-Tooltip, Veranstaltung Glow, Ankündigung Redesign
 | Datei | Was |
 |---|---|
 | `includes/Playlist.php` | `listAll()`: `GROUP_CONCAT`-Subquery liefert `monitor_namen` (kommasepariert); SEPARATOR-Quotes korrekt escaped (`\'`) |
@@ -185,8 +165,7 @@ Staging-Tests: keinerlei sichtbare Veränderung.
 
 ---
 
-### Schritt 17 — Modul `veranstaltung`: Adaptives Layout + Feinschliff (live ✅)
-
+### Schritt 17 — Modul `veranstaltung`: Adaptives Layout + Feinschliff
 | Datei | Was |
 |---|---|
 | `proxies/veranstaltungen.php` | `bild_breite`/`bild_hoehe` aus WP-API `image.width`/`image.height` hinzugefügt |
@@ -194,7 +173,7 @@ Staging-Tests: keinerlei sichtbare Veränderung.
 | `assets/css/monitor.css` | Neue Styles für alle drei Varianten: Portrait (Bild links 40 %, Frosted-Glass rechts), Landscape (Vollbild + Gradient-Overlay ab 55 % von oben), Kein Bild (zentriert); Datum 38 px / `#e03535`; Uhrzeit 30 px; Titel 72 px mit `padding-bottom: 12px` (verhindert Unterlängen-Clipping durch `-webkit-line-clamp`); starker Text-Schatten |
 | `assets/js/monitor.js` | `modulAnzeigeDauer()`: Sonderfall `veranstaltung` — Gesamtdauer = `anzahl × anzeige_dauer_sek` (Events kommen aus externer API, nicht aus `inhalte[]`) |
 
-**Schriftgrößen final (live getestet):**
+**Schriftgrößen final (am Monitor abgenommen):**
 
 | Element | Landscape | Portrait | Kein Bild |
 |---|---|---|---|
@@ -204,15 +183,14 @@ Staging-Tests: keinerlei sichtbare Veränderung.
 
 ---
 
-### Schritt 16 — FRET-Modul Verbesserungen (live ✅)
-
+### Schritt 16 — FRET-Modul Verbesserungen
 | Datei | Was |
 |---|---|
 | `assets/css/monitor.css` | FRET Layout Variante D: Überschrift 34 px/700, Song-Titel 42 px/700 + `text-shadow`, `.tm-song-aktuell` mit rotem Akzentbalken (`border-left: 4px solid #ad2121`), Countdown 22 px |
 | `assets/js/monitor.js` | FRET Fortschrittsbalken via `requestAnimationFrame` (kein `setInterval`-Drift); `startTime`-Fallback wenn `remainingSeconds` null; Countdown-Fallback mit akkumulierter Lieddauer |
 | `admin/includes/layout.php` | Admin-Versionsanzeige in Topbar: git-Hash + Datum + STAGING-Label aus `version.php` (wird von CI/CD generiert) |
 
-**FRET CSS-Werte final (live getestet):**
+**FRET CSS-Werte final (am Monitor abgenommen):**
 - Überschrift: 34 px, weight 700
 - Song-Titel: 42 px, weight 700, max. 2 Zeilen, Text-Schatten
 - Künstler: 36 px
@@ -223,8 +201,7 @@ Staging-Tests: keinerlei sichtbare Veränderung.
 
 ---
 
-### Schritt 15 — CI/CD + Monitor-Domain + Testmon (live ✅)
-
+### Schritt 15 — CI/CD + Monitor-Domain + Testmon
 | Datei | Was |
 |---|---|
 | `.github/workflows/deploy.yml` | GitHub Actions: Push auf Develop-Branch → FTP-Deploy auf Staging; Merge auf `main` → FTP-Deploy auf `screen.tcpayer.de` (Live) |
@@ -235,8 +212,7 @@ Staging-Tests: keinerlei sichtbare Veränderung.
 
 ---
 
-### Schritt 14 — Modul `video` + Videothek-Admin (live getestet ✅)
-
+### Schritt 14 — Modul `video` + Videothek-Admin
 | Datei | Was |
 |---|---|
 | `12_migration_video.sql` | Tabelle `video_dateien` + Spalten `video_datei_id`/`video_embed_url` |
@@ -250,7 +226,7 @@ Staging-Tests: keinerlei sichtbare Veränderung.
 ## CI/CD-Workflow
 
 ```
-Push auf Develop-Branch
+Push auf einen beliebigen claude/**-Branch
   → FTP-Deploy: screen.spass-am-tanzen.de/   (Staging-Backend)
   → FTP-Deploy: testmon.spass-am-tanzen.de/  (Staging-Monitor)
 
@@ -263,7 +239,7 @@ GitHub Secrets: `FTP_HOST`, `FTP_USER`, `FTP_PASS` (in Repository-Settings hinte
 
 ---
 
-## Schritt 9b — Finale CSS-Werte (live getestet)
+## Schritt 9b — Finale CSS-Werte (am Monitor abgenommen)
 
 ### Stundenplan
 - `grid-template-columns: 110px 100px 1fr 160px` (klein: `80px 70px 1fr 115px`)
@@ -271,7 +247,7 @@ GitHub Secrets: `FTP_HOST`, `FTP_USER`, `FTP_PASS` (in Repository-Settings hinte
 - `.tm-sp-zeit`: `color: #ad2121`; `.tm-sp-lehrer`: `font-size: 22px`
 - Überschrift `.tm-sp-heading`: 48px, zentriert, Großbuchstaben, rot
 
-### FRET/Song (Layout Variante D — live)
+### FRET/Song (Layout Variante D)
 - Überschrift: 34px, weight 700
 - Song-Titel: 42px, weight 700, Text-Schatten, max. 2 Zeilen
 - Künstler: 36px
@@ -308,7 +284,7 @@ Vollständige Liste in `CLAUDE.md` Abschnitt 12. Highlights:
 ## Arbeitsregeln
 
 - **Kein Schreiben/Code ohne explizites „GO".** Lesen/Prüfen jederzeit ok.
-- **Entwicklung ausschließlich auf `claude/nifty-johnson-3q6u7g`** — keinen zweiten Feature-Branch aufmachen.
+- **Entwicklung auf dem Branch, den die Session zugewiesen bekommt** (`claude/…`) — jeder davon deployt auf Staging; keinen zweiten Feature-Branch parallel aufmachen.
 - **Push und Merge nur nach Rückfrage** — jeder Push deployt automatisch auf Staging, jeder Merge nach `main` auf Live.
 - Lieferung über Git/CI-CD; **ZIP nur auf ausdrückliche Anfrage** (siehe `CLAUDE.md`).
 - Nach jedem Abschnitt committen + `STATUS.md` aktualisieren.
