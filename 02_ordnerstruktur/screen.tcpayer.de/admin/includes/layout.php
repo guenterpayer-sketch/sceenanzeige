@@ -33,6 +33,7 @@ function admin_header(string $titel, string $aktiv = ''): void
         'monitore'     => ['Monitore',    'monitore.php',     $istAdmin],
         'wochenplan'   => ['Kalender',    'wochenplan.php',   true],
         'vorschau'     => ['Vorschau',    'monitor-vorschau.php', true],
+        'launcher'     => ['Launcher',    'launcher.php',     true],
         'sep3'         => null,
         'fret-geraete' => ['FRET-Geräte', 'fret-geraete.php', $istAdmin],
     ];

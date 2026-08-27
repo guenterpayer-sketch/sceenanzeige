@@ -160,6 +160,7 @@ admin_header('Monitore', 'monitore');
 <?php else: ?>
 <div class="adm-neuzeile">
     <a class="adm-btn-primary" href="monitore.php?neu=1">+ Neuer Monitor</a>
+    <a class="adm-btn" href="launcher.php">🖥️ Windows-Launcher</a>
 </div>
 <?php endif; ?>
 
