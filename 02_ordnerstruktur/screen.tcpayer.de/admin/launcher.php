@@ -32,7 +32,9 @@ admin_header('Windows-Launcher', 'launcher');
         blockieren. Die Verknüpfung startet Chrome mit einem <strong>eigenen
         Profil je Saal</strong>; damit erscheint nach einem Stromausfall kein gelbes
         Band „Wiederherstellen?" mehr, und der Monitor bleibt von den Tabs und
-        Konten des normalen Chrome getrennt.
+        Konten des normalen Chrome getrennt. Bei mehreren angeschlossenen
+        Bildschirmen legt die Verknüpfung außerdem fest, <strong>auf welchem</strong>
+        der Saal aufgeht — ohne diese Angabe belegt Chrome immer den Hauptbildschirm.
     </p>
 </details>
 
@@ -72,11 +74,26 @@ admin_header('Windows-Launcher', 'launcher');
     </p>
     <ul class="adm-hilfe">
         <li><strong>Welcher Monitor</strong> — der Saal, den dieser PC anzeigen soll.</li>
+        <li><strong>Auf welchem Bildschirm</strong> — bei mehreren angeschlossenen
+            Bildschirmen. Vorgewählt ist der erweiterte Bildschirm, also in aller Regel
+            der Fernseher. Hängt nur ein Bildschirm am PC, gibt es nichts zu wählen.</li>
         <li><strong>Verknüpfung auf dem Desktop anlegen</strong> — das Symbol zum Anklicken.</li>
         <li><strong>Beim Hochfahren automatisch starten</strong> — optional. Angehakt läuft
             der Monitor nach dem Einschalten von selbst los, ohne dass jemand klickt.
             Es kann immer nur <em>ein</em> Saal automatisch starten.</li>
+        <li><strong>Vollbild absichern (Kiosk)</strong> — optional und normalerweise
+            <em>nicht</em> nötig. Ohne Haken startet der Monitor im Vollbild, aus dem
+            <kbd>F11</kbd> wieder herausführt — Taskleiste und Desktop bleiben erreichbar.
+            Mit Haken gibt es kein <kbd>F11</kbd> mehr; das ist für PCs gedacht, die
+            nichts anderes tun (etwa ein Mini-PC hinter dem Fernseher).</li>
     </ul>
+    <p class="adm-hilfe">
+        Zum Schluss bietet das Fenster an, den Monitor <strong>zur Probe zu starten</strong>.
+        Das ist die verlässlichste Prüfung, ob der richtige Bildschirm getroffen wird:
+        die Nummerierung in den Windows-Anzeigeeinstellungen muss nicht mit der
+        Reihenfolge im Auswahlfeld übereinstimmen. Landet der Saal falsch, einfach
+        den anderen Bildschirm wählen und erneut einrichten.
+    </p>
     <p class="adm-hilfe">
         Windows fragt beim ersten Start einmal nach („Möchten Sie diese Datei
         ausführen?"), weil die Datei aus dem Internet stammt — mit „Ausführen"
@@ -97,7 +114,11 @@ admin_header('Windows-Launcher', 'launcher');
         Anheften seit Version 10 nicht mehr automatisiert zu.
     </p>
     <p class="adm-hilfe">
-        Beenden lässt sich der Vollbild-Monitor mit <kbd>Alt</kbd>&nbsp;+&nbsp;<kbd>F4</kbd>.
+        <strong>Vollbild verlassen:</strong> <kbd>F11</kbd> — die Taskleiste ist dann
+        wieder da. <strong>Monitor schließen:</strong> <kbd>Alt</kbd>&nbsp;+&nbsp;<kbd>F4</kbd>.
+        Welches der offenen Fenster der Monitor ist, zeigen <kbd>Alt</kbd>&nbsp;+&nbsp;<kbd>Tab</kbd>
+        und die Taskleisten-Vorschau: der Monitor läuft unter dem roten Symbol und
+        trägt den <strong>Saalnamen</strong> als Fenstertitel.
         Voraussetzung für alles: Google Chrome ist auf dem PC installiert.
     </p>
 </div>

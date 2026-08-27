@@ -721,6 +721,14 @@
                     return;
                 }
                 _lastReloadAt = newReloadAt;
+
+                // Saalname als Fenstertitel. Am Saal-PC läuft der Monitor als
+                // eigenes Chrome-Fenster (Windows-Launcher, Schritt 34) — der
+                // Titel ist das, was in Alt+Tab, Titelleiste und Taskleisten-
+                // Vorschau steht. Ohne ihn heißt jedes Fenster nur „Monitor"
+                // und niemand weiß, welches er vor sich hat.
+                if (data.monitor_name) { document.title = data.monitor_name; }
+
                 render(data);
             })
             .catch(function (err) {

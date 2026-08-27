@@ -62,8 +62,10 @@ UTF-8 **ohne BOM** — ein BOM in der ersten Zeile lässt `cmd.exe` stolpern.
 ## Chrome-Startparameter
 
 ```
---kiosk --app="https://saal1.tcpayer.de/"
+--start-fullscreen  (oder --kiosk, wenn abgesichert gewählt)
+--app="https://saal1.tcpayer.de/"
 --user-data-dir="%LOCALAPPDATA%\TanzschuleMonitor\saal1_tcpayer_de"
+--window-position=1920,0 --window-size=1920,1080
 --no-first-run --no-default-browser-check
 --disable-session-crashed-bubble --noerrdialogs
 --disable-features=TranslateUI
@@ -76,9 +78,44 @@ UTF-8 **ohne BOM** — ein BOM in der ersten Zeile lässt `cmd.exe` stolpern.
 - `--user-data-dir` je Saal verhindert das gelbe Band „Wiederherstellen?" nach
   einem Stromausfall — der häufigste Grund, warum so ein Monitor morgens
   „kaputt" aussieht.
+- `--window-position`/`--window-size` bestimmen, **auf welchem Bildschirm** das
+  Fenster aufgeht, bevor es ins Vollbild wechselt. Ohne diese Angabe belegt
+  Chrome immer den Hauptbildschirm — der Fernseher hängt aber meist als
+  erweiterter Bildschirm daneben.
 - `--autoplay-policy` hält dem `video`-Modul den Rücken frei.
 - Der Pfad wird beim Anlegen der Verknüpfung **aufgelöst**: Umgebungsvariablen
   in den Argumenten einer `.lnk` expandiert Windows beim Start nicht.
+
+## Bildschirmwahl und Vollbild-Modus
+
+Die Liste kommt aus `[Windows.Forms.Screen]::AllScreens`. **Deren Reihenfolge
+entspricht nicht zwingend der Nummerierung in den Windows-Anzeigeeinstellungen**
+— deshalb steht die Position im Text jedes Eintrags, und das Fenster bietet am
+Ende an, den Monitor zur Probe zu starten. Das ist die einzige verlässliche
+Prüfung.
+
+Vorgewählt ist bei mehreren Bildschirmen der **erste Nicht-Hauptbildschirm**:
+der Fernseher hängt in aller Regel als erweiterter Schirm am Arbeits-PC. Bei
+einem einzigen Bildschirm ist das Auswahlfeld abgeschaltet.
+
+Das Kästchen **„Vollbild absichern (Kiosk)"** schaltet zwischen
+`--start-fullscreen` (Standard, `F11` führt heraus, Taskleiste erreichbar) und
+`--kiosk` (kein `F11`, für einen Mini-PC, der nichts anderes tut). Die
+Bildschirmangabe wird in **beiden** Fällen mitgegeben; ob Chrome sie im
+Kiosk-Modus befolgt, ist ungeprüft — falls nicht, ist der Haken wieder weg die
+Lösung. Der Hinweis steht so auch im Fenster.
+
+Beim erneuten Öffnen liest `Lies-Verknuepfung` Bildschirm und Kiosk-Haken aus
+der vorhandenen `.lnk` zurück, damit das Fenster wie beim Autostart den
+IST-Zustand zeigt.
+
+## Welches Fenster ist der Monitor?
+
+`monitor.js` setzt `document.title` auf den Saalnamen (`monitor_name` liefert
+`proxies/monitor.php` ohnehin mit). Zusammen mit dem eigenen Symbol aus `--app`
+zeigen Alt+Tab, Titelleiste und Taskleisten-Vorschau damit **„Saal 1"** statt
+„Monitor" — sonst ist bei einem Vollbild nicht erkennbar, welches Fenster
+`Alt+F4` treffen würde.
 
 ## Autostart
 

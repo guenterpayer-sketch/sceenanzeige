@@ -81,29 +81,81 @@ function Hole-Icon {
     return $null
 }
 
+# --- Bildschirme ------------------------------------------------------------
+# Ohne Positionsangabe oeffnet Chrome immer auf dem Hauptbildschirm. Haengt am
+# PC ein Fernseher als erweiterter Bildschirm, ist das der falsche. Windows
+# liefert die Liste der angeschlossenen Schirme samt Koordinaten; die
+# ausgewaehlten wandern als --window-position/--window-size in die Verknuepfung.
+#
+# Achtung: Die Reihenfolge von AllScreens entspricht nicht zwingend der
+# Nummerierung in den Windows-Anzeigeeinstellungen — deshalb steht die
+# Position mit im Text, und am Ende laesst sich das Ergebnis zur Probe starten.
+function Hole-Bildschirme {
+    $liste = @()
+    $alle = [Windows.Forms.Screen]::AllScreens
+    for ($i = 0; $i -lt $alle.Count; $i++) {
+        $b = $alle[$i].Bounds
+        $text = 'Bildschirm ' + ($i + 1) + ' — ' + $b.Width + '×' + $b.Height
+        if ($alle[$i].Primary) { $text += ' (Hauptbildschirm)' }
+        $text += '   [Position ' + $b.X + ',' + $b.Y + ']'
+        $liste += [pscustomobject]@{
+            Text = $text; X = $b.X; Y = $b.Y; Breite = $b.Width; Hoehe = $b.Height
+            Primaer = $alle[$i].Primary
+        }
+    }
+    return $liste
+}
+
 # --- Chrome-Startparameter -------------------------------------------------
-# --kiosk      : Vollbild ohne Adressleiste, kein versehentliches Verlassen
 # --app        : eigenes Fenster mit eigener Windows-App-Kennung; nur so
 #                bekommt der Launcher ein getrenntes Taskleisten-Symbol und
 #                landet nicht unter dem normalen Chrome
 # --user-data-dir : eigenes Profil je Saal. Verhindert das gelbe Band
 #                "Wiederherstellen?" nach einem Stromausfall und haelt den
 #                Monitor von den Konten/Tabs des normalen Chrome getrennt
+# --window-position/-size : legt fest, auf welchem Bildschirm das Fenster
+#                aufgeht, bevor es ins Vollbild wechselt
+# --start-fullscreen : Vollbild, aus dem F11 wieder herausfuehrt
+# --kiosk      : abgesichertes Vollbild ohne F11 — nur wenn ausdruecklich
+#                gewuenscht (Mini-PC hinter dem Fernseher). Ob Chrome dabei
+#                die Bildschirmwahl befolgt, muss am Geraet geprueft werden;
+#                falls nicht, ist der Haken wieder weg die Loesung.
 # --autoplay-policy : das Video-Modul darf ohne Mausklick abspielen
-function Baue-Argumente($monitor) {
+function Baue-Argumente($monitor, $bildschirm, $kiosk) {
     $profil = Join-Path $Basisordner $monitor.Slug
-    return @(
-        '--kiosk',
-        ('--app="' + $monitor.Url + '"'),
-        ('--user-data-dir="' + $profil + '"'),
-        '--no-first-run',
-        '--no-default-browser-check',
-        '--disable-session-crashed-bubble',
-        '--noerrdialogs',
-        '--disable-features=TranslateUI',
-        '--autoplay-policy=no-user-gesture-required',
-        '--overscroll-history-navigation=0'
-    ) -join ' '
+    $teile = @()
+    if ($kiosk) { $teile += '--kiosk' } else { $teile += '--start-fullscreen' }
+    $teile += ('--app="' + $monitor.Url + '"')
+    $teile += ('--user-data-dir="' + $profil + '"')
+    if ($bildschirm) {
+        $teile += ('--window-position=' + $bildschirm.X + ',' + $bildschirm.Y)
+        $teile += ('--window-size=' + $bildschirm.Breite + ',' + $bildschirm.Hoehe)
+    }
+    $teile += '--no-first-run'
+    $teile += '--no-default-browser-check'
+    $teile += '--disable-session-crashed-bubble'
+    $teile += '--noerrdialogs'
+    $teile += '--disable-features=TranslateUI'
+    $teile += '--autoplay-policy=no-user-gesture-required'
+    $teile += '--overscroll-history-navigation=0'
+    return $teile -join ' '
+}
+
+# Liest die Einstellungen aus einer vorhandenen Verknuepfung zurueck, damit
+# das Fenster beim erneuten Oeffnen den IST-Zustand zeigt (wie beim Autostart).
+function Lies-Verknuepfung($pfad) {
+    if (-not (Test-Path -LiteralPath $pfad)) { return $null }
+    try {
+        $shell = New-Object -ComObject WScript.Shell
+        $arg = $shell.CreateShortcut($pfad).Arguments
+        $x = $null; $y = $null
+        if ($arg -match '--window-position=(-?\d+),(-?\d+)') {
+            $x = [int]$Matches[1]; $y = [int]$Matches[2]
+        }
+        return [pscustomobject]@{ Kiosk = ($arg -match '--kiosk'); X = $x; Y = $y }
+    } catch {
+        return $null
+    }
 }
 
 function Saeubere-Dateiname($text) {
@@ -156,6 +208,7 @@ if (-not $Chrome) {
 }
 
 $Icon = Hole-Icon
+$Bildschirme = Hole-Bildschirme
 
 
 # ===========================================================================
@@ -163,7 +216,7 @@ $Icon = Hole-Icon
 # ===========================================================================
 $form = New-Object Windows.Forms.Form
 $form.Text            = 'Monitor-Launcher einrichten'
-$form.ClientSize      = New-Object Drawing.Size(480, 310)
+$form.ClientSize      = New-Object Drawing.Size(480, 400)
 $form.StartPosition   = 'CenterScreen'
 $form.FormBorderStyle = 'FixedDialog'
 $form.MaximizeBox     = $false
@@ -187,44 +240,80 @@ foreach ($m in $Monitore) {
 $cbMonitor.SelectedIndex = 0
 $form.Controls.Add($cbMonitor)
 
+$lblSchirm = New-Object Windows.Forms.Label
+$lblSchirm.Text     = 'Auf welchem Bildschirm?'
+$lblSchirm.Location = New-Object Drawing.Point(20, 82)
+$lblSchirm.Size     = New-Object Drawing.Size(440, 20)
+$form.Controls.Add($lblSchirm)
+
+$cbSchirm = New-Object Windows.Forms.ComboBox
+$cbSchirm.DropDownStyle = 'DropDownList'
+$cbSchirm.Location      = New-Object Drawing.Point(20, 106)
+$cbSchirm.Size          = New-Object Drawing.Size(440, 24)
+foreach ($b in $Bildschirme) { [void]$cbSchirm.Items.Add($b.Text) }
+$form.Controls.Add($cbSchirm)
+# Bei mehreren Bildschirmen ist der erste Nicht-Hauptbildschirm vorgewählt:
+# der Fernseher haengt in aller Regel als erweiterter Schirm am Arbeits-PC.
+$vorwahl = 0
+if ($Bildschirme.Count -gt 1) {
+    for ($i = 0; $i -lt $Bildschirme.Count; $i++) {
+        if (-not $Bildschirme[$i].Primaer) { $vorwahl = $i; break }
+    }
+}
+$cbSchirm.SelectedIndex = $vorwahl
+if ($Bildschirme.Count -le 1) { $cbSchirm.Enabled = $false }
+
 $chkDesktop = New-Object Windows.Forms.CheckBox
 $chkDesktop.Text     = 'Verknüpfung auf dem Desktop anlegen'
-$chkDesktop.Location = New-Object Drawing.Point(20, 88)
+$chkDesktop.Location = New-Object Drawing.Point(20, 148)
 $chkDesktop.Size     = New-Object Drawing.Size(440, 24)
 $form.Controls.Add($chkDesktop)
 
 $chkAutostart = New-Object Windows.Forms.CheckBox
 $chkAutostart.Text     = 'Beim Hochfahren automatisch starten'
-$chkAutostart.Location = New-Object Drawing.Point(20, 114)
+$chkAutostart.Location = New-Object Drawing.Point(20, 174)
 $chkAutostart.Size     = New-Object Drawing.Size(440, 24)
 $form.Controls.Add($chkAutostart)
 
 $lblAutostartInfo = New-Object Windows.Forms.Label
-$lblAutostartInfo.Location  = New-Object Drawing.Point(40, 138)
+$lblAutostartInfo.Location  = New-Object Drawing.Point(40, 198)
 $lblAutostartInfo.Size      = New-Object Drawing.Size(420, 18)
 $lblAutostartInfo.ForeColor = [Drawing.Color]::FromArgb(173, 33, 33)
 $form.Controls.Add($lblAutostartInfo)
 
+$chkKiosk = New-Object Windows.Forms.CheckBox
+$chkKiosk.Text     = 'Vollbild absichern (Kiosk — kein F11)'
+$chkKiosk.Location = New-Object Drawing.Point(20, 220)
+$chkKiosk.Size     = New-Object Drawing.Size(440, 24)
+$form.Controls.Add($chkKiosk)
+
+$lblKioskInfo = New-Object Windows.Forms.Label
+$lblKioskInfo.Location  = New-Object Drawing.Point(40, 244)
+$lblKioskInfo.Size      = New-Object Drawing.Size(420, 32)
+$lblKioskInfo.ForeColor = [Drawing.Color]::FromArgb(90, 90, 90)
+$lblKioskInfo.Text = "Nur für PCs, die nichts anderes tun. Landet der Monitor damit auf dem " +
+                     "falschen Bildschirm, diesen Haken wieder entfernen."
+$form.Controls.Add($lblKioskInfo)
+
 $lblHinweis = New-Object Windows.Forms.Label
-$lblHinweis.Location = New-Object Drawing.Point(20, 176)
-$lblHinweis.Size     = New-Object Drawing.Size(440, 76)
+$lblHinweis.Location = New-Object Drawing.Point(20, 286)
+$lblHinweis.Size     = New-Object Drawing.Size(440, 62)
 $lblHinweis.ForeColor = [Drawing.Color]::FromArgb(90, 90, 90)
-$lblHinweis.Text = "An die Taskleiste anheften geht nur von Hand — Windows lässt das " +
-                   "seit Version 10 nicht mehr per Skript zu:`n" +
-                   "Rechtsklick auf das neue Desktop-Symbol → »An Taskleiste anheften«.`n`n" +
-                   "Beenden lässt sich der Vollbild-Monitor mit Alt + F4."
+$lblHinweis.Text = "An die Taskleiste anheften geht nur von Hand: Rechtsklick auf das neue " +
+                   "Desktop-Symbol → »An Taskleiste anheften«.`n`n" +
+                   "Vollbild verlassen: F11 · Monitor schließen: Alt + F4"
 $form.Controls.Add($lblHinweis)
 
 $btnOk = New-Object Windows.Forms.Button
 $btnOk.Text     = 'Einrichten'
-$btnOk.Location = New-Object Drawing.Point(268, 264)
+$btnOk.Location = New-Object Drawing.Point(268, 354)
 $btnOk.Size     = New-Object Drawing.Size(95, 30)
 $btnOk.DialogResult = [Windows.Forms.DialogResult]::OK
 $form.Controls.Add($btnOk)
 
 $btnAbbruch = New-Object Windows.Forms.Button
 $btnAbbruch.Text     = 'Abbrechen'
-$btnAbbruch.Location = New-Object Drawing.Point(373, 264)
+$btnAbbruch.Location = New-Object Drawing.Point(373, 354)
 $btnAbbruch.Size     = New-Object Drawing.Size(95, 30)
 $btnAbbruch.DialogResult = [Windows.Forms.DialogResult]::Cancel
 $form.Controls.Add($btnAbbruch)
@@ -237,8 +326,10 @@ $form.CancelButton = $btnAbbruch
 # Werkzeug zum Wieder-Abschalten.
 function Aktualisiere-Haken {
     $m = $Monitore[$cbMonitor.SelectedIndex]
-    $desktopDa   = Test-Path -LiteralPath (Desktop-Pfad $m)
-    $autostartDa = Test-Path -LiteralPath (Autostart-Pfad $m)
+    $desktopPfad = Desktop-Pfad $m
+    $autoPfad    = Autostart-Pfad $m
+    $desktopDa   = Test-Path -LiteralPath $desktopPfad
+    $autostartDa = Test-Path -LiteralPath $autoPfad
 
     $chkDesktop.Checked   = ($desktopDa -or -not $autostartDa)
     $chkAutostart.Checked = $autostartDa
@@ -248,6 +339,23 @@ function Aktualisiere-Haken {
         $lblAutostartInfo.Text = 'Derzeit startet »' + $anderer + '« automatisch.'
     } else {
         $lblAutostartInfo.Text = ''
+    }
+
+    # Bildschirm und Kiosk-Haken aus einer schon vorhandenen Verknüpfung
+    # zurücklesen. Passt die gespeicherte Position zu keinem angeschlossenen
+    # Bildschirm mehr (Fernseher abgesteckt), bleibt die Vorauswahl stehen.
+    $alt = Lies-Verknuepfung $desktopPfad
+    if (-not $alt) { $alt = Lies-Verknuepfung $autoPfad }
+    if ($alt) {
+        $chkKiosk.Checked = $alt.Kiosk
+        if ($null -ne $alt.X) {
+            for ($i = 0; $i -lt $Bildschirme.Count; $i++) {
+                if ($Bildschirme[$i].X -eq $alt.X -and $Bildschirme[$i].Y -eq $alt.Y) {
+                    $cbSchirm.SelectedIndex = $i
+                    break
+                }
+            }
+        }
     }
 }
 
@@ -261,7 +369,9 @@ if ($form.ShowDialog() -ne [Windows.Forms.DialogResult]::OK) { return }
 #  Anlegen / Entfernen
 # ===========================================================================
 $monitor    = $Monitore[$cbMonitor.SelectedIndex]
-$argumente  = Baue-Argumente $monitor
+$bildschirm = $null
+if ($cbSchirm.SelectedIndex -ge 0) { $bildschirm = $Bildschirme[$cbSchirm.SelectedIndex] }
+$argumente  = Baue-Argumente $monitor $bildschirm $chkKiosk.Checked
 $desktopLnk = Desktop-Pfad $monitor
 $autoLnk    = Autostart-Pfad $monitor
 $getan      = @()
@@ -299,10 +409,21 @@ if ($getan.Count -eq 0) {
 }
 
 $text = ($monitor.Name + ' — ' + $monitor.Domain + "`n`n" + ($getan -join "`n"))
+if ($bildschirm) {
+    $text += "`n• " + $bildschirm.Text
+}
+if ($chkKiosk.Checked) {
+    $text += "`n• Vollbild abgesichert (kein F11)"
+} else {
+    $text += "`n• Vollbild, F11 führt heraus"
+}
 if ($chkDesktop.Checked) {
     $text += "`n`nAn die Taskleiste anheften:`nRechtsklick auf das neue Desktop-Symbol → »An Taskleiste anheften«."
 }
-$text += "`n`nMonitor jetzt zur Probe starten?"
+# Die Probe ist der einzige verlässliche Test, ob der richtige Bildschirm
+# getroffen wird — die Nummerierung von Windows und die Reihenfolge von
+# AllScreens müssen nicht übereinstimmen.
+$text += "`n`nMonitor jetzt zur Probe starten? (Prüft, ob der Bildschirm stimmt.)"
 
 $antwort = [Windows.Forms.MessageBox]::Show($text, 'Monitor-Launcher — fertig', 'YesNo', 'Information')
 if ($antwort -eq [Windows.Forms.DialogResult]::Yes) {
