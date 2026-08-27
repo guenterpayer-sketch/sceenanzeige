@@ -1,0 +1,4 @@
+# Die Vorlage wird ausschließlich serverseitig von launcher-download.php
+# gelesen und dort mit der aktuellen Monitor-Liste gefüllt. Ein direkter
+# Aufruf ergibt nur eine halbfertige Datei mit Platzhaltern — deshalb zu.
+Require all denied
