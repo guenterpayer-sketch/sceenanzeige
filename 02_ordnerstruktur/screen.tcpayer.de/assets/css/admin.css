@@ -1385,3 +1385,21 @@ details.adm-hilfe-klapp[open] .adm-hk-auf { display: inline; }
     font-size: 14px;
 }
 .adm-termin-hinweis a { color: #8a6a0e; font-weight: 600; }
+
+/* ── API-Protokoll (admin/nc-protokoll.php) ─────────────────────────────── */
+/* Kennzahlen-Reihe über der Tabelle: „heute / diesen Monat / Fehler". */
+.adm-nc-zahlen { display: flex; gap: 12px; flex-wrap: wrap; margin: 0 0 18px; }
+.adm-nc-zahl {
+    flex: 0 0 140px; background: #fff; border: 1px solid #dde3ea; border-radius: 8px;
+    padding: 14px 16px; display: flex; flex-direction: column; gap: 4px;
+}
+.adm-nc-zahl--breit { flex: 0 0 200px; }
+.adm-nc-zahl--warn { border-color: #f0c4c4; background: #fdf5f5; }
+.adm-nc-wert { font-size: 30px; font-weight: 700; color: #33424f; line-height: 1.1; }
+.adm-nc-zahl--warn .adm-nc-wert { color: #ad2121; }
+.adm-nc-wert-klein { font-size: 18px; font-weight: 600; color: #33424f; line-height: 1.6; }
+.adm-nc-label { font-size: 13px; color: #6b7a8d; }
+.adm-nc-monatswahl { margin: 0 0 14px; display: flex; align-items: center; gap: 8px; }
+.adm-nc-monatswahl select { padding: 6px 8px; border: 1px solid #dde3ea; border-radius: 6px; }
+.adm-nc-sperrliste { margin: 8px 0 8px 18px; padding: 0; }
+.adm-tabelle tr.adm-nc-fehlerzeile td { background: #fdf5f5; }

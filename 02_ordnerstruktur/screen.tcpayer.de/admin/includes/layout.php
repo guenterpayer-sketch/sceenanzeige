@@ -36,6 +36,7 @@ function admin_header(string $titel, string $aktiv = ''): void
         'launcher'     => ['Launcher',    'launcher.php',     true],
         'sep3'         => null,
         'fret-geraete' => ['FRET-Geräte', 'fret-geraete.php', $istAdmin],
+        'nc-protokoll' => ['API-Protokoll', 'nc-protokoll.php', $istAdmin],
     ];
     $kommtNoch = [];
     ?>
