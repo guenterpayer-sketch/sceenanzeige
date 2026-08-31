@@ -20,21 +20,33 @@
  * stehen. Der Key kommt getrennt serverseitig dazu.
  *
  * KONTINGENT (siehe includes/NcCache.php):
- *   Die NC-Legacy-API hat ein begrenztes Monatskontingent. Die rohe
- *   Event-Liste wird deshalb serverseitig bis Mitternacht gecacht —
- *   geschlüsselt NUR nach den API-Parametern (Datum + Tagesanzahl), nicht
- *   nach Standort-/Saal-Filter. Die Filter laufen danach über die
- *   gecachten Daten, dadurch teilen sich alle Säle und alle Modul-
- *   Instanzen EINEN Abruf pro Tag.
+ *   Die NC-Legacy-API hat ein begrenztes Monatskontingent. Drei Vorkehrungen
+ *   sorgen dafür, dass daraus EIN Abruf pro Tag wird statt einem je Monitor:
+ *     1. Erfolge werden bis Mitternacht gecacht — geschlüsselt NUR nach den
+ *        API-Parametern (Datum + Tagesanzahl), nicht nach Standort-/Saal-
+ *        Filter. Die Filter laufen danach über die gecachten Daten, dadurch
+ *        teilen sich alle Säle und alle Modul-Instanzen EINEN Abruf.
+ *     2. Fehler werden ebenfalls kurz gemerkt (NcCache::FEHLER_TTL_SEK).
+ *        Sonst geht jeder Wiederholungsversuch der Monitore (alle 10 Min.,
+ *        pro Instanz) als echter API-Aufruf raus — ausgerechnet dann, wenn
+ *        NC ohnehin klemmt.
+ *     3. Eine Sperre verhindert, dass beim gleichzeitigen Ablauf (Mitternacht,
+ *        „Monitore neu laden") alle Monitore zugleich losziehen.
  *   Frische Daten außer der Reihe gibt es über „Monitore neu laden" im
- *   Admin — das leert den Cache (admin/reload_trigger.php). Bewusst kein
- *   Query-Parameter dafür: dieser Endpunkt ist ohne Login erreichbar.
+ *   Admin — das leert Daten UND gemerkte Fehler (admin/reload_trigger.php).
+ *   Bewusst kein Query-Parameter dafür: dieser Endpunkt ist ohne Login
+ *   erreichbar.
+ *
+ * Jeder ECHTE Netzabruf wird in includes/NcProtokoll.php festgehalten —
+ * sichtbar unter „API-Protokoll" im Admin. Aus dem Cache bediente Anfragen
+ * stehen dort nicht, sie kosten kein Kontingent.
  */
 
 declare(strict_types=1);
 
 require __DIR__ . '/../config.php';
 require __DIR__ . '/../includes/NcCache.php';
+require __DIR__ . '/../includes/NcProtokoll.php';
 require __DIR__ . '/_cors.php';
 
 // CORS wird zentral per .htaccess gesetzt.
@@ -76,11 +88,54 @@ $dateMitternacht = strtotime('today midnight');
 
 // Schlüssel nur aus den API-Parametern — die Standort-/Saal-Filter greifen
 // erst weiter unten, damit sich alle Instanzen einen Abruf teilen.
-$cacheSchluessel = $dateMitternacht . '_' . $days;
-$ausCache        = NcCache::lese($cacheSchluessel);
+$cacheSchluessel = 'timetable_' . $dateMitternacht . '_' . $days;
+
+/** Sperre freigeben, Fehler merken und mit Fehlermeldung aussteigen. */
+function nc_abbruch(string $schluessel, $sperre, string $meldung): never
+{
+    NcCache::schreibeFehler($schluessel, $meldung);
+    NcCache::sperreFreigeben($sperre);
+    proxy_fehler($meldung, 502);
+}
+
+$events   = null;
+$geholtAm = 0;
+$quelle   = 'cache';
+$sperre   = null;
+
+$ausCache = NcCache::lese($cacheSchluessel);
+
+if ($ausCache === null) {
+    // Steht ein frischer Fehler im Negativ-Gedächtnis? Dann NC in Ruhe lassen
+    // und dem Monitor dieselbe Meldung geben — er zeigt weiter seine alten
+    // Daten und versucht es später erneut.
+    $gemerkt = NcCache::leseFehler($cacheSchluessel);
+    if ($gemerkt !== null) {
+        proxy_fehler($gemerkt['meldung'], 502);
+    }
+
+    // Nur einer geht los. Kommt die Sperre nicht zustande, wird trotzdem
+    // weitergemacht — lieber ein Abruf zu viel als ein leerer Monitor.
+    $sperre = NcCache::sperreHolen($cacheSchluessel);
+
+    // Zweiter Blick: Während des Wartens hat der Sperrenhalter womöglich
+    // schon geliefert (oder ist gescheitert).
+    $ausCache = NcCache::lese($cacheSchluessel);
+    if ($ausCache === null) {
+        $gemerkt = NcCache::leseFehler($cacheSchluessel);
+        if ($gemerkt !== null) {
+            NcCache::sperreFreigeben($sperre);
+            proxy_fehler($gemerkt['meldung'], 502);
+        }
+    }
+}
 
 if ($ausCache !== null) {
-    $events   = $ausCache['events'];
+    // Auch wenn wir sie nur zum Nachschauen geholt haben: sofort freigeben,
+    // damit niemand hinter uns unnötig wartet.
+    NcCache::sperreFreigeben($sperre);
+
+    $events   = $ausCache['daten'];
     $geholtAm = (int)$ausCache['geholt_am'];
     $quelle   = 'cache';
 } else {
@@ -89,6 +144,8 @@ if ($ausCache !== null) {
         'date'   => $dateMitternacht,
         'days'   => $days,
     ]);
+
+    $start = microtime(true);
 
     $ch = curl_init(NC_API_BASE . '/timetable/data');
     curl_setopt_array($ch, [
@@ -99,23 +156,30 @@ if ($ausCache !== null) {
         CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded'],
     ]);
     $antwort   = curl_exec($ch);
-    $httpCode  = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    $httpCode  = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
     $curlError = curl_error($ch);
     curl_close($ch);
 
+    $dauerMs = (int)round((microtime(true) - $start) * 1000);
+
     if ($antwort === false) {
-        proxy_fehler('Verbindung zur Nimbuscloud fehlgeschlagen: ' . $curlError, 502);
+        $meldung = 'Verbindung zur Nimbuscloud fehlgeschlagen: ' . $curlError;
+        NcProtokoll::eintragen('timetable', 0, $dauerMs, false, $curlError);
+        nc_abbruch($cacheSchluessel, $sperre, $meldung);
     }
     if ($httpCode === 401) {
-        proxy_fehler('Nimbuscloud lehnt den API-Key ab (401).', 502);
+        NcProtokoll::eintragen('timetable', $httpCode, $dauerMs, false, 'API-Key abgelehnt');
+        nc_abbruch($cacheSchluessel, $sperre, 'Nimbuscloud lehnt den API-Key ab (401).');
     }
     if ($httpCode >= 400) {
-        proxy_fehler('Nimbuscloud-Fehler (HTTP ' . $httpCode . ').', 502);
+        NcProtokoll::eintragen('timetable', $httpCode, $dauerMs, false, 'HTTP ' . $httpCode);
+        nc_abbruch($cacheSchluessel, $sperre, 'Nimbuscloud-Fehler (HTTP ' . $httpCode . ').');
     }
 
     $json = json_decode($antwort, true);
     if (!is_array($json)) {
-        proxy_fehler('Unerwartete Antwort von der Nimbuscloud.', 502);
+        NcProtokoll::eintragen('timetable', $httpCode, $dauerMs, false, 'Antwort nicht lesbar');
+        nc_abbruch($cacheSchluessel, $sperre, 'Unerwartete Antwort von der Nimbuscloud.');
     }
 
     // Legacy-API verpackt das Ergebnis in "content".
@@ -126,8 +190,11 @@ if ($ausCache !== null) {
         $events = [];
     }
 
+    NcProtokoll::eintragen('timetable', $httpCode, $dauerMs, true, count($events) . ' Termine');
+
     // Nur Erfolge cachen — Fehlerfälle steigen oben schon aus.
     NcCache::schreibe($cacheSchluessel, $events, (int)strtotime('tomorrow midnight'));
+    NcCache::sperreFreigeben($sperre);
 
     $geholtAm = time();
     $quelle   = 'api';

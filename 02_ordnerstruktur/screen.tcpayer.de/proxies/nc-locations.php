@@ -8,11 +8,19 @@
  * Berechtigung: Stammdaten — Lesezugriff (gleicher Key wie Stundenplan).
  * Nur vom Backend (Admin-Editor) aufgerufen — kein CORS nötig.
  * NC_API_KEY bleibt serverseitig, kommt nie ans Frontend.
+ *
+ * KONTINGENT: Standorte und Säle ändern sich praktisch nie, dieser Aufruf
+ * lief aber bei JEDEM Öffnen einer Stundenplan-Instanz erneut los. Er nutzt
+ * jetzt denselben Tages-Cache wie nc.php (inklusive Negativ-Gedächtnis und
+ * Sperre) und wird ebenso protokolliert. Neu angelegte Säle erscheinen
+ * spätestens am nächsten Tag, sofort über „Monitore neu laden" im Admin.
  */
 
 declare(strict_types=1);
 
 require __DIR__ . '/../config.php';
+require __DIR__ . '/../includes/NcCache.php';
+require __DIR__ . '/../includes/NcProtokoll.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -22,10 +30,48 @@ function nc_loc_fehler(string $msg): never
     exit;
 }
 
+/** Sperre freigeben, Fehler merken und mit Fehlermeldung aussteigen. */
+function nc_loc_abbruch(string $schluessel, $sperre, string $meldung): never
+{
+    NcCache::schreibeFehler($schluessel, $meldung);
+    NcCache::sperreFreigeben($sperre);
+    nc_loc_fehler($meldung);
+}
+
 $apiKey = defined('NC_API_KEY') ? NC_API_KEY : '';
 if ($apiKey === '') {
     nc_loc_fehler('NC_API_KEY ist nicht konfiguriert (config.php).');
 }
+
+$cacheSchluessel = 'locations';
+$sperre          = null;
+
+$ausCache = NcCache::lese($cacheSchluessel);
+
+if ($ausCache === null) {
+    $gemerkt = NcCache::leseFehler($cacheSchluessel);
+    if ($gemerkt !== null) {
+        nc_loc_fehler($gemerkt['meldung']);
+    }
+
+    $sperre   = NcCache::sperreHolen($cacheSchluessel);
+    $ausCache = NcCache::lese($cacheSchluessel);
+    if ($ausCache === null) {
+        $gemerkt = NcCache::leseFehler($cacheSchluessel);
+        if ($gemerkt !== null) {
+            NcCache::sperreFreigeben($sperre);
+            nc_loc_fehler($gemerkt['meldung']);
+        }
+    }
+}
+
+if ($ausCache !== null) {
+    NcCache::sperreFreigeben($sperre);
+    echo json_encode(['ok' => true, 'standorte' => $ausCache['daten']]);
+    exit;
+}
+
+$start = microtime(true);
 
 $ch = curl_init(NC_API_BASE . '/data/locations');
 curl_setopt_array($ch, [
@@ -36,20 +82,25 @@ curl_setopt_array($ch, [
     CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded'],
 ]);
 $antwort  = curl_exec($ch);
-$httpCode = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+$httpCode = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
 $curlErr  = curl_error($ch);
 curl_close($ch);
 
+$dauerMs = (int)round((microtime(true) - $start) * 1000);
+
 if ($antwort === false) {
-    nc_loc_fehler('Verbindung zur Nimbuscloud fehlgeschlagen: ' . $curlErr);
+    NcProtokoll::eintragen('locations', 0, $dauerMs, false, $curlErr);
+    nc_loc_abbruch($cacheSchluessel, $sperre, 'Verbindung zur Nimbuscloud fehlgeschlagen: ' . $curlErr);
 }
 if ($httpCode >= 400) {
-    nc_loc_fehler('Nimbuscloud-Fehler (HTTP ' . $httpCode . ').');
+    NcProtokoll::eintragen('locations', $httpCode, $dauerMs, false, 'HTTP ' . $httpCode);
+    nc_loc_abbruch($cacheSchluessel, $sperre, 'Nimbuscloud-Fehler (HTTP ' . $httpCode . ').');
 }
 
 $json = json_decode($antwort, true);
 if (!is_array($json)) {
-    nc_loc_fehler('Unerwartete Antwort von der NC-API.');
+    NcProtokoll::eintragen('locations', $httpCode, $dauerMs, false, 'Antwort nicht lesbar');
+    nc_loc_abbruch($cacheSchluessel, $sperre, 'Unerwartete Antwort von der NC-API.');
 }
 
 $content = $json['content'] ?? $json;
@@ -75,9 +126,16 @@ foreach ($locationListe as $item) {
 }
 
 if (empty($standorte)) {
-    nc_loc_fehler('Keine Standorte von der NC-API erhalten.');
+    NcProtokoll::eintragen('locations', $httpCode, $dauerMs, false, 'Keine Standorte in der Antwort');
+    nc_loc_abbruch($cacheSchluessel, $sperre, 'Keine Standorte von der NC-API erhalten.');
 }
 
 usort($standorte, fn($a, $b) => strcmp($a['name'], $b['name']));
+$standorte = array_values($standorte);
 
-echo json_encode(['ok' => true, 'standorte' => array_values($standorte)]);
+NcProtokoll::eintragen('locations', $httpCode, $dauerMs, true, count($standorte) . ' Standorte');
+
+NcCache::schreibe($cacheSchluessel, $standorte, (int)strtotime('tomorrow midnight'));
+NcCache::sperreFreigeben($sperre);
+
+echo json_encode(['ok' => true, 'standorte' => $standorte]);
