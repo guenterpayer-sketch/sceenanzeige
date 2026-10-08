@@ -148,6 +148,14 @@
 
             var url = basis + '/proxies/veranstaltungen.php?anzahl=' + anzahl;
 
+            // Kategorie-Filter: gespeichert als JSON-String "[8,10]" oder ""
+            // (= alle). Gefiltert wird serverseitig im Proxy.
+            var kategorien = [];
+            try { kategorien = JSON.parse(settings.kategorien || '[]'); } catch (e) {}
+            if (Array.isArray(kategorien) && kategorien.length > 0) {
+                url += '&kategorien=' + encodeURIComponent(kategorien.join(','));
+            }
+
             fetch(url, { cache: 'no-store' })
                 .then(function (r) { return r.json(); })
                 .then(function (data) {

@@ -464,3 +464,67 @@
                 + 'Standorte konnten nicht geladen werden.</span>';
         });
 })();
+
+// ---- Veranstaltung: Kategorie-Checkboxen (Kategorien von tcpayer.de) ----
+// Muster wie der Standort-Picker oben. Gespeichert werden Kategorie-IDs als
+// JSON-String "[8,10]"; nichts angehakt = "" = alle Veranstaltungen.
+(function () {
+    var picker = document.getElementById('f_kategorien');
+    var hidden = document.getElementById('f_kategorien_hidden');
+    if (!picker || !hidden) { return; }
+
+    var selected = [];
+    try { selected = JSON.parse(hidden.value || '[]'); } catch (e) {}
+    if (!Array.isArray(selected)) { selected = []; }
+    selected = selected.map(Number);
+
+    var escHtml = TMAdmin.escapeHtml;
+
+    function syncHidden() {
+        var ids = [];
+        picker.querySelectorAll('input[type="checkbox"]:checked').forEach(function (cb) {
+            ids.push(parseInt(cb.value, 10));
+        });
+        hidden.value = ids.length > 0 ? JSON.stringify(ids) : '';
+    }
+
+    function option(id, text, checked) {
+        var label = document.createElement('label');
+        label.className = 'adm-location-option';
+        label.innerHTML = '<input type="checkbox" value="' + id + '"'
+            + (checked ? ' checked' : '') + '> ' + escHtml(text);
+        picker.appendChild(label);
+    }
+
+    fetch('../proxies/veranstaltung-kategorien.php')
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (!data.ok || !data.kategorien || data.kategorien.length === 0) {
+                picker.innerHTML = '<span class="adm-leer">'
+                    + (data.error ? escHtml(data.error) : 'Keine Kategorien auf tcpayer.de gefunden.')
+                    + '</span>';
+                return;
+            }
+
+            picker.innerHTML = '';
+            var bekannt = [];
+            data.kategorien.forEach(function (k) {
+                bekannt.push(k.id);
+                option(k.id, k.name + ' (' + k.anzahl + ')', selected.indexOf(k.id) !== -1);
+            });
+            // Gespeicherte, in WordPress inzwischen gelöschte Kategorien
+            // sichtbar lassen — sonst verschwindet der Haken unbemerkt.
+            // Der Proxy ignoriert sie ohnehin; Haken entfernen räumt auf.
+            selected.forEach(function (id) {
+                if (bekannt.indexOf(id) === -1) {
+                    option(id, 'Kategorie ' + id + ' (nicht mehr vorhanden)', true);
+                }
+            });
+            syncHidden();
+            picker.addEventListener('change', syncHidden);
+        })
+        .catch(function () {
+            picker.innerHTML = '<span class="adm-leer adm-flash-fehler" style="padding:4px 8px;border-radius:4px">'
+                + 'Kategorien konnten nicht geladen werden.</span>';
+        });
+})();

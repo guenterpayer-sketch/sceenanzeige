@@ -503,6 +503,7 @@
             tdPicker.liste.innerHTML = '<p class="adm-leer">Noch keine Playlist angelegt.</p>';
         }
         PLAYLISTS.forEach(function (it) {
+            if (it.archiviert) { return; } // archiviert = nicht mehr auswählbar
             var btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'adm-picker-instanz' + (it.aktiv ? '' : ' inaktiv')

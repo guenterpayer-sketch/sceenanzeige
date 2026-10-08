@@ -131,6 +131,15 @@ final class ModuleRegistry
                 $out .= '<input type="hidden" name="' . $name . '" id="f_' . $key . '_hidden" value="' . $jsonVal . '">';
                 break;
 
+            case 'wp_kategorie_picker':
+                // Platzhalter-Div; JS (instanz.js) füllt Checkboxen mit den
+                // Veranstaltungs-Kategorien von tcpayer.de ein.
+                // Wert ist JSON-String "[8,10]" (Kategorie-IDs) oder "" (= alle).
+                $jsonVal = htmlspecialchars((string)($value ?? ''));
+                $out .= '<div id="f_' . $key . '" class="adm-location-picker adm-kategorie-picker"><span class="adm-leer">Lade Kategorien…</span></div>';
+                $out .= '<input type="hidden" name="' . $name . '" id="f_' . $key . '_hidden" value="' . $jsonVal . '">';
+                break;
+
             case 'room_picker':
                 // Platzhalter-Select; JS (in instanz.php) füllt Optgruppen ein.
                 // Wert ist int (0 = alle Säle, sonst room_id).
@@ -196,6 +205,15 @@ final class ModuleRegistry
                 case 'location_picker':
                     // Gespeichert als JSON-String "[1,3]" oder "" (= alle)
                     $result[$key] = is_string($raw) ? $raw : ($field['default'] ?? '');
+                    break;
+                case 'wp_kategorie_picker':
+                    // Gespeichert als JSON-String "[8,10]" oder "" (= alle);
+                    // nur positive Ganzzahlen werden übernommen.
+                    $ids = is_string($raw) ? json_decode($raw, true) : null;
+                    $ids = is_array($ids)
+                        ? array_values(array_unique(array_filter(array_map('intval', $ids), static fn($i) => $i > 0)))
+                        : [];
+                    $result[$key] = $ids ? json_encode($ids) : '';
                     break;
                 case 'room_picker':
                     // Gespeichert als int: 0 = alle Säle, sonst room_id
