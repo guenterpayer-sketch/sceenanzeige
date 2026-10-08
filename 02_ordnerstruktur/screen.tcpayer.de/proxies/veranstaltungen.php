@@ -6,7 +6,7 @@
  * (öffentlich, kein API-Key erforderlich).
  *
  * Aufruf vom Frontend:
- *   GET proxies/veranstaltungen.php[?anzahl=<int>]
+ *   GET proxies/veranstaltungen.php[?anzahl=<int>][&kategorien=<id>,<id>]
  *
  * Liefert:
  *   { "events": [ { titel, start_date, end_date, bild_url, venue, beschreibung } ] }
@@ -28,6 +28,25 @@ $heute  = date('Y-m-d');
 $apiUrl = 'https://tcpayer.de/wp-json/tribe/events/v1/events'
     . '?per_page=' . $anzahl
     . '&start_date=' . urlencode($heute);
+
+// Kategorie-Filter (Instanz-Einstellung "kategorien", hier als "8,10").
+// Gefiltert wird bei der API selbst, damit "anzahl" auch nach dem Filtern
+// stimmt. Unbekannte IDs werden vorher aussortiert — die API würde sonst die
+// ganze Abfrage mit HTTP 400 ablehnen. Bleibt nichts übrig, gibt es bewusst
+// eine leere Liste statt aller Termine.
+$kategorienParam = trim((string)($_GET['kategorien'] ?? ''));
+if ($kategorienParam !== '') {
+    require __DIR__ . '/../includes/VeranstaltungKategorien.php';
+    $gewuenscht = array_values(array_unique(array_filter(
+        array_map('intval', explode(',', $kategorienParam)),
+        static fn($id) => $id > 0
+    )));
+    $gueltig = VeranstaltungKategorien::gueltigeIds($gewuenscht);
+    if (empty($gueltig)) {
+        proxy_json_exit(['events' => []]);
+    }
+    $apiUrl .= '&categories=' . implode(',', $gueltig);
+}
 
 $ch = curl_init($apiUrl);
 curl_setopt_array($ch, [

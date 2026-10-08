@@ -3,7 +3,7 @@
  * includes/Playlist.php
  *
  * CRUD-Helfer für die Playlist-Hauptfläche (Schritt 6, Playlist-Editor):
- *   - playlists                (Name, aktiv)
+ *   - playlists                (Name, aktiv, ordner_id, archiviert)
  *   - playlist_layout          (1:1, Spaltenanzahl + Breiten + Header/Footer)
  *   - playlist_spalten_inhalte (Modul-Instanzen je Spalte, Reihenfolge)
  *
@@ -27,21 +27,85 @@ final class Playlist
     // ------------------------------------------------------------------
 
     /** Legt eine Playlist samt Default-Layout (1-spaltig) an, liefert die neue ID. */
-    public static function create(string $name): int
+    public static function create(string $name, ?int $ordnerId = null): int
     {
         $pdo = get_pdo();
-        $stmt = $pdo->prepare('INSERT INTO playlists (name, aktiv) VALUES (:name, 1)');
-        $stmt->execute([':name' => trim($name)]);
+        $stmt = $pdo->prepare('INSERT INTO playlists (name, aktiv, ordner_id) VALUES (:name, 1, :ordner)');
+        $stmt->execute([':name' => trim($name), ':ordner' => $ordnerId]);
         $id = (int)$pdo->lastInsertId();
         // Invariante: jede Playlist hat genau eine playlist_layout-Zeile.
         self::speichereLayout($id, 1, [100], true, true);
         return $id;
     }
 
-    public static function update(int $id, string $name): void
+    public static function update(int $id, string $name, ?int $ordnerId = null): void
     {
-        get_pdo()->prepare('UPDATE playlists SET name = :name WHERE id = :id')
-            ->execute([':name' => trim($name), ':id' => $id]);
+        get_pdo()->prepare('UPDATE playlists SET name = :name, ordner_id = :ordner WHERE id = :id')
+            ->execute([':name' => trim($name), ':ordner' => $ordnerId, ':id' => $id]);
+    }
+
+    // ------------------------------------------------------------------
+    // Archiv (Migration 15)
+    // ------------------------------------------------------------------
+
+    /**
+     * Wo ist die Playlist noch eingeplant? Liefert lesbare Fundstellen
+     * (leer = nirgends). Grundlage für die Archiv-Sperre: eine archivierte
+     * Playlist ist in der Übersicht unsichtbar — liefe sie trotzdem auf einem
+     * Monitor, wüsste niemand mehr, woher sie kommt.
+     *
+     * @return string[]
+     */
+    public static function einplanungen(int $id): array
+    {
+        $pdo = get_pdo();
+        $orte = [];
+
+        $stmt = $pdo->prepare(
+            'SELECT DISTINCT m.name FROM monitor_zeitplan z JOIN monitore m ON m.id = z.monitor_id
+             WHERE z.playlist_id = :id ORDER BY m.name'
+        );
+        $stmt->execute([':id' => $id]);
+        foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $name) {
+            $orte[] = 'Wochenplan von „' . $name . '"';
+        }
+
+        try {
+            $stmt = $pdo->prepare(
+                'SELECT m.name, MIN(t.datum_von) AS ab FROM monitor_termine t JOIN monitore m ON m.id = t.monitor_id
+                 WHERE t.playlist_id = :id AND t.datum_bis >= CURDATE()
+                 GROUP BY m.name ORDER BY m.name'
+            );
+            $stmt->execute([':id' => $id]);
+            foreach ($stmt->fetchAll() as $row) {
+                $orte[] = 'Kalender-Termin auf „' . $row['name'] . '" (ab '
+                        . date('d.m.Y', strtotime((string)$row['ab'])) . ')';
+            }
+        } catch (PDOException $e) {
+            // Migration 14 noch nicht eingespielt → keine Termine
+            if ($e->getCode() !== '42S02') { throw $e; }
+        }
+
+        return $orte;
+    }
+
+    /**
+     * Archiviert eine Playlist — nur, wenn sie nirgends mehr eingeplant ist.
+     * @return array{ok:bool, orte?:string[]}
+     */
+    public static function archivieren(int $id): array
+    {
+        $orte = self::einplanungen($id);
+        if (!empty($orte)) {
+            return ['ok' => false, 'orte' => $orte];
+        }
+        get_pdo()->prepare('UPDATE playlists SET archiviert = 1 WHERE id = :id')->execute([':id' => $id]);
+        return ['ok' => true];
+    }
+
+    public static function wiederherstellen(int $id): void
+    {
+        get_pdo()->prepare('UPDATE playlists SET archiviert = 0 WHERE id = :id')->execute([':id' => $id]);
     }
 
     /** Pausiert/aktiviert die GESAMTE Playlist ohne sie zu löschen. */
@@ -88,18 +152,34 @@ final class Playlist
      * Alle Playlists inkl. Layout-Kurzinfo und Modul-Anzahl (für die Übersicht).
      * @return array<int,array>
      */
-    public static function listAll(): array
+    public static function listAll(bool $ohneArchiv = false): array
     {
-        $sql = 'SELECT p.id, p.name, p.aktiv, p.erstellt_am,
+        // anzahl_termine_kommend: Kalender-Termine, die heute oder später noch
+        // gelten (für die Verwendungs-Filter + Archiv-Sperre in playlists.php).
+        $termine = '(SELECT COUNT(*) FROM monitor_termine t WHERE t.playlist_id = p.id AND t.datum_bis >= CURDATE())';
+        try {
+            return self::listAllSql($termine, $ohneArchiv);
+        } catch (PDOException $e) {
+            // Migration 14 noch nicht eingespielt → wie „keine Termine"
+            if ($e->getCode() !== '42S02') { throw $e; }
+            return self::listAllSql('0', $ohneArchiv);
+        }
+    }
+
+    private static function listAllSql(string $termineSql, bool $ohneArchiv): array
+    {
+        $sql = 'SELECT p.id, p.name, p.aktiv, p.erstellt_am, p.ordner_id, p.archiviert,
                        l.spalten_anzahl, l.spalte1_breite, l.spalte2_breite, l.spalte3_breite,
                        l.header_sichtbar, l.footer_ticker,
                        (SELECT COUNT(*) FROM playlist_spalten_inhalte s WHERE s.playlist_id = p.id) AS anzahl_module,
                        (SELECT COUNT(DISTINCT z.monitor_id) FROM monitor_zeitplan z WHERE z.playlist_id = p.id) AS anzahl_monitore,
                        (SELECT GROUP_CONCAT(m.name ORDER BY m.name SEPARATOR \', \')
                         FROM monitor_zeitplan z2 JOIN monitore m ON m.id = z2.monitor_id
-                        WHERE z2.playlist_id = p.id) AS monitor_namen
+                        WHERE z2.playlist_id = p.id) AS monitor_namen,
+                       ' . $termineSql . ' AS anzahl_termine_kommend
                 FROM playlists p
                 LEFT JOIN playlist_layout l ON l.playlist_id = p.id
+                ' . ($ohneArchiv ? 'WHERE p.archiviert = 0' : '') . '
                 ORDER BY p.name';
         return get_pdo()->query($sql)->fetchAll();
     }

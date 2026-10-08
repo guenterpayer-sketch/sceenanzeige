@@ -54,10 +54,23 @@ if ($hlIn > 0 && ($hlObj = ModulInstanz::find($hlIn))) {
               . '</strong>" — zurück/schließen führt zur markierten Playlist-Übersicht';
 }
 
-$layouts = LayoutRegistry::getAll();
+// --- Ordner-Ansicht merken (von=alle|none|archiv|<id>): Zurück, Abbrechen
+// und Speichern & schließen führen in den Ordner, aus dem man kam.
+$von = (string)($_GET['von'] ?? '');
+if (!in_array($von, ['alle', 'none', 'archiv'], true) && !ctype_digit($von)) { $von = ''; }
+$vonQuery   = $von !== '' ? '&von=' . rawurlencode($von) : '';
+$listeQuery = ltrim(($von !== '' ? '&ordner=' . rawurlencode($von) : '') . $hlQuery, '&');
+$listeUrl   = 'playlists.php' . ($listeQuery !== '' ? '?' . $listeQuery : '');
+
+$layouts    = LayoutRegistry::getAll();
+$ordnerAlle = PlaylistOrdner::listAllMitAnzahl();
 
 // --- Vorbelegung ---
 $werteName   = $playlist['name'] ?? '';
+// Neue Playlist aus einem Ordner heraus angelegt → dieser Ordner ist vorgewählt
+$werteOrdner = $istNeu
+    ? (ctype_digit($von) ? (int)$von : null)
+    : ($playlist['ordner_id'] !== null ? (int)$playlist['ordner_id'] : null);
 $werteAktiv  = $istNeu ? true : (bool)$playlist['aktiv'];
 $layoutRow   = $istNeu ? null : Playlist::ladeLayout($id);
 $werteLayout = Playlist::layoutIdAus($layoutRow) ?? '1-spaltig';
@@ -102,6 +115,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // --- Speichern ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'speichern') {
     $werteName   = trim((string)($_POST['name'] ?? ''));
+    $werteOrdner = (int)($_POST['ordner_id'] ?? 0);
+    $werteOrdner = ($werteOrdner > 0 && PlaylistOrdner::find($werteOrdner)) ? $werteOrdner : null;
     $werteAktiv  = !empty($_POST['aktiv']);
     $werteHeader = !empty($_POST['header_sichtbar']);
     $werteFooter = !empty($_POST['footer_ticker']);
@@ -131,9 +146,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'speic
 
     if (empty($fehler)) {
         if ($istNeu) {
-            $id = Playlist::create($werteName);
+            $id = Playlist::create($werteName, $werteOrdner);
         } else {
-            Playlist::update($id, $werteName);
+            Playlist::update($id, $werteName, $werteOrdner);
         }
         Playlist::setAktiv($id, $werteAktiv);
         Playlist::speichereLayout($id, $spalten, $breiten, $werteHeader, $werteFooter);
@@ -150,11 +165,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['aktion'] ?? '') === 'speic
         Playlist::ersetzeSpaltenInhalte($id, $inhalte);
 
         if (!empty($_POST['bleiben'])) {
-            header('Location: playlist-editor.php?id=' . $id . '&gespeichert=1' . $hlQuery);
+            header('Location: playlist-editor.php?id=' . $id . '&gespeichert=1' . $hlQuery . $vonQuery);
         } else {
             // id mitgeben: der Flash-Aktions-Link auf playlists.php kann dann
             // drüben direkt die Monitore dieser Playlist hervorheben.
-            header('Location: playlists.php?gespeichert=1&id=' . $id . $hlQuery);
+            header('Location: playlists.php?gespeichert=1&id=' . $id . ($listeQuery !== '' ? '&' . $listeQuery : ''));
         }
         exit;
     }
@@ -174,7 +189,7 @@ function pl_modul_icon(string $icon): string
 
 <?php if ($hlLeiste !== null) { admin_hl_leiste($hlLeiste, 'playlist-editor.php' . ($id > 0 ? '?id=' . $id : '')); } ?>
 
-<p><a href="playlists.php<?= $hlQuery !== '' ? htmlspecialchars('?' . substr($hlQuery, 1)) : '' ?>" class="adm-zurueck">← zurück zu den Playlists</a></p>
+<p><a href="<?= htmlspecialchars($listeUrl) ?>" class="adm-zurueck">← zurück zu den Playlists</a></p>
 
 <?php if (isset($_GET['gespeichert'])): ?>
     <div class="adm-flash">Playlist gespeichert.</div>
@@ -191,6 +206,15 @@ function pl_modul_icon(string $icon): string
         <div class="field">
             <label for="name">Name der Playlist</label>
             <input type="text" id="name" name="name" value="<?= htmlspecialchars($werteName) ?>" required>
+        </div>
+        <div class="field">
+            <label for="ordner_id">Ordner</label>
+            <select id="ordner_id" name="ordner_id">
+                <option value="0">— Ohne Ordner —</option>
+                <?php foreach ($ordnerAlle as $o): ?>
+                    <option value="<?= (int)$o['id'] ?>"<?= $werteOrdner === (int)$o['id'] ? ' selected' : '' ?>><?= htmlspecialchars($o['name']) ?></option>
+                <?php endforeach; ?>
+            </select>
         </div>
         <div class="field field-bool">
             <label for="aktiv">
@@ -273,7 +297,7 @@ function pl_modul_icon(string $icon): string
     <div class="adm-aktionsleiste">
         <button type="submit" name="bleiben" value="1" class="adm-btn-primary">Speichern</button>
         <button type="submit" class="adm-btn-primary">Speichern &amp; schließen</button>
-        <a href="playlists.php<?= $hlQuery !== '' ? htmlspecialchars('?' . substr($hlQuery, 1)) : '' ?>" class="adm-btn adm-btn-grau">Abbrechen</a>
+        <a href="<?= htmlspecialchars($listeUrl) ?>" class="adm-btn adm-btn-grau">Abbrechen</a>
     </div>
 </form>
 

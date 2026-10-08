@@ -318,6 +318,10 @@ body {
 }
 .adm-ordner-tools .adm-ordner-edit:hover { background: #ad2121; }
 .adm-ordner-tools .adm-ordner-del:hover { background: #c0392b; }
+/* Playlist-Ordner (Schritt 36): Archiv-Kachel gedämpft, damit sie sich von
+   den Arbeitsordnern abhebt. */
+.adm-ordner-archiv { opacity: .75; }
+.adm-ordner-archiv:hover { opacity: 1; }
 @media (max-width: 760px) { .adm-ordnergrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 /* Ebene 2: Instanz-Kacheln */
@@ -611,6 +615,10 @@ body {
     font-size: 12px; background: #eef1f5; color: #4a5764;
     border-radius: 10px; padding: 2px 8px;
 }
+/* Aufräum-Hinweis: Playlist weder im Wochenplan noch in einem kommenden Termin */
+.adm-meta-badge--ungenutzt { background: #f0e2c0; color: #7a5b00; cursor: help; }
+/* Ordnername auf der Kachel (nur in „Alle Playlists" und im Archiv) */
+.adm-kachel-ordner { font-size: 12px; color: #8a97a6; margin: -2px 0 6px; }
 
 /* Monitor-Badge mit Hover-Tooltip (Monitor-Namen) */
 .adm-monitore-badge--aktiv {

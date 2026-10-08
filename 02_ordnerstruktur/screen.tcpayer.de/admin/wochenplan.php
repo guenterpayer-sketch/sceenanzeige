@@ -65,11 +65,13 @@ foreach ($monitore as $m) {
 // wie termin-aktion.php nach dem Speichern
 $termineFuerJs = Monitor::termineFuerKalender($wochenStart->format('Y-m-d'), $wochenEnde->format('Y-m-d'));
 
-// Playlists für den Termin-Dialog (Picker)
+// Playlists für den Termin-Dialog. Archivierte bleiben in der Liste, damit
+// alte Termine ihren Namen behalten — der Picker blendet sie aus.
 $playlistsFuerJs = array_map(static fn($p) => [
-    'id'    => (int)$p['id'],
-    'name'  => $p['name'],
-    'aktiv' => (bool)$p['aktiv'],
+    'id'         => (int)$p['id'],
+    'name'       => $p['name'],
+    'aktiv'      => (bool)$p['aktiv'],
+    'archiviert' => (bool)$p['archiviert'],
 ], Playlist::listAll());
 
 admin_header('Kalender', 'wochenplan');

@@ -89,6 +89,13 @@ if ($aktion === 'speichern') {
     if ($datumVon > $datumBis) {
         fehler('Das Von-Datum muss vor (oder gleich) dem Bis-Datum liegen.');
     }
+    // Archivierte Playlists dürfen nicht (wieder) in die Zukunft geplant
+    // werden — z.B. durch Verschieben eines alten Termins. Sonst liefe eine
+    // Playlist, die in der Übersicht unsichtbar ist (Schritt 36).
+    $plDaten = Playlist::find($playlistId);
+    if (!empty($plDaten['archiviert']) && $datumBis >= date('Y-m-d')) {
+        fehler('Die Playlist „' . $plDaten['name'] . '" ist archiviert. Bitte erst unter Playlists → Archiv wiederherstellen.');
+    }
 
     $von = (string)($_POST['von'] ?? '');
     $bis = (string)($_POST['bis'] ?? '');

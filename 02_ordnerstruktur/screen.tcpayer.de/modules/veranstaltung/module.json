@@ -18,6 +18,12 @@
       "default": 5
     },
     {
+      "key": "kategorien",
+      "type": "wp_kategorie_picker",
+      "label": "Nur diese Kategorien anzeigen (nichts angehakt = alle)",
+      "default": ""
+    },
+    {
       "key": "uebergang",
       "type": "select",
       "label": "Übergang",

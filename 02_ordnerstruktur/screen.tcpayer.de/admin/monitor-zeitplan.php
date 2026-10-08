@@ -55,7 +55,9 @@ if ($hlPl > 0 && ($hlObj = Playlist::find($hlPl))) {
               . '</strong>" — zurück/schließen führt zur markierten Monitor-Übersicht';
 }
 
-$playlists = Playlist::listAll();
+// Archivierte Playlists sind nicht auswählbar. Sie können hier auch nicht
+// mehr eingeplant sein: Playlist::archivieren() sperrt, solange sie es sind.
+$playlists = Playlist::listAll(true);
 $gueltigePlaylists = [];
 foreach ($playlists as $p) { $gueltigePlaylists[(int)$p['id']] = true; }
 
